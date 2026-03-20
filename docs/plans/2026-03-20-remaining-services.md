@@ -58,8 +58,8 @@ func (c *Client) Delete(path string) (*Response, error)
 
 | 커맨드 | API |
 |--------|-----|
-| `directory list-orgunits` | GET `/directory/orgunits` |
-| `directory get-orgunit <id>` | GET `/directory/orgunits/{orgunitId}` |
+| `directory list-orgunits` | GET `/orgunits` |
+| `directory get-orgunit <id>` | GET `/orgunits/{orgUnitId}` |
 | `directory list-levels` | GET `/directory/levels` |
 | `directory list-positions` | GET `/directory/positions` |
 | `directory list-user-types` | GET `/directory/user-types` |
@@ -339,20 +339,20 @@ func (c *Client) UploadFile(uploadURL string, filePath string) error
 - Create: `internal/api/drive_sharedfolder.go`
 - Modify: `cmd/drive.go`
 
-**GroupFolder (SDK: DriveGroupFolderApi):**
+**GroupFolder (SDK: DriveGroupFolderApi — groupId 기반):**
 
 | 커맨드 | API |
 |--------|-----|
-| `drive group list-folders` | GET `/drive/group-folders` (admin) |
-| `drive group list <groupFolderId> [--folder <folderId>]` | GET `/drive/group-folders/{id}/files` |
-| `drive group get <groupFolderId> <fileId>` | GET `/drive/group-folders/{id}/files/{fileId}` |
+| `drive group get-folder <groupId>` | GET `/groups/{groupId}/folder` |
+| `drive group list <groupId> [--folder <folderId>]` | GET `/groups/{groupId}/folder/files` 또는 `.../files/{folderId}/children` |
+| `drive group get <groupId> <fileId>` | GET `/groups/{groupId}/folder/files/{fileId}` |
 
-**SharedFolder (SDK: DriveSharedFolderApi):**
+**SharedFolder (SDK: DriveSharedFolderApi — sharedfolders 세그먼트):**
 
 | 커맨드 | API |
 |--------|-----|
-| `drive shared-folder list --user-id <id>` | GET `/users/{userId}/drive/shared-folders` |
-| `drive shared-folder files <sharedFolderId> --user-id <id>` | GET `/users/{userId}/drive/shared-folders/{id}/files` |
+| `drive shared-folder list --user-id <id>` | GET `/users/{userId}/drive/sharedfolders` |
+| `drive shared-folder files <sharedFolderId> --user-id <id>` | GET `/users/{userId}/drive/sharedfolders/{id}/files` |
 
 ---
 

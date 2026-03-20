@@ -1,3 +1,19 @@
+# Go 빌드 산출물
 nw-cli
 dist/
 *.exe
+
+# npm 배포 산출물 (build-npm.sh가 생성)
+npm/linux-x64/nw-cli
+npm/linux-x64/package.json
+npm/linux-arm64/nw-cli
+npm/linux-arm64/package.json
+npm/darwin-x64/nw-cli
+npm/darwin-x64/package.json
+npm/darwin-arm64/nw-cli
+npm/darwin-arm64/package.json
+npm/win32-x64/nw-cli.exe
+npm/win32-x64/package.json
+
+# npm 로그
+*.log

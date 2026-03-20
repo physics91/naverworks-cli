@@ -65,11 +65,20 @@ func (s *TokenStore) Save(token *Token) error {
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return fmt.Errorf("디렉토리 생성 실패: %w", err)
 	}
+	if runtime.GOOS != "windows" {
+		os.Chmod(dir, 0700)
+	}
 	data, err := json.MarshalIndent(token, "", "  ")
 	if err != nil {
 		return fmt.Errorf("토큰 직렬화 실패: %w", err)
 	}
-	return os.WriteFile(s.path, data, 0600)
+	if err := os.WriteFile(s.path, data, 0600); err != nil {
+		return err
+	}
+	if runtime.GOOS != "windows" {
+		os.Chmod(s.path, 0600)
+	}
+	return nil
 }
 
 func (s *TokenStore) Delete() error {

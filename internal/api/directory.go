@@ -1,5 +1,7 @@
 package api
 
+import "net/url"
+
 type DirectoryService struct {
 	client *Client
 }
@@ -13,7 +15,7 @@ func (s *DirectoryService) ListUsers(cursor string, count int) (*Response, error
 }
 
 func (s *DirectoryService) GetUser(userID string) (*Response, error) {
-	return s.client.Get("/users/" + userID)
+	return s.client.Get("/users/" + url.PathEscape(userID))
 }
 
 func (s *DirectoryService) ListGroups(cursor string, count int) (*Response, error) {
@@ -21,5 +23,5 @@ func (s *DirectoryService) ListGroups(cursor string, count int) (*Response, erro
 }
 
 func (s *DirectoryService) GetGroup(groupID string) (*Response, error) {
-	return s.client.Get("/groups/" + groupID)
+	return s.client.Get("/groups/" + url.PathEscape(groupID))
 }

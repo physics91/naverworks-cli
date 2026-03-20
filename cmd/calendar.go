@@ -202,12 +202,21 @@ var calCreateEventCmd = &cobra.Command{
 			return fmt.Errorf("--calendar-id, --title, --start, --end는 필수입니다")
 		}
 
+		startTime, err := time.Parse(time.RFC3339, start)
+		if err != nil {
+			return fmt.Errorf("--start 형식 오류 (RFC3339): %w", err)
+		}
+		endTime, err := time.Parse(time.RFC3339, end)
+		if err != nil {
+			return fmt.Errorf("--end 형식 오류 (RFC3339): %w", err)
+		}
+
 		event := map[string]interface{}{
 			"summary": title,
 		}
 		if isAllDay {
-			event["start"] = map[string]string{"date": start[:10]}
-			event["end"] = map[string]string{"date": end[:10]}
+			event["start"] = map[string]string{"date": startTime.Format("2006-01-02")}
+			event["end"] = map[string]string{"date": endTime.Format("2006-01-02")}
 			event["isAllDay"] = true
 		} else {
 			event["start"] = map[string]string{"dateTime": start}

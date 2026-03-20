@@ -72,11 +72,20 @@ func (c *Config) Save(path string) error {
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return fmt.Errorf("디렉토리 생성 실패: %w", err)
 	}
+	if runtime.GOOS != "windows" {
+		os.Chmod(dir, 0700)
+	}
 	data, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
 		return fmt.Errorf("config 직렬화 실패: %w", err)
 	}
-	return os.WriteFile(path, data, 0600)
+	if err := os.WriteFile(path, data, 0600); err != nil {
+		return err
+	}
+	if runtime.GOOS != "windows" {
+		os.Chmod(path, 0600)
+	}
+	return nil
 }
 
 func (c *Config) Set(key, value string) error {

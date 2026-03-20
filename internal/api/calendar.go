@@ -15,11 +15,11 @@ func NewCalendarService(client *Client) *CalendarService {
 }
 
 func (s *CalendarService) ListCalendars(userID, cursor string, count int) (*Response, error) {
-	return s.client.Get(fmt.Sprintf("/users/%s/calendar-personals", userID) + BuildPaginationQuery(cursor, count))
+	return s.client.Get(fmt.Sprintf("/users/%s/calendar-personals", url.PathEscape(userID)) + BuildPaginationQuery(cursor, count))
 }
 
 func (s *CalendarService) GetDefaultCalendar(userID string) (*Response, error) {
-	return s.client.Get(fmt.Sprintf("/users/%s/calendar", userID))
+	return s.client.Get(fmt.Sprintf("/users/%s/calendar", url.PathEscape(userID)))
 }
 
 func (s *CalendarService) ListEvents(userID, calendarID, from, until string) (*Response, error) {
@@ -27,17 +27,20 @@ func (s *CalendarService) ListEvents(userID, calendarID, from, until string) (*R
 		"fromDateTime":  {from},
 		"untilDateTime": {until},
 	}
-	return s.client.Get(fmt.Sprintf("/users/%s/calendars/%s/events?%s", userID, calendarID, params.Encode()))
+	return s.client.Get(fmt.Sprintf("/users/%s/calendars/%s/events?%s", url.PathEscape(userID), url.PathEscape(calendarID), params.Encode()))
 }
 
 func (s *CalendarService) GetEvent(userID, calendarID, eventID string) (*Response, error) {
-	return s.client.Get(fmt.Sprintf("/users/%s/calendars/%s/events/%s", userID, calendarID, eventID))
+	return s.client.Get(fmt.Sprintf("/users/%s/calendars/%s/events/%s", url.PathEscape(userID), url.PathEscape(calendarID), url.PathEscape(eventID)))
 }
 
 func (s *CalendarService) CreateEvent(userID, calendarID string, event map[string]interface{}) (*Response, error) {
 	body := map[string]interface{}{
 		"eventComponents": []interface{}{event},
 	}
-	data, _ := json.Marshal(body)
-	return s.client.Post(fmt.Sprintf("/users/%s/calendars/%s/events", userID, calendarID), data)
+	data, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("이벤트 직렬화 실패: %w", err)
+	}
+	return s.client.Post(fmt.Sprintf("/users/%s/calendars/%s/events", url.PathEscape(userID), url.PathEscape(calendarID)), data)
 }

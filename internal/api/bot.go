@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 )
 
 type BotService struct {
@@ -20,8 +21,11 @@ func (s *BotService) SendTextToUser(botID, userID, text string) (*Response, erro
 			"text": text,
 		},
 	}
-	data, _ := json.Marshal(body)
-	return s.client.Post(fmt.Sprintf("/bots/%s/users/%s/messages", botID, userID), data)
+	data, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("메시지 직렬화 실패: %w", err)
+	}
+	return s.client.Post(fmt.Sprintf("/bots/%s/users/%s/messages", url.PathEscape(botID), url.PathEscape(userID)), data)
 }
 
 func (s *BotService) SendTextToChannel(botID, channelID, text string) (*Response, error) {
@@ -31,15 +35,18 @@ func (s *BotService) SendTextToChannel(botID, channelID, text string) (*Response
 			"text": text,
 		},
 	}
-	data, _ := json.Marshal(body)
-	return s.client.Post(fmt.Sprintf("/bots/%s/channels/%s/messages", botID, channelID), data)
+	data, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("메시지 직렬화 실패: %w", err)
+	}
+	return s.client.Post(fmt.Sprintf("/bots/%s/channels/%s/messages", url.PathEscape(botID), url.PathEscape(channelID)), data)
 }
 
 func (s *BotService) GetChannel(botID, channelID string) (*Response, error) {
-	return s.client.Get(fmt.Sprintf("/bots/%s/channels/%s", botID, channelID))
+	return s.client.Get(fmt.Sprintf("/bots/%s/channels/%s", url.PathEscape(botID), url.PathEscape(channelID)))
 }
 
 func (s *BotService) ListChannelMembers(botID, channelID, cursor string, count int) (*Response, error) {
-	path := fmt.Sprintf("/bots/%s/channels/%s/members", botID, channelID) + BuildPaginationQuery(cursor, count)
+	path := fmt.Sprintf("/bots/%s/channels/%s/members", url.PathEscape(botID), url.PathEscape(channelID)) + BuildPaginationQuery(cursor, count)
 	return s.client.Get(path)
 }

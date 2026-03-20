@@ -48,6 +48,9 @@ var botSendCmd = &cobra.Command{
 		if to == "" && channel == "" {
 			return fmt.Errorf("--to 또는 --channel 중 하나를 지정하세요")
 		}
+		if to != "" && channel != "" {
+			return fmt.Errorf("--to와 --channel은 동시에 지정할 수 없습니다")
+		}
 		if text == "" {
 			return fmt.Errorf("--text를 지정하세요")
 		}

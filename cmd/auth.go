@@ -3,10 +3,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/physics91/naverworks-cli/internal/auth"
@@ -78,7 +78,7 @@ func loginOAuth(cfg *config.Config, store *auth.TokenStore) error {
 		return fmt.Errorf("OAuth 인증에 필요한 설정이 누락되었습니다: client_id, client_secret")
 	}
 
-	port, err := auth.FindAvailablePort(8484, 8494)
+	ln, port, err := auth.FindAvailableListener(8484, 8494)
 	if err != nil {
 		return err
 	}
@@ -89,14 +89,18 @@ func loginOAuth(cfg *config.Config, store *auth.TokenStore) error {
 		scope = defaultOAuthScope
 	}
 
-	state := auth.GenerateState()
+	state, err := auth.GenerateState()
+	if err != nil {
+		ln.Close()
+		return err
+	}
 	authURL := auth.BuildAuthorizationURL(authBaseURL, cfg.ClientID, redirectURI, state, scope)
 
 	if err := openBrowser(authURL); err != nil {
 		fmt.Fprintf(os.Stderr, "브라우저를 열 수 없습니다. 아래 URL을 직접 열어주세요:\n%s\n", authURL)
 	}
 
-	code, err := auth.WaitForCallback(port, state, 120*time.Second)
+	code, err := auth.WaitForCallback(ln, state, 120*time.Second)
 	if err != nil {
 		return err
 	}
@@ -125,18 +129,24 @@ var authStatusCmd = &cobra.Command{
 		status := map[string]interface{}{
 			"auth_method": token.AuthMethod,
 			"expires_at":  token.ExpiresAt.Format(time.RFC3339),
-			"scopes":      splitScopes(token.Scope),
+			"scopes":      strings.Fields(token.Scope),
+		}
+		if len(status["scopes"].([]string)) == 0 {
+			status["scopes"] = []string{}
 		}
 
 		if token.AuthMethod == "jwt" {
 			status["service_account_id"] = token.ServiceAccountID
 		} else if auth.HasScope(token.Scope, "openid") && auth.HasScope(token.Scope, "profile") {
-			if name, err := fetchUserName(token.AccessToken); err == nil && name != "" {
+			if name, err := auth.FetchUserName(token.AccessToken, authBaseURL); err == nil && name != "" {
 				status["user_name"] = name
 			}
 		}
 
-		data, _ := json.MarshalIndent(status, "", "  ")
+		data, err := json.MarshalIndent(status, "", "  ")
+		if err != nil {
+			return fmt.Errorf("JSON 직렬화 실패: %w", err)
+		}
 		fmt.Println(string(data))
 		return nil
 	},
@@ -146,8 +156,12 @@ var authLogoutCmd = &cobra.Command{
 	Use:   "logout",
 	Short: "로그아웃",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, _ := config.Load(config.DefaultPath())
+		cfg, err := config.Load(config.DefaultPath())
+		if err != nil {
+			cfg = &config.Config{}
+		}
 		cfg.ApplyEnvOverrides()
+
 		store := auth.NewTokenStore(auth.DefaultTokenPath())
 		token, err := store.Load()
 		if err != nil {
@@ -188,51 +202,4 @@ func openBrowser(url string) error {
 		return exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
 	}
 	return fmt.Errorf("지원하지 않는 OS")
-}
-
-func splitScopes(scope string) []string {
-	if scope == "" {
-		return []string{}
-	}
-	result := []string{}
-	for _, s := range splitFields(scope) {
-		if s != "" {
-			result = append(result, s)
-		}
-	}
-	return result
-}
-
-func splitFields(s string) []string {
-	var result []string
-	current := ""
-	for _, c := range s {
-		if c == ' ' {
-			if current != "" {
-				result = append(result, current)
-				current = ""
-			}
-		} else {
-			current += string(c)
-		}
-	}
-	if current != "" {
-		result = append(result, current)
-	}
-	return result
-}
-
-func fetchUserName(accessToken string) (string, error) {
-	req, _ := http.NewRequest("GET", authBaseURL+"/userinfo", nil)
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	var info struct {
-		Name string `json:"name"`
-	}
-	json.NewDecoder(resp.Body).Decode(&info)
-	return info.Name, nil
 }

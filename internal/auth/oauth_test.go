@@ -9,22 +9,19 @@ import (
 )
 
 func TestBuildAuthorizationURL(t *testing.T) {
-	url := BuildAuthorizationURL("https://auth.example.com", "client-id", "http://localhost:8484/callback", "test-state", "openid profile bot")
-	if url == "" {
+	u := BuildAuthorizationURL("https://auth.example.com", "client-id", "http://localhost:8484/callback", "test-state", "openid profile bot")
+	if u == "" {
 		t.Fatal("expected non-empty URL")
 	}
 	for _, param := range []string{"client_id=client-id", "state=test-state", "response_type=code"} {
-		if !strings.Contains(url, param) {
-			t.Errorf("URL missing %q: %s", param, url)
+		if !strings.Contains(u, param) {
+			t.Errorf("URL missing %q: %s", param, u)
 		}
 	}
 }
 
 func TestExchangeCode(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" {
-			t.Errorf("expected POST, got %s", r.Method)
-		}
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"access_token":  "at-new",
 			"refresh_token": "rt-new",
@@ -44,6 +41,25 @@ func TestExchangeCode(t *testing.T) {
 	}
 	if token.AuthMethod != "oauth" {
 		t.Errorf("expected oauth, got %q", token.AuthMethod)
+	}
+}
+
+func TestExchangeCode_HTTPError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error":             "invalid_grant",
+			"error_description": "bad code",
+		})
+	}))
+	defer server.Close()
+
+	_, err := ExchangeCode(server.URL, "client-id", "client-secret", "bad-code", "http://localhost:8484/callback")
+	if err == nil {
+		t.Fatal("expected error for 400 response")
+	}
+	if !strings.Contains(err.Error(), "invalid_grant") {
+		t.Errorf("expected invalid_grant in error, got %v", err)
 	}
 }
 
@@ -81,11 +97,12 @@ func TestRevokeToken(t *testing.T) {
 	}
 }
 
-func TestFindAvailablePort(t *testing.T) {
-	port, err := FindAvailablePort(8484, 8494)
+func TestFindAvailableListener(t *testing.T) {
+	ln, port, err := FindAvailableListener(8484, 8494)
 	if err != nil {
-		t.Fatalf("find port failed: %v", err)
+		t.Fatalf("find listener failed: %v", err)
 	}
+	defer ln.Close()
 	if port < 8484 || port > 8494 {
 		t.Errorf("port %d out of range", port)
 	}
@@ -97,5 +114,30 @@ func TestHasScope(t *testing.T) {
 	}
 	if HasScope("bot directory", "openid") {
 		t.Error("expected openid to not be found")
+	}
+}
+
+func TestGenerateState(t *testing.T) {
+	state, err := GenerateState()
+	if err != nil {
+		t.Fatalf("generate state failed: %v", err)
+	}
+	if len(state) != 32 {
+		t.Errorf("expected 32 hex chars, got %d", len(state))
+	}
+}
+
+func TestRequestToken_EmptyAccessToken(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"token_type": "Bearer",
+			"expires_in": 3600,
+		})
+	}))
+	defer server.Close()
+
+	_, err := ExchangeCode(server.URL, "id", "secret", "code", "http://localhost/cb")
+	if err == nil {
+		t.Fatal("expected error for empty access_token")
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -12,10 +13,14 @@ import (
 	"time"
 )
 
-func GenerateState() string {
+var authHTTPClient = &http.Client{Timeout: 30 * time.Second}
+
+func GenerateState() (string, error) {
 	b := make([]byte, 16)
-	rand.Read(b)
-	return hex.EncodeToString(b)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("state 생성 실패: %w", err)
+	}
+	return hex.EncodeToString(b), nil
 }
 
 func BuildAuthorizationURL(authBaseURL, clientID, redirectURI, state, scope string) string {
@@ -83,7 +88,7 @@ func RevokeToken(authBaseURL, clientID, clientSecret, token, tokenTypeHint strin
 		"token":           {token},
 		"token_type_hint": {tokenTypeHint},
 	}
-	resp, err := http.PostForm(authBaseURL+"/revoke", data)
+	resp, err := authHTTPClient.PostForm(authBaseURL+"/revoke", data)
 	if err != nil {
 		return fmt.Errorf("revoke 요청 실패: %w", err)
 	}
@@ -94,18 +99,17 @@ func RevokeToken(authBaseURL, clientID, clientSecret, token, tokenTypeHint strin
 	return nil
 }
 
-func FindAvailablePort(start, end int) (int, error) {
+func FindAvailableListener(start, end int) (net.Listener, int, error) {
 	for port := start; port <= end; port++ {
-		ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+		ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
 		if err == nil {
-			ln.Close()
-			return port, nil
+			return ln, port, nil
 		}
 	}
-	return 0, fmt.Errorf("사용 가능한 포트를 찾을 수 없습니다 (%d-%d)", start, end)
+	return nil, 0, fmt.Errorf("사용 가능한 포트를 찾을 수 없습니다 (%d-%d)", start, end)
 }
 
-func WaitForCallback(port int, expectedState string, timeout time.Duration) (string, error) {
+func WaitForCallback(ln net.Listener, expectedState string, timeout time.Duration) (string, error) {
 	codeCh := make(chan string, 1)
 	errCh := make(chan error, 1)
 
@@ -130,8 +134,8 @@ func WaitForCallback(port int, expectedState string, timeout time.Duration) (str
 		codeCh <- code
 	})
 
-	server := &http.Server{Addr: fmt.Sprintf(":%d", port), Handler: mux}
-	go server.ListenAndServe()
+	server := &http.Server{Handler: mux}
+	go server.Serve(ln)
 	defer server.Close()
 
 	select {
@@ -153,12 +157,52 @@ func HasScope(scopeStr string, target string) bool {
 	return false
 }
 
+func FetchUserName(accessToken, authBaseURL string) (string, error) {
+	req, err := http.NewRequest("GET", authBaseURL+"/userinfo", nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	resp, err := authHTTPClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		return "", fmt.Errorf("userinfo 조회 실패: HTTP %d", resp.StatusCode)
+	}
+	var info struct {
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
+		return "", err
+	}
+	return info.Name, nil
+}
+
 func requestToken(tokenURL string, data url.Values) (*Token, error) {
-	resp, err := http.PostForm(tokenURL, data)
+	resp, err := authHTTPClient.PostForm(tokenURL, data)
 	if err != nil {
 		return nil, fmt.Errorf("토큰 요청 실패: %w", err)
 	}
 	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("토큰 응답 읽기 실패: %w", err)
+	}
+
+	if resp.StatusCode >= 400 {
+		var errResp struct {
+			Error     string `json:"error"`
+			ErrorDesc string `json:"error_description"`
+		}
+		json.Unmarshal(body, &errResp)
+		if errResp.Error != "" {
+			return nil, fmt.Errorf("토큰 발급 실패 (HTTP %d): %s - %s", resp.StatusCode, errResp.Error, errResp.ErrorDesc)
+		}
+		return nil, fmt.Errorf("토큰 발급 실패: HTTP %d", resp.StatusCode)
+	}
 
 	var result struct {
 		AccessToken  string `json:"access_token"`
@@ -166,14 +210,13 @@ func requestToken(tokenURL string, data url.Values) (*Token, error) {
 		TokenType    string `json:"token_type"`
 		ExpiresIn    int    `json:"expires_in"`
 		Scope        string `json:"scope"`
-		Error        string `json:"error"`
-		ErrorDesc    string `json:"error_description"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, fmt.Errorf("토큰 응답 파싱 실패: %w", err)
 	}
-	if result.Error != "" {
-		return nil, fmt.Errorf("토큰 발급 실패: %s - %s", result.Error, result.ErrorDesc)
+
+	if result.AccessToken == "" {
+		return nil, fmt.Errorf("토큰 응답에 access_token이 없습니다")
 	}
 
 	return &Token{

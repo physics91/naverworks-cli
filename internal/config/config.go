@@ -73,7 +73,9 @@ func (c *Config) Save(path string) error {
 		return fmt.Errorf("디렉토리 생성 실패: %w", err)
 	}
 	if runtime.GOOS != "windows" {
-		os.Chmod(dir, 0700)
+		if err := os.Chmod(dir, 0700); err != nil {
+			return fmt.Errorf("디렉토리 권한 설정 실패: %w", err)
+		}
 	}
 	data, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
@@ -83,7 +85,9 @@ func (c *Config) Save(path string) error {
 		return err
 	}
 	if runtime.GOOS != "windows" {
-		os.Chmod(path, 0600)
+		if err := os.Chmod(path, 0600); err != nil {
+			return fmt.Errorf("파일 권한 설정 실패: %w", err)
+		}
 	}
 	return nil
 }

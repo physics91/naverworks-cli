@@ -82,7 +82,7 @@ func loginOAuth(cfg *config.Config, store *auth.TokenStore) error {
 	if err != nil {
 		return err
 	}
-	redirectURI := fmt.Sprintf("http://localhost:%d/callback", port)
+	redirectURI := fmt.Sprintf("http://127.0.0.1:%d/callback", port)
 
 	scope := cfg.Scope
 	if scope == "" {

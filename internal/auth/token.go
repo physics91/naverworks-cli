@@ -66,7 +66,9 @@ func (s *TokenStore) Save(token *Token) error {
 		return fmt.Errorf("디렉토리 생성 실패: %w", err)
 	}
 	if runtime.GOOS != "windows" {
-		os.Chmod(dir, 0700)
+		if err := os.Chmod(dir, 0700); err != nil {
+			return fmt.Errorf("디렉토리 권한 설정 실패: %w", err)
+		}
 	}
 	data, err := json.MarshalIndent(token, "", "  ")
 	if err != nil {
@@ -76,7 +78,9 @@ func (s *TokenStore) Save(token *Token) error {
 		return err
 	}
 	if runtime.GOOS != "windows" {
-		os.Chmod(s.path, 0600)
+		if err := os.Chmod(s.path, 0600); err != nil {
+			return fmt.Errorf("파일 권한 설정 실패: %w", err)
+		}
 	}
 	return nil
 }

@@ -26,3 +26,29 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Extract version
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build npm packages
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+        run: ./npm/build-npm.sh "$VERSION" dist
+
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ steps.version.outputs.VERSION }}
+        run: |
+          for dir in npm/linux-x64 npm/linux-arm64 npm/darwin-x64 npm/darwin-arm64 npm/win32-x64; do
+            if [ -f "$dir/nw-cli" ] || [ -f "$dir/nw-cli.exe" ]; then
+              cd "$dir" && npm publish --access public && cd -
+            fi
+          done
+          cd npm/cli && npm publish --access public

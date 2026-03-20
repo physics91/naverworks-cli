@@ -1,0 +1,26 @@
+{
+  "name": "nw-cli",
+  "version": "0.1.0",
+  "description": "네이버웍스(NAVER WORKS) REST API CLI",
+  "bin": {
+    "nw-cli": "bin/nw-cli"
+  },
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "optionalDependencies": {
+    "@nw-cli/linux-x64": "0.1.0",
+    "@nw-cli/linux-arm64": "0.1.0",
+    "@nw-cli/darwin-x64": "0.1.0",
+    "@nw-cli/darwin-arm64": "0.1.0",
+    "@nw-cli/win32-x64": "0.1.0"
+  },
+  "keywords": ["naverworks", "naver-works", "line-works", "cli"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/physics91/naverworks-cli"
+  },
+  "os": ["linux", "darwin", "win32"],
+  "cpu": ["x64", "arm64"]
+}

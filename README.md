@@ -4,6 +4,18 @@
 
 ## 설치
 
+### npm (권장)
+
+```bash
+npm install -g nw-cli
+```
+
+또는 npx로 바로 실행:
+
+```bash
+npx nw-cli version
+```
+
 ### 스크립트 (Linux/macOS)
 
 ```bash

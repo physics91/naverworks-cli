@@ -28,15 +28,19 @@ description: Use when releasing a new version of nw-cli — autonomously builds 
 아래를 **개별 명령으로** 순서대로 실행한다. 하나라도 실패하면 **즉시 중단** (롤백 불필요):
 
 ```
-1. go mod tidy && git diff --exit-code
-   → diff가 있으면 "go.mod/go.sum이 변경되었습니다. 먼저 커밋해주세요"로 중단
-2. go test ./... -count=1
-3. go vet ./...
-4. git status --porcelain  (출력이 있으면 "워킹 트리가 clean하지 않습니다"로 중단)
-5. goreleaser 존재 확인: command -v goreleaser (없으면 HAS_GORELEASER=false로 표시)
-6. 빌드 도구 확인: command -v tar && command -v zip (수동 빌드 시 필요)
-7. gh auth status
-8. npm whoami
+1. go mod tidy
+2. git diff --exit-code
+   → 종료 코드 != 0이면 "go.mod/go.sum이 변경되었습니다. 먼저 커밋해주세요"로 중단
+3. go test ./... -count=1
+4. go vet ./...
+5. git status --porcelain
+   → 출력이 있으면 "워킹 트리가 clean하지 않습니다"로 중단
+6. command -v goreleaser
+   → 실패하면 HAS_GORELEASER=false로 표시 (중단하지 않음)
+7. command -v tar
+8. command -v zip
+9. gh auth status
+10. npm whoami
 ```
 
 각 결과를 간결하게 보고:
@@ -76,21 +80,33 @@ mkdir -p dist
 ```
 
 그 다음 **각 플랫폼을 개별 명령으로** 실행:
+각 플랫폼을 **개별 명령 3개씩** 실행 (linux-amd64 예시):
 ```bash
 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/nw-cli .
+```
+```bash
 tar -czf "dist/nw-cli_${VERSION}_linux_amd64.tar.gz" -C dist nw-cli
+```
+```bash
 rm dist/nw-cli
 ```
-(linux-arm64, darwin-amd64, darwin-arm64도 동일 패턴)
 
+linux-arm64, darwin-amd64, darwin-arm64도 **동일하게 3개 명령으로 분리**한다.
+
+Windows:
 ```bash
 GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/nw-cli.exe .
-(cd dist && zip "nw-cli_${VERSION}_windows_amd64.zip" nw-cli.exe && rm nw-cli.exe)
+```
+```bash
+cd dist && zip "nw-cli_${VERSION}_windows_amd64.zip" nw-cli.exe
+```
+```bash
+rm dist/nw-cli.exe
 ```
 
 체크섬:
 ```bash
-cd dist && (sha256sum nw-cli_*.tar.gz nw-cli_*.zip 2>/dev/null || shasum -a 256 nw-cli_*.tar.gz nw-cli_*.zip) > checksums.txt && cd ..
+cd dist && sha256sum nw-cli_*.tar.gz nw-cli_*.zip > checksums.txt 2>/dev/null || cd dist && shasum -a 256 nw-cli_*.tar.gz nw-cli_*.zip > checksums.txt
 ```
 
 빌드 완료 후 산출물 목록과 크기를 보고한다.
@@ -121,20 +137,32 @@ gh release create v<VERSION> dist/nw-cli_*.tar.gz dist/nw-cli_*.zip dist/checksu
 ./npm/build-npm.sh <VERSION> dist
 ```
 
-플랫폼 패키지를 **하나씩** 퍼블리시하고, 성공한 패키지를 `PUBLISHED_PACKAGES`에 기록:
+플랫폼 패키지를 **하나씩 개별 명령으로** 퍼블리시하고, 성공한 패키지를 `PUBLISHED_PACKAGES`에 기록:
+
 ```bash
-cd npm/linux-x64 && npm publish --access public && cd ../..
-# → PUBLISHED_PACKAGES에 "@nw-cli/linux-x64" 추가
-cd npm/linux-arm64 && npm publish --access public && cd ../..
-# → PUBLISHED_PACKAGES에 추가
-# ... darwin-x64, darwin-arm64, win32-x64도 동일
+cd npm/linux-x64
 ```
+```bash
+npm publish --access public
+```
+```bash
+cd ../..
+```
+→ 성공 시 PUBLISHED_PACKAGES에 `@nw-cli/linux-x64` 추가
+
+linux-arm64, darwin-x64, darwin-arm64, win32-x64도 **동일하게 3개 명령으로 분리**한다.
 
 마지막에 메인 패키지:
 ```bash
-cd npm/cli && npm publish --access public && cd ../..
-# → PUBLISHED_PACKAGES에 "nw-cli" 추가
+cd npm/cli
 ```
+```bash
+npm publish --access public
+```
+```bash
+cd ../..
+```
+→ 성공 시 PUBLISHED_PACKAGES에 `nw-cli` 추가
 
 **어느 패키지에서든 실패하면** 즉시 중단하고 롤백으로 진입한다.
 

@@ -98,15 +98,19 @@ Windows:
 GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/nw-cli.exe .
 ```
 ```bash
-cd dist && zip "nw-cli_${VERSION}_windows_amd64.zip" nw-cli.exe
+zip dist/nw-cli_${VERSION}_windows_amd64.zip -j dist/nw-cli.exe
 ```
 ```bash
 rm dist/nw-cli.exe
 ```
 
-체크섬:
+체크섬 (sha256sum 또는 shasum 중 사용 가능한 것):
 ```bash
-cd dist && sha256sum nw-cli_*.tar.gz nw-cli_*.zip > checksums.txt 2>/dev/null || cd dist && shasum -a 256 nw-cli_*.tar.gz nw-cli_*.zip > checksums.txt
+sha256sum dist/nw-cli_*.tar.gz dist/nw-cli_*.zip > dist/checksums.txt
+```
+macOS에서 sha256sum이 없으면:
+```bash
+shasum -a 256 dist/nw-cli_*.tar.gz dist/nw-cli_*.zip > dist/checksums.txt
 ```
 
 빌드 완료 후 산출물 목록과 크기를 보고한다.

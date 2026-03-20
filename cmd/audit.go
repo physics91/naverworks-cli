@@ -26,17 +26,19 @@ var auditDownloadLogsCmd = &cobra.Command{
 		client := buildAPIClient(cfg, token)
 		svc := api.NewAuditService(client)
 
-		from, _ := cmd.Flags().GetString("from")
-		until, _ := cmd.Flags().GetString("until")
-		if from == "" || until == "" {
-			return fmt.Errorf("--from과 --until은 필수입니다")
+		startTime, _ := cmd.Flags().GetString("start-time")
+		endTime, _ := cmd.Flags().GetString("end-time")
+		service, _ := cmd.Flags().GetString("service")
+		if startTime == "" || endTime == "" {
+			return fmt.Errorf("--start-time과 --end-time은 필수입니다")
 		}
 
-		resp, err := svc.DownloadLogs(from, until)
+		downloadURL, err := svc.DownloadLogs(startTime, endTime, service)
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		result, _ := json.Marshal(map[string]string{"download_url": downloadURL})
+		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(result)
 		return nil
 	},
 }
@@ -108,24 +110,26 @@ var monitoringDownloadMessagesCmd = &cobra.Command{
 		client := buildAPIClient(cfg, token)
 		svc := api.NewMonitoringService(client)
 
-		from, _ := cmd.Flags().GetString("from")
-		until, _ := cmd.Flags().GetString("until")
-		if from == "" || until == "" {
-			return fmt.Errorf("--from과 --until은 필수입니다")
+		startTime, _ := cmd.Flags().GetString("start-time")
+		endTime, _ := cmd.Flags().GetString("end-time")
+		if startTime == "" || endTime == "" {
+			return fmt.Errorf("--start-time과 --end-time은 필수입니다")
 		}
 
-		resp, err := svc.DownloadMessages(from, until)
+		downloadURL, err := svc.DownloadMessages(startTime, endTime)
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		result, _ := json.Marshal(map[string]string{"download_url": downloadURL})
+		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(result)
 		return nil
 	},
 }
 
 func init() {
-	auditDownloadLogsCmd.Flags().String("from", "", "시작 날짜 (필수)")
-	auditDownloadLogsCmd.Flags().String("until", "", "종료 날짜 (필수)")
+	auditDownloadLogsCmd.Flags().String("start-time", "", "시작 시간 (필수)")
+	auditDownloadLogsCmd.Flags().String("end-time", "", "종료 시간 (필수)")
+	auditDownloadLogsCmd.Flags().String("service", "", "서비스 필터")
 
 	auditListPolicyGroupsCmd.Flags().String("cursor", "", "페이지네이션 커서")
 	auditListPolicyGroupsCmd.Flags().Int("count", 0, "페이지 크기")
@@ -134,8 +138,8 @@ func init() {
 	auditCmd.AddCommand(auditDownloadLogsCmd, auditListPolicyGroupsCmd)
 	rootCmd.AddCommand(auditCmd)
 
-	monitoringDownloadMessagesCmd.Flags().String("from", "", "시작 날짜 (필수)")
-	monitoringDownloadMessagesCmd.Flags().String("until", "", "종료 날짜 (필수)")
+	monitoringDownloadMessagesCmd.Flags().String("start-time", "", "시작 시간 (필수)")
+	monitoringDownloadMessagesCmd.Flags().String("end-time", "", "종료 시간 (필수)")
 
 	monitoringCmd.AddCommand(monitoringDownloadMessagesCmd)
 	rootCmd.AddCommand(monitoringCmd)

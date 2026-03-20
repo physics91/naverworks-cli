@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -116,9 +117,71 @@ func (c *Client) doWithRetry(method, path string, body []byte, retried401 bool) 
 	return nil, &APIError{StatusCode: 429, Code: "RATE_LIMIT_EXCEEDED", Description: "최대 재시도 횟수 초과"}
 }
 
+// GetDownloadURL calls the API endpoint without following redirects,
+// returning the Location header URL for download endpoints that return 302.
+func (c *Client) GetDownloadURL(path string) (string, error) {
+	if c.token.NeedsRefresh() && c.refreshFn != nil {
+		if err := c.refreshFn(c.token); err != nil {
+			return "", fmt.Errorf("토큰 갱신 실패: %w", err)
+		}
+	}
+
+	noRedirectClient := &http.Client{
+		Timeout: 30 * time.Second,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	req, err := http.NewRequest("GET", c.baseURL+path, nil)
+	if err != nil {
+		return "", fmt.Errorf("요청 생성 실패: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+c.token.AccessToken)
+
+	resp, err := noRedirectClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("네트워크 에러: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 301 || resp.StatusCode == 302 {
+		location := resp.Header.Get("Location")
+		if location != "" {
+			return location, nil
+		}
+	}
+
+	// 302가 아닌 경우 일반 응답으로 처리
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 400 {
+		apiErr := &APIError{StatusCode: resp.StatusCode}
+		json.Unmarshal(body, apiErr)
+		return "", apiErr
+	}
+
+	// JSON 응답에 downloadUrl 필드가 있을 수 있음
+	var result struct {
+		DownloadURL string `json:"downloadUrl"`
+	}
+	if json.Unmarshal(body, &result) == nil && result.DownloadURL != "" {
+		return result.DownloadURL, nil
+	}
+
+	return string(body), nil
+}
+
 // UploadFile uploads a file to a pre-signed URL using PUT.
 // No Authorization header is sent (the URL is pre-signed).
 func (c *Client) UploadFile(uploadURL string, filePath string) error {
+	parsedURL, err := url.Parse(uploadURL)
+	if err != nil {
+		return fmt.Errorf("업로드 URL 파싱 실패: %w", err)
+	}
+	if parsedURL.Scheme != "https" {
+		return fmt.Errorf("업로드 URL이 HTTPS가 아닙니다: %s", parsedURL.Scheme)
+	}
+
 	f, err := os.Open(filePath)
 	if err != nil {
 		return fmt.Errorf("파일 열기 실패: %w", err)
@@ -137,7 +200,8 @@ func (c *Client) UploadFile(uploadURL string, filePath string) error {
 	req.Header.Set("Content-Type", "application/octet-stream")
 	req.ContentLength = stat.Size()
 
-	resp, err := http.DefaultClient.Do(req)
+	uploadClient := &http.Client{Timeout: 10 * time.Minute}
+	resp, err := uploadClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("업로드 네트워크 에러: %w", err)
 	}

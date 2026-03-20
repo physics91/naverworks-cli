@@ -34,11 +34,12 @@ func (s *SharedDriveService) GetFile(driveID, fileID string) (*Response, error) 
 	return s.client.Get(fmt.Sprintf("/sharedrives/%s/files/%s", url.PathEscape(driveID), url.PathEscape(fileID)))
 }
 
-func (s *SharedDriveService) GetDownloadURL(driveID, fileID string) (*Response, error) {
-	return s.client.Get(fmt.Sprintf("/sharedrives/%s/files/%s/download", url.PathEscape(driveID), url.PathEscape(fileID)))
+func (s *SharedDriveService) GetDownloadURL(driveID, fileID string) (string, error) {
+	return s.client.GetDownloadURL(fmt.Sprintf("/sharedrives/%s/files/%s/download", url.PathEscape(driveID), url.PathEscape(fileID)))
 }
 
-func (s *SharedDriveService) CreateUploadURL(driveID string, body map[string]interface{}) (*Response, error) {
+func (s *SharedDriveService) CreateUploadURL(driveID string, body map[string]interface{}, fileSize int64) (*Response, error) {
+	body["fileSize"] = fileSize
 	data, err := json.Marshal(body)
 	if err != nil {
 		return nil, fmt.Errorf("업로드 요청 직렬화 실패: %w", err)

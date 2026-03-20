@@ -32,11 +32,12 @@ func (s *DriveService) GetFile(userID, fileID string) (*Response, error) {
 	return s.client.Get(fmt.Sprintf("/users/%s/drive/files/%s", url.PathEscape(userID), url.PathEscape(fileID)))
 }
 
-func (s *DriveService) GetDownloadURL(userID, fileID string) (*Response, error) {
-	return s.client.Get(fmt.Sprintf("/users/%s/drive/files/%s/download", url.PathEscape(userID), url.PathEscape(fileID)))
+func (s *DriveService) GetDownloadURL(userID, fileID string) (string, error) {
+	return s.client.GetDownloadURL(fmt.Sprintf("/users/%s/drive/files/%s/download", url.PathEscape(userID), url.PathEscape(fileID)))
 }
 
-func (s *DriveService) CreateUploadURL(userID string, body map[string]interface{}) (*Response, error) {
+func (s *DriveService) CreateUploadURL(userID string, body map[string]interface{}, fileSize int64) (*Response, error) {
+	body["fileSize"] = fileSize
 	data, err := json.Marshal(body)
 	if err != nil {
 		return nil, fmt.Errorf("업로드 요청 직렬화 실패: %w", err)
@@ -44,7 +45,8 @@ func (s *DriveService) CreateUploadURL(userID string, body map[string]interface{
 	return s.client.Post(fmt.Sprintf("/users/%s/drive/files", url.PathEscape(userID)), data)
 }
 
-func (s *DriveService) CreateUploadURLInFolder(userID, folderID string, body map[string]interface{}) (*Response, error) {
+func (s *DriveService) CreateUploadURLInFolder(userID, folderID string, body map[string]interface{}, fileSize int64) (*Response, error) {
+	body["fileSize"] = fileSize
 	data, err := json.Marshal(body)
 	if err != nil {
 		return nil, fmt.Errorf("업로드 요청 직렬화 실패: %w", err)
@@ -53,12 +55,12 @@ func (s *DriveService) CreateUploadURLInFolder(userID, folderID string, body map
 }
 
 func (s *DriveService) CreateFolder(userID, name string) (*Response, error) {
-	data, _ := json.Marshal(map[string]string{"folderName": name})
+	data, _ := json.Marshal(map[string]string{"fileName": name})
 	return s.client.Post(fmt.Sprintf("/users/%s/drive/files/createfolder", url.PathEscape(userID)), data)
 }
 
 func (s *DriveService) CreateFolderInParent(userID, parentID, name string) (*Response, error) {
-	data, _ := json.Marshal(map[string]string{"folderName": name})
+	data, _ := json.Marshal(map[string]string{"fileName": name})
 	return s.client.Post(fmt.Sprintf("/users/%s/drive/files/%s/createfolder", url.PathEscape(userID), url.PathEscape(parentID)), data)
 }
 

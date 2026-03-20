@@ -117,11 +117,12 @@ var driveDownloadCmd = &cobra.Command{
 		client := buildAPIClient(cfg, token)
 		svc := api.NewDriveService(client)
 
-		resp, err := svc.GetDownloadURL(userID, args[0])
+		downloadURL, err := svc.GetDownloadURL(userID, args[0])
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		result, _ := json.Marshal(map[string]string{"download_url": downloadURL})
+		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(result)
 		return nil
 	},
 }
@@ -146,13 +147,19 @@ var driveUploadCmd = &cobra.Command{
 		fileName := filepath.Base(localPath)
 		folder, _ := cmd.Flags().GetString("folder")
 
+		stat, err := os.Stat(localPath)
+		if err != nil {
+			return fmt.Errorf("파일 정보 조회 실패: %w", err)
+		}
+		fileSize := stat.Size()
+
 		body := map[string]interface{}{"fileName": fileName}
 
 		var resp *api.Response
 		if folder != "" {
-			resp, err = svc.CreateUploadURLInFolder(userID, folder, body)
+			resp, err = svc.CreateUploadURLInFolder(userID, folder, body, fileSize)
 		} else {
-			resp, err = svc.CreateUploadURL(userID, body)
+			resp, err = svc.CreateUploadURL(userID, body, fileSize)
 		}
 		if err != nil {
 			return err
@@ -410,11 +417,12 @@ var driveSharedDownloadCmd = &cobra.Command{
 		client := buildAPIClient(cfg, token)
 		svc := api.NewSharedDriveService(client)
 
-		resp, err := svc.GetDownloadURL(args[0], args[1])
+		downloadURL, err := svc.GetDownloadURL(args[0], args[1])
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		result, _ := json.Marshal(map[string]string{"download_url": downloadURL})
+		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(result)
 		return nil
 	},
 }
@@ -433,9 +441,16 @@ var driveSharedUploadCmd = &cobra.Command{
 
 		localPath := args[1]
 		fileName := filepath.Base(localPath)
+
+		stat, err := os.Stat(localPath)
+		if err != nil {
+			return fmt.Errorf("파일 정보 조회 실패: %w", err)
+		}
+		fileSize := stat.Size()
+
 		body := map[string]interface{}{"fileName": fileName}
 
-		resp, err := svc.CreateUploadURL(args[0], body)
+		resp, err := svc.CreateUploadURL(args[0], body, fileSize)
 		if err != nil {
 			return err
 		}

@@ -178,11 +178,11 @@ var boardCreatePostCmd = &cobra.Command{
 		if title == "" {
 			return fmt.Errorf("--title은 필수입니다")
 		}
-
-		post := map[string]interface{}{"title": title}
-		if body != "" {
-			post["body"] = body
+		if body == "" {
+			return fmt.Errorf("--body는 필수입니다")
 		}
+
+		post := map[string]interface{}{"title": title, "body": body}
 
 		resp, err := svc.CreatePost(args[0], post)
 		if err != nil {
@@ -205,13 +205,16 @@ var boardUpdatePostCmd = &cobra.Command{
 		client := buildAPIClient(cfg, token)
 		svc := api.NewBoardService(client)
 
-		post := map[string]interface{}{}
-		if title, _ := cmd.Flags().GetString("title"); title != "" {
-			post["title"] = title
+		title, _ := cmd.Flags().GetString("title")
+		body, _ := cmd.Flags().GetString("body")
+		if title == "" {
+			return fmt.Errorf("--title은 필수입니다")
 		}
-		if body, _ := cmd.Flags().GetString("body"); body != "" {
-			post["body"] = body
+		if body == "" {
+			return fmt.Errorf("--body는 필수입니다")
 		}
+
+		post := map[string]interface{}{"title": title, "body": body}
 
 		resp, err := svc.UpdatePost(args[0], args[1], post)
 		if err != nil {

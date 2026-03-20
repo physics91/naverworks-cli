@@ -78,11 +78,12 @@ var formDownloadAttachmentCmd = &cobra.Command{
 		client := buildAPIClient(cfg, token)
 		svc := api.NewFormService(client)
 
-		resp, err := svc.DownloadAttachment(args[0], args[1], args[2])
+		downloadURL, err := svc.DownloadAttachment(args[0], args[1], args[2])
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		result, _ := json.Marshal(map[string]string{"download_url": downloadURL})
+		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(result)
 		return nil
 	},
 }

@@ -107,12 +107,19 @@ var taskCreateCmd = &cobra.Command{
 		client := buildAPIClient(cfg, token)
 		svc := api.NewTaskService(client)
 
-		title, _ := cmd.Flags().GetString("title")
-		if title == "" {
-			return fmt.Errorf("--title은 필수입니다")
+		var body map[string]interface{}
+		data, _ := cmd.Flags().GetString("data")
+		if data != "" {
+			if err := json.Unmarshal([]byte(data), &body); err != nil {
+				return fmt.Errorf("--data JSON 파싱 실패: %w", err)
+			}
+		} else {
+			title, _ := cmd.Flags().GetString("title")
+			if title == "" {
+				return fmt.Errorf("--title은 필수입니다")
+			}
+			body = map[string]interface{}{"title": title}
 		}
-
-		body := map[string]interface{}{"title": title}
 
 		resp, err := svc.CreateTask(userID, body)
 		if err != nil {
@@ -135,9 +142,17 @@ var taskUpdateCmd = &cobra.Command{
 		client := buildAPIClient(cfg, token)
 		svc := api.NewTaskService(client)
 
-		body := map[string]interface{}{}
-		if title, _ := cmd.Flags().GetString("title"); title != "" {
-			body["title"] = title
+		var body map[string]interface{}
+		data, _ := cmd.Flags().GetString("data")
+		if data != "" {
+			if err := json.Unmarshal([]byte(data), &body); err != nil {
+				return fmt.Errorf("--data JSON 파싱 실패: %w", err)
+			}
+		} else {
+			body = map[string]interface{}{}
+			if title, _ := cmd.Flags().GetString("title"); title != "" {
+				body["title"] = title
+			}
 		}
 
 		resp, err := svc.UpdateTask(args[0], body)
@@ -240,7 +255,9 @@ func init() {
 	}
 
 	taskCreateCmd.Flags().String("title", "", "태스크 제목 (필수)")
+	taskCreateCmd.Flags().String("data", "", "전체 JSON 페이로드")
 	taskUpdateCmd.Flags().String("title", "", "태스크 제목")
+	taskUpdateCmd.Flags().String("data", "", "전체 JSON 페이로드")
 
 	taskCmd.AddCommand(taskListCmd, taskGetCmd, taskCreateCmd, taskUpdateCmd, taskDeleteCmd, taskListCategoriesCmd)
 	rootCmd.AddCommand(taskCmd)

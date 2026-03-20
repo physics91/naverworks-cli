@@ -99,12 +99,19 @@ var bpCreateCmd = &cobra.Command{
 		client := buildAPIClient(cfg, token)
 		svc := api.NewBusinessPlaceService(client)
 
-		name, _ := cmd.Flags().GetString("name")
-		if name == "" {
-			return fmt.Errorf("--name은 필수입니다")
+		var body map[string]interface{}
+		data, _ := cmd.Flags().GetString("data")
+		if data != "" {
+			if err := json.Unmarshal([]byte(data), &body); err != nil {
+				return fmt.Errorf("--data JSON 파싱 실패: %w", err)
+			}
+		} else {
+			name, _ := cmd.Flags().GetString("name")
+			if name == "" {
+				return fmt.Errorf("--name은 필수입니다")
+			}
+			body = map[string]interface{}{"businessPlaceName": name}
 		}
-
-		body := map[string]interface{}{"businessPlaceName": name}
 
 		resp, err := svc.CreateBusinessPlace(body)
 		if err != nil {
@@ -127,9 +134,17 @@ var bpUpdateCmd = &cobra.Command{
 		client := buildAPIClient(cfg, token)
 		svc := api.NewBusinessPlaceService(client)
 
-		body := map[string]interface{}{}
-		if name, _ := cmd.Flags().GetString("name"); name != "" {
-			body["businessPlaceName"] = name
+		var body map[string]interface{}
+		data, _ := cmd.Flags().GetString("data")
+		if data != "" {
+			if err := json.Unmarshal([]byte(data), &body); err != nil {
+				return fmt.Errorf("--data JSON 파싱 실패: %w", err)
+			}
+		} else {
+			body = map[string]interface{}{}
+			if name, _ := cmd.Flags().GetString("name"); name != "" {
+				body["businessPlaceName"] = name
+			}
 		}
 
 		resp, err := svc.UpdateBusinessPlace(args[0], body)
@@ -172,7 +187,9 @@ func init() {
 	bpListCmd.Flags().Bool("all", false, "전체 페이지 자동 순회")
 
 	bpCreateCmd.Flags().String("name", "", "사업장 이름 (필수)")
+	bpCreateCmd.Flags().String("data", "", "전체 JSON 페이로드")
 	bpUpdateCmd.Flags().String("name", "", "사업장 이름")
+	bpUpdateCmd.Flags().String("data", "", "전체 JSON 페이로드")
 
 	businessPlaceCmd.AddCommand(bpListCmd, bpGetCmd, bpCreateCmd, bpUpdateCmd, bpDeleteCmd)
 	rootCmd.AddCommand(businessPlaceCmd)

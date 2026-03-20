@@ -13,19 +13,22 @@ func NewAuditService(client *Client) *AuditService {
 	return &AuditService{client: client}
 }
 
-func (s *AuditService) DownloadLogs(from, until string) (*Response, error) {
+func (s *AuditService) DownloadLogs(startTime, endTime, service string) (string, error) {
 	params := url.Values{}
-	if from != "" {
-		params.Set("from", from)
+	if startTime != "" {
+		params.Set("startTime", startTime)
 	}
-	if until != "" {
-		params.Set("until", until)
+	if endTime != "" {
+		params.Set("endTime", endTime)
+	}
+	if service != "" {
+		params.Set("service", service)
 	}
 	query := ""
 	if len(params) > 0 {
 		query = "?" + params.Encode()
 	}
-	return s.client.Get("/audits/logs/download" + query)
+	return s.client.GetDownloadURL("/audits/logs/download" + query)
 }
 
 func (s *AuditService) ListPolicyGroups(cursor string, count int) (*Response, error) {
@@ -40,17 +43,17 @@ func NewMonitoringService(client *Client) *MonitoringService {
 	return &MonitoringService{client: client}
 }
 
-func (s *MonitoringService) DownloadMessages(from, until string) (*Response, error) {
+func (s *MonitoringService) DownloadMessages(startTime, endTime string) (string, error) {
 	params := url.Values{}
-	if from != "" {
-		params.Set("from", from)
+	if startTime != "" {
+		params.Set("startTime", startTime)
 	}
-	if until != "" {
-		params.Set("until", until)
+	if endTime != "" {
+		params.Set("endTime", endTime)
 	}
 	query := ""
 	if len(params) > 0 {
 		query = "?" + params.Encode()
 	}
-	return s.client.Get(fmt.Sprintf("/monitoring/message-contents/download%s", query))
+	return s.client.GetDownloadURL(fmt.Sprintf("/monitoring/message-contents/download%s", query))
 }

@@ -154,15 +154,22 @@ var contactCreateCmd = &cobra.Command{
 		client := buildAPIClient(cfg, token)
 		svc := api.NewContactService(client)
 
-		name, _ := cmd.Flags().GetString("name")
-		email, _ := cmd.Flags().GetString("email")
-		if name == "" {
-			return fmt.Errorf("--name은 필수입니다")
-		}
-
-		body := map[string]interface{}{"name": name}
-		if email != "" {
-			body["email"] = email
+		var body map[string]interface{}
+		data, _ := cmd.Flags().GetString("data")
+		if data != "" {
+			if err := json.Unmarshal([]byte(data), &body); err != nil {
+				return fmt.Errorf("--data JSON 파싱 실패: %w", err)
+			}
+		} else {
+			name, _ := cmd.Flags().GetString("name")
+			email, _ := cmd.Flags().GetString("email")
+			if name == "" {
+				return fmt.Errorf("--name은 필수입니다")
+			}
+			body = map[string]interface{}{"name": name}
+			if email != "" {
+				body["email"] = email
+			}
 		}
 
 		resp, err := svc.CreateContact(body)
@@ -186,12 +193,20 @@ var contactUpdateCmd = &cobra.Command{
 		client := buildAPIClient(cfg, token)
 		svc := api.NewContactService(client)
 
-		body := map[string]interface{}{}
-		if name, _ := cmd.Flags().GetString("name"); name != "" {
-			body["name"] = name
-		}
-		if email, _ := cmd.Flags().GetString("email"); email != "" {
-			body["email"] = email
+		var body map[string]interface{}
+		data, _ := cmd.Flags().GetString("data")
+		if data != "" {
+			if err := json.Unmarshal([]byte(data), &body); err != nil {
+				return fmt.Errorf("--data JSON 파싱 실패: %w", err)
+			}
+		} else {
+			body = map[string]interface{}{}
+			if name, _ := cmd.Flags().GetString("name"); name != "" {
+				body["name"] = name
+			}
+			if email, _ := cmd.Flags().GetString("email"); email != "" {
+				body["email"] = email
+			}
 		}
 
 		resp, err := svc.UpdateContact(args[0], body)
@@ -346,9 +361,11 @@ func init() {
 
 	contactCreateCmd.Flags().String("name", "", "연락처 이름 (필수)")
 	contactCreateCmd.Flags().String("email", "", "이메일")
+	contactCreateCmd.Flags().String("data", "", "전체 JSON 페이로드")
 
 	contactUpdateCmd.Flags().String("name", "", "연락처 이름")
 	contactUpdateCmd.Flags().String("email", "", "이메일")
+	contactUpdateCmd.Flags().String("data", "", "전체 JSON 페이로드")
 
 	contactCmd.AddCommand(contactListCmd, contactListUserCmd, contactGetCmd, contactCreateCmd,
 		contactUpdateCmd, contactDeleteCmd, contactListTagsCmd, contactListUserTagsCmd)

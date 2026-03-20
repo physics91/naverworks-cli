@@ -17,7 +17,7 @@ func (s *FormService) ListResponses(formID string, cursor string, count int) (*R
 	return s.client.Get(fmt.Sprintf("/forms/%s/responses", url.PathEscape(formID)) + BuildPaginationQuery(cursor, count))
 }
 
-func (s *FormService) DownloadAttachment(formID, responseID, attachmentID string) (*Response, error) {
-	return s.client.Get(fmt.Sprintf("/forms/%s/responses/%s/attachments/%s",
+func (s *FormService) DownloadAttachment(formID, responseID, attachmentID string) (string, error) {
+	return s.client.GetDownloadURL(fmt.Sprintf("/forms/%s/responses/%s/attachments/%s",
 		url.PathEscape(formID), url.PathEscape(responseID), url.PathEscape(attachmentID)))
 }

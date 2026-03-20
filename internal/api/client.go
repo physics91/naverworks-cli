@@ -44,6 +44,18 @@ func (c *Client) Post(path string, body []byte) (*Response, error) {
 	return c.do("POST", path, body)
 }
 
+func (c *Client) Put(path string, body []byte) (*Response, error) {
+	return c.do("PUT", path, body)
+}
+
+func (c *Client) Patch(path string, body []byte) (*Response, error) {
+	return c.do("PATCH", path, body)
+}
+
+func (c *Client) Delete(path string) (*Response, error) {
+	return c.do("DELETE", path, nil)
+}
+
 func (c *Client) do(method, path string, body []byte) (*Response, error) {
 	if c.token.NeedsRefresh() && c.refreshFn != nil {
 		if err := c.refreshFn(c.token); err != nil {

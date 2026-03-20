@@ -119,12 +119,18 @@ func (c *Client) doWithRetry(method, path string, body []byte, retried401 bool) 
 
 // GetDownloadURL calls the API endpoint without following redirects,
 // returning the Location header URL for download endpoints that return 302.
+// Includes token refresh and 401/429 retry logic (same as doWithRetry).
 func (c *Client) GetDownloadURL(path string) (string, error) {
 	if c.token.NeedsRefresh() && c.refreshFn != nil {
 		if err := c.refreshFn(c.token); err != nil {
 			return "", fmt.Errorf("토큰 갱신 실패: %w", err)
 		}
 	}
+	return c.getDownloadURLWithRetry(path, false)
+}
+
+func (c *Client) getDownloadURLWithRetry(path string, retried401 bool) (string, error) {
+	const maxRateLimitRetries = 3
 
 	noRedirectClient := &http.Client{
 		Timeout: 30 * time.Second,
@@ -133,42 +139,56 @@ func (c *Client) GetDownloadURL(path string) (string, error) {
 		},
 	}
 
-	req, err := http.NewRequest("GET", c.baseURL+path, nil)
-	if err != nil {
-		return "", fmt.Errorf("요청 생성 실패: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+c.token.AccessToken)
+	for attempt := 0; attempt <= maxRateLimitRetries; attempt++ {
+		req, err := http.NewRequest("GET", c.baseURL+path, nil)
+		if err != nil {
+			return "", fmt.Errorf("요청 생성 실패: %w", err)
+		}
+		req.Header.Set("Authorization", "Bearer "+c.token.AccessToken)
 
-	resp, err := noRedirectClient.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("네트워크 에러: %w", err)
-	}
-	defer resp.Body.Close()
+		resp, err := noRedirectClient.Do(req)
+		if err != nil {
+			return "", fmt.Errorf("네트워크 에러: %w", err)
+		}
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
 
-	if resp.StatusCode == 301 || resp.StatusCode == 302 {
-		location := resp.Header.Get("Location")
-		if location != "" {
-			return location, nil
+		switch {
+		case resp.StatusCode == 301 || resp.StatusCode == 302:
+			location := resp.Header.Get("Location")
+			if location != "" {
+				return location, nil
+			}
+
+		case resp.StatusCode == 401 && !retried401 && c.refreshFn != nil:
+			if err := c.refreshFn(c.token); err != nil {
+				return "", fmt.Errorf("토큰 갱신 실패: %w", err)
+			}
+			return c.getDownloadURLWithRetry(path, true)
+
+		case resp.StatusCode == 429 && attempt < maxRateLimitRetries:
+			waitDuration := parseRateLimitReset(resp.Header, attempt)
+			time.Sleep(waitDuration)
+			continue
+
+		case resp.StatusCode >= 400:
+			apiErr := &APIError{StatusCode: resp.StatusCode}
+			json.Unmarshal(body, apiErr)
+			return "", apiErr
+
+		default:
+			// JSON 응답에 downloadUrl 필드가 있을 수 있음
+			var result struct {
+				DownloadURL string `json:"downloadUrl"`
+			}
+			if json.Unmarshal(body, &result) == nil && result.DownloadURL != "" {
+				return result.DownloadURL, nil
+			}
+			return string(body), nil
 		}
 	}
 
-	// 302가 아닌 경우 일반 응답으로 처리
-	body, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode >= 400 {
-		apiErr := &APIError{StatusCode: resp.StatusCode}
-		json.Unmarshal(body, apiErr)
-		return "", apiErr
-	}
-
-	// JSON 응답에 downloadUrl 필드가 있을 수 있음
-	var result struct {
-		DownloadURL string `json:"downloadUrl"`
-	}
-	if json.Unmarshal(body, &result) == nil && result.DownloadURL != "" {
-		return result.DownloadURL, nil
-	}
-
-	return string(body), nil
+	return "", &APIError{StatusCode: 429, Code: "RATE_LIMIT_EXCEEDED", Description: "최대 재시도 횟수 초과"}
 }
 
 // UploadFile uploads a file to a pre-signed URL using PUT.

@@ -2,330 +2,385 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** nw-cli에 나머지 13개 네이버웍스 서비스를 추가하여 SDK 전체 API를 CLI로 노출한다.
+**Goal:** nw-cli에 나머지 13개 네이버웍스 서비스의 주요 CLI 명령을 추가한다 (MVP 범위). 전체 SDK API 노출은 phase 2에서 다룬다.
 
-**Architecture:** 기존 패턴을 반복한다. 각 서비스당 `internal/api/<service>.go` + `cmd/<service>.go`. 공통 헬퍼(`loadConfigAndToken`, `buildAPIClient`, `resolveBotID` 패턴)를 재사용한다. userId가 필요한 서비스는 calendar과 동일하게 `--user-id` 플래그를 사용한다.
-
-**구현 순서:** 복잡도 낮은 것부터. Drive는 가장 복잡하므로 마지막.
+**Architecture:** 기존 패턴을 반복하되, 선행 인프라 확장이 필요하다:
+1. HTTP client에 `Put`/`Patch`/`Delete` 메서드 추가
+2. 공통 `resolveUserID` 헬퍼 (calendar의 `resolveCalendarUserID` 일반화)
+3. 공통 페이지네이션 패턴 (`--cursor`/`--count`/`--all`) 재사용
+4. SCIM 전용 config 키 (`scim_access_token`) + 별도 API client
+5. Drive 전용 raw upload helper (resumable upload 지원)
 
 ---
 
-## Task 1: Directory 확장 (orgunit, level, position 등)
+## Task 0: HTTP client 확장 (선행 필수)
 
-기존 directory 커맨드에 서브커맨드 추가.
+**Files:**
+- Modify: `internal/api/client.go`
+- Modify: `internal/api/client_test.go`
+
+**추가 메서드:**
+
+```go
+func (c *Client) Put(path string, body []byte) (*Response, error)
+func (c *Client) Patch(path string, body []byte) (*Response, error)
+func (c *Client) Delete(path string) (*Response, error)
+```
+
+모두 `c.do(method, path, body)` 위임. 기존 `Get`/`Post`와 동일 패턴.
+
+**테스트:** PUT 성공, PATCH 성공, DELETE 성공 케이스.
+
+---
+
+## Task 1: 공통 헬퍼 확장
+
+**Files:**
+- Modify: `cmd/helpers.go`
+
+**변경:**
+- `resolveUserID(cmd, defaultUID, authMethod)` — calendar/task/mail/attendance 등에서 공유
+- SCIM용 `loadScimClient()` — config에서 `scim_access_token` 읽어 별도 Client 생성 (baseURL: `https://www.worksapis.com/scim/v2`)
+
+**Config 확장:**
+- `internal/config/config.go`에 `ScimAccessToken` 필드 추가
+- `NW_SCIM_ACCESS_TOKEN` 환경변수 추가
+
+---
+
+## Task 2: Directory 확장
 
 **Files:**
 - Modify: `internal/api/directory.go`
 - Modify: `cmd/directory.go`
 
-**추가 커맨드:**
+**추가 커맨드 (SDK 경로 검증 완료):**
 
-| 커맨드 | API | 메서드 |
-|--------|-----|--------|
-| `directory list-orgunits` | GET `/orgunits` | 조직 목록 |
-| `directory get-orgunit <id>` | GET `/orgunits/{orgunitId}` | 조직 상세 |
-| `directory list-levels` | GET `/levels` | 직급 목록 |
-| `directory list-positions` | GET `/positions` | 직책 목록 |
-| `directory list-user-types` | GET `/usertypes` | 사용자 유형 |
-| `directory list-employment-types` | GET `/employmenttypes` | 고용 유형 |
-
-**패턴:** 모두 GET + 페이지네이션. `list-users`와 동일 구조.
+| 커맨드 | API |
+|--------|-----|
+| `directory list-orgunits` | GET `/directory/orgunits` |
+| `directory get-orgunit <id>` | GET `/directory/orgunits/{orgunitId}` |
+| `directory list-levels` | GET `/directory/levels` |
+| `directory list-positions` | GET `/directory/positions` |
+| `directory list-user-types` | GET `/directory/user-types` |
+| `directory list-employment-types` | GET `/directory/employment-types` |
 
 ---
 
-## Task 2: Contact 서비스
+## Task 3: Contact 서비스
 
 **Files:**
 - Create: `internal/api/contact.go`
 - Create: `cmd/contact.go`
 
-**커맨드:**
-
-| 커맨드 | API | 메서드 |
-|--------|-----|--------|
-| `contact list` | GET `/contacts` | 연락처 목록 |
-| `contact get <id>` | GET `/contacts/{contactId}` | 연락처 상세 |
-| `contact create --name <n> --email <e>` | POST `/contacts` | 연락처 생성 |
-| `contact update <id> --name <n>` | PATCH `/contacts/{contactId}` | 연락처 수정 |
-| `contact delete <id>` | DELETE `/contacts/{contactId}` | 연락처 삭제 |
-| `contact list-tags` | GET `/contacts/tags` | 태그 목록 |
+| 커맨드 | API |
+|--------|-----|
+| `contact list` | GET `/contacts` |
+| `contact list-user <userId>` | GET `/users/{userId}/contacts` |
+| `contact get <id>` | GET `/contacts/{contactId}` |
+| `contact create --name <n> --email <e>` | POST `/contacts` |
+| `contact update <id> --name <n>` | PATCH `/contacts/{contactId}` |
+| `contact delete <id>` | DELETE `/contacts/{contactId}` |
+| `contact list-tags` | GET `/contact-tags` |
+| `contact list-user-tags --user-id <id>` | GET `/users/{userId}/contact-tags` |
 
 ---
 
-## Task 3: Board 서비스
+## Task 4: Board 서비스
 
 **Files:**
 - Create: `internal/api/board.go`
 - Create: `cmd/board.go`
 
-**커맨드:**
-
-| 커맨드 | API | 메서드 |
-|--------|-----|--------|
-| `board list` | GET `/boards` | 게시판 목록 |
-| `board get <boardId>` | GET `/boards/{boardId}` | 게시판 상세 |
-| `board list-posts <boardId>` | GET `/boards/{boardId}/posts` | 게시글 목록 |
-| `board get-post <boardId> <postId>` | GET `/boards/{boardId}/posts/{postId}` | 게시글 상세 |
-| `board create-post <boardId> --title <t> --body <b>` | POST `/boards/{boardId}/posts` | 게시글 생성 |
-| `board delete-post <boardId> <postId>` | DELETE `/boards/{boardId}/posts/{postId}` | 게시글 삭제 |
-| `board list-comments <boardId> <postId>` | GET `/boards/{boardId}/posts/{postId}/comments` | 댓글 목록 |
+| 커맨드 | API |
+|--------|-----|
+| `board list` | GET `/boards` |
+| `board get <boardId>` | GET `/boards/{boardId}` |
+| `board list-posts <boardId>` | GET `/boards/{boardId}/posts` |
+| `board get-post <boardId> <postId>` | GET `/boards/{boardId}/posts/{postId}` |
+| `board create-post <boardId> --title <t> --body <b>` | POST `/boards/{boardId}/posts` |
+| `board update-post <boardId> <postId> --title <t>` | PUT `/boards/{boardId}/posts/{postId}` |
+| `board delete-post <boardId> <postId>` | DELETE `/boards/{boardId}/posts/{postId}` |
+| `board list-comments <boardId> <postId>` | GET `/boards/{boardId}/posts/{postId}/comments` |
 
 ---
 
-## Task 4: Task 서비스
+## Task 5: Task 서비스
 
 **Files:**
 - Create: `internal/api/task.go`
-- Create: `cmd/task.go`
+- Create: `cmd/task_cmd.go` (cobra의 task와 이름 충돌 방지)
 
-**커맨드:**
+| 커맨드 | API |
+|--------|-----|
+| `task list --user-id <id>` | GET `/users/{userId}/tasks` |
+| `task get <taskId>` | GET `/tasks/{taskId}` |
+| `task create --user-id <id> --title <t>` | POST `/users/{userId}/tasks` |
+| `task update <taskId> --title <t>` | PATCH `/tasks/{taskId}` |
+| `task delete <taskId>` | DELETE `/tasks/{taskId}` |
+| `task list-categories --user-id <id>` | GET `/users/{userId}/task-categories` |
 
-| 커맨드 | API | 메서드 |
-|--------|-----|--------|
-| `task list --user-id <id>` | GET `/users/{userId}/tasks` | 할일 목록 |
-| `task get <taskId>` | GET `/tasks/{taskId}` | 할일 상세 |
-| `task create --user-id <id> --title <t>` | POST `/users/{userId}/tasks` | 할일 생성 |
-| `task update <taskId> --title <t>` | PATCH `/tasks/{taskId}` | 할일 수정 |
-| `task delete <taskId>` | DELETE `/tasks/{taskId}` | 할일 삭제 |
-| `task list-categories --user-id <id>` | GET `/users/{userId}/task-categories` | 카테고리 목록 |
+`--user-id`는 `resolveUserID` 공통 헬퍼 사용.
 
 ---
 
-## Task 5: Note 서비스
+## Task 6: Note 서비스
 
 **Files:**
 - Create: `internal/api/note.go`
 - Create: `cmd/note.go`
 
-**커맨드:**
-
-| 커맨드 | API | 메서드 |
-|--------|-----|--------|
-| `note create <groupId>` | POST `/groups/{groupId}/note` | 노트 생성 |
-| `note delete <groupId>` | DELETE `/groups/{groupId}/note` | 노트 삭제 |
-| `note list-posts <groupId>` | GET `/groups/{groupId}/note/posts` | 포스트 목록 |
-| `note get-post <groupId> <postId>` | GET `/groups/{groupId}/note/posts/{postId}` | 포스트 상세 |
+| 커맨드 | API |
+|--------|-----|
+| `note create <groupId>` | POST `/groups/{groupId}/note` |
+| `note delete <groupId>` | DELETE `/groups/{groupId}/note` |
+| `note list-posts <groupId>` | GET `/groups/{groupId}/note/posts` |
+| `note get-post <groupId> <postId>` | GET `/groups/{groupId}/note/posts/{postId}` |
+| `note create-post <groupId> --title <t> --body <b>` | POST `/groups/{groupId}/note/posts` |
+| `note update-post <groupId> <postId> --title <t>` | PUT `/groups/{groupId}/note/posts/{postId}` |
+| `note delete-post <groupId> <postId>` | DELETE `/groups/{groupId}/note/posts/{postId}` |
 
 ---
 
-## Task 6: Mail 서비스
+## Task 7: Mail 서비스
 
 **Files:**
 - Create: `internal/api/mail.go`
 - Create: `cmd/mail.go`
 
-**커맨드:**
+| 커맨드 | API |
+|--------|-----|
+| `mail send --user-id <id> --to <addr> --subject <s> --body <b>` | POST `/users/{userId}/mail` |
+| `mail get --user-id <id> <mailId>` | GET `/users/{userId}/mail/{mailId}` |
+| `mail delete --user-id <id> <mailId>` | DELETE `/users/{userId}/mail/{mailId}` |
+| `mail list-folders --user-id <id>` | GET `/users/{userId}/mail/mailfolders` |
+| `mail get-folder --user-id <id> <folderId>` | GET `/users/{userId}/mail/mailfolders/{folderId}` |
+| `mail list --user-id <id> <folderId>` | GET `/users/{userId}/mail/mailfolders/{folderId}/children` |
 
-| 커맨드 | API | 메서드 |
-|--------|-----|--------|
-| `mail send --user-id <id> --to <addr> --subject <s> --body <b>` | POST `/users/{userId}/mail` | 메일 발송 |
-| `mail get --user-id <id> <mailId>` | GET `/users/{userId}/mail/{mailId}` | 메일 상세 |
-| `mail delete --user-id <id> <mailId>` | DELETE `/users/{userId}/mail/{mailId}` | 메일 삭제 |
-| `mail list-folders --user-id <id>` | GET `/users/{userId}/mail/mailfolders` | 폴더 목록 |
-| `mail list --user-id <id> <folderId>` | GET `/users/{userId}/mail/mailfolders/{folderId}/children` | 폴더 내 메일 목록 |
+`--user-id`는 `resolveUserID` 공통 헬퍼 사용.
 
 ---
 
-## Task 7: Form 서비스
+## Task 8: Form 서비스
 
 **Files:**
 - Create: `internal/api/form.go`
 - Create: `cmd/form.go`
 
-**커맨드:**
-
-| 커맨드 | API | 메서드 |
-|--------|-----|--------|
-| `form list-responses <formId>` | GET `/forms/{formId}/responses` | 설문 응답 목록 |
+| 커맨드 | API |
+|--------|-----|
+| `form list-responses <formId>` | GET `/forms/{formId}/responses` |
+| `form download-attachment <formId> <responseId> <attachmentId>` | GET `/forms/{formId}/responses/{responseId}/attachments/{attachmentId}` |
 
 ---
 
-## Task 8: Approval 서비스
+## Task 9: Approval 서비스
 
 **Files:**
 - Create: `internal/api/approval.go`
 - Create: `cmd/approval.go`
 
-**커맨드:**
-
-| 커맨드 | API | 메서드 |
-|--------|-----|--------|
-| `approval list --user-id <id>` | GET `/business-support/approval/users/{userId}/documents` | 결재 문서 목록 |
-| `approval get <documentId>` | GET `/business-support/approval/documents/{documentId}` | 결재 문서 상세 |
-| `approval list-categories` | GET `/business-support/approval/categories` | 카테고리 목록 |
-| `approval get-category <id>` | GET `/business-support/approval/categories/{categoryId}` | 카테고리 상세 |
-| `approval list-forms` | GET `/business-support/approval/forms` | 양식 목록 |
+| 커맨드 | API |
+|--------|-----|
+| `approval list --user-id <id>` | GET `/business-support/approval/users/{userId}/documents` |
+| `approval list-all` | GET `/business-support/approval/documents` |
+| `approval get <documentId>` | GET `/business-support/approval/documents/{documentId}` |
+| `approval list-categories` | GET `/business-support/approval/categories` |
+| `approval get-category <id>` | GET `/business-support/approval/categories/{categoryId}` |
+| `approval list-forms` | GET `/business-support/approval/document-forms` |
 
 ---
 
-## Task 9: Attendance 서비스
+## Task 10: Attendance 서비스
 
 **Files:**
 - Create: `internal/api/attendance.go`
 - Create: `cmd/attendance.go`
 
-**커맨드:**
+| 커맨드 | API |
+|--------|-----|
+| `attendance status --user-id <id>` | GET `/business-support/attendance/users/{userId}/status` |
+| `attendance clock-in --user-id <id> --date <YYYY-MM-DD> --time <HH:mm>` | POST `/business-support/attendance/users/{userId}/clock-in` |
+| `attendance clock-out --user-id <id> --date <YYYY-MM-DD> --time <HH:mm>` | POST `/business-support/attendance/users/{userId}/clock-out` |
+| `attendance list-absences` | GET `/business-support/attendance/absences` |
+| `attendance list-annual-leaves` | GET `/business-support/attendance/annual-leaves` |
 
-| 커맨드 | API | 메서드 |
-|--------|-----|--------|
-| `attendance status --user-id <id>` | GET `/business-support/attendance/users/{userId}/status` | 근태 상태 |
-| `attendance clock-in --user-id <id>` | POST `/business-support/attendance/users/{userId}/clock-in` | 출근 |
-| `attendance clock-out --user-id <id>` | POST `/business-support/attendance/users/{userId}/clock-out` | 퇴근 |
-| `attendance list-absences` | GET `/business-support/attendance/absences` | 부재 항목 |
-| `attendance list-annual-leaves --user-id <id>` | GET `/business-support/attendance/users/{userId}/annual-leaves` | 연차 목록 |
+clock-in/clock-out body: `{"baseDate": "YYYY-MM-DD", "clockInTime": "HH:mm"}` (또는 `clockOutTime`)
 
 ---
 
-## Task 10: Audit + Monitoring 서비스
+## Task 11: Audit + Monitoring
 
 **Files:**
 - Create: `internal/api/audit.go`
 - Create: `cmd/audit.go`
 
-**커맨드:**
-
-| 커맨드 | API | 메서드 |
-|--------|-----|--------|
-| `audit download-logs --from <date> --until <date>` | GET `/audits/logs/download` | 감사 로그 다운로드 URL |
-| `audit list-policy-groups` | GET `/audits/policy-groups` | 정책 그룹 목록 |
-| `monitoring download-messages --from <date> --until <date>` | GET `/monitoring/message-contents/download` | 메시지 콘텐츠 다운로드 URL |
-
-> audit과 monitoring은 커맨드가 적으므로 하나의 task에서 처리.
+| 커맨드 | API |
+|--------|-----|
+| `audit download-logs --from <date> --until <date>` | GET `/audits/logs/download` |
+| `audit list-policy-groups` | GET `/audits/policy-groups` |
+| `monitoring download-messages --from <date> --until <date>` | GET `/monitoring/message-contents/download` |
 
 ---
 
-## Task 11: Human Resource 서비스
+## Task 12: Human Resource
 
 **Files:**
 - Create: `internal/api/hr.go`
 - Create: `cmd/hr.go`
 
-**커맨드:**
-
-| 커맨드 | API | 메서드 |
-|--------|-----|--------|
-| `hr list-extension-properties` | GET `/human-resource/extension-properties` | 확장 속성 목록 |
-| `hr get-user-properties <userId>` | GET `/human-resource/users/{userId}/extension-properties` | 사용자 확장 속성 |
-| `hr list-leave-types` | GET `/human-resource/leave-of-absences` | 휴직 유형 |
-| `hr list-on-leave` | GET `/human-resource/on-leave-users` | 휴직 중 사용자 |
+| 커맨드 | API |
+|--------|-----|
+| `hr list-extension-properties` | GET `/business-support/human-resource/extension-properties` |
+| `hr get-user-properties <userId>` | GET `/business-support/human-resource/user/{userId}/extension-properties` |
+| `hr list-leave-types` | GET `/business-support/human-resource/leave-of-absences` |
+| `hr list-on-leave` | GET `/business-support/human-resource/on-leave-users` |
 
 ---
 
-## Task 12: Business Place 서비스
+## Task 13: Business Place
 
 **Files:**
 - Create: `internal/api/businessplace.go`
 - Create: `cmd/businessplace.go`
 
-**커맨드:**
-
-| 커맨드 | API | 메서드 |
-|--------|-----|--------|
-| `business-place list` | GET `/business-support/business-places` | 사업장 목록 |
-| `business-place get <id>` | GET `/business-support/business-places/{id}` | 사업장 상세 |
-| `business-place create --name <n>` | POST `/business-support/business-places` | 사업장 생성 |
-| `business-place update <id> --name <n>` | PATCH `/business-support/business-places/{id}` | 사업장 수정 |
-| `business-place delete <id>` | DELETE `/business-support/business-places/{id}` | 사업장 삭제 |
+| 커맨드 | API |
+|--------|-----|
+| `business-place list` | GET `/business-support/business-places` |
+| `business-place get <id>` | GET `/business-support/business-places/{id}` |
+| `business-place create --name <n>` | POST `/business-support/business-places` |
+| `business-place update <id> --name <n>` | PATCH `/business-support/business-places/{id}` |
+| `business-place delete <id>` | DELETE `/business-support/business-places/{id}` |
 
 ---
 
-## Task 13: SCIM 서비스
+## Task 14: SCIM 서비스
 
-**특이사항:** Base URL이 `https://www.worksapis.com/scim/v2`로 다름. 별도 API client 또는 baseURL 오버라이드 필요.
+**특이사항:**
+- Base URL: `https://www.worksapis.com/scim/v2`
+- 인증: SCIM 전용 long-lived access token (OAuth/JWT와 별도)
+- Config 키: `scim_access_token` / `NW_SCIM_ACCESS_TOKEN`
 
 **Files:**
 - Create: `internal/api/scim.go`
 - Create: `cmd/scim.go`
+- Modify: `cmd/helpers.go` (`loadScimClient` 추가)
 
-**커맨드:**
-
-| 커맨드 | API | 메서드 |
-|--------|-----|--------|
-| `scim list-users` | GET `/Users` | SCIM 사용자 목록 |
-| `scim get-user <id>` | GET `/Users/{id}` | SCIM 사용자 상세 |
-| `scim create-user --userName <n>` | POST `/Users` | SCIM 사용자 생성 |
-| `scim update-user <id>` | PUT `/Users/{id}` | SCIM 사용자 수정 |
-| `scim delete-user <id>` | DELETE `/Users/{id}` | SCIM 사용자 삭제 |
-| `scim list-groups` | GET `/Groups` | SCIM 그룹 목록 |
-| `scim get-group <id>` | GET `/Groups/{id}` | SCIM 그룹 상세 |
-| `scim create-group --displayName <n>` | POST `/Groups` | SCIM 그룹 생성 |
-| `scim update-group <id>` | PUT `/Groups/{id}` | SCIM 그룹 수정 |
-| `scim delete-group <id>` | DELETE `/Groups/{id}` | SCIM 그룹 삭제 |
+| 커맨드 | API |
+|--------|-----|
+| `scim list-users` | GET `/Users` |
+| `scim get-user <id>` | GET `/Users/{id}` |
+| `scim create-user --userName <n>` | POST `/Users` |
+| `scim update-user <id>` | PUT `/Users/{id}` |
+| `scim patch-user <id>` | PATCH `/Users/{id}` |
+| `scim delete-user <id>` | DELETE `/Users/{id}` |
+| `scim list-groups` | GET `/Groups` |
+| `scim get-group <id>` | GET `/Groups/{id}` |
+| `scim create-group --displayName <n>` | POST `/Groups` |
+| `scim update-group <id>` | PUT `/Groups/{id}` |
+| `scim patch-group <id>` | PATCH `/Groups/{id}` |
+| `scim delete-group <id>` | DELETE `/Groups/{id}` |
 
 ---
 
-## Task 14: Drive 서비스 (MyDrive)
+## Task 15: Drive — 공통 인프라 + MyDrive
 
-Drive는 가장 복잡하므로 MyDrive/SharedDrive/GroupFolder/SharedFolder를 나눈다.
+**선행:** raw upload helper
 
 **Files:**
-- Create: `internal/api/drive.go`
+- Create: `internal/api/drive.go` (공통 drive 유틸: upload, download URL 처리)
+- Create: `internal/api/drive_mydrive.go`
 - Create: `cmd/drive.go`
 
-**커맨드 (MyDrive):**
+Raw upload helper:
+```go
+func (c *Client) UploadFile(uploadURL string, filePath string) error
+// - uploadURL에 직접 PUT (Bearer 토큰 없음, Content-Type: application/octet-stream)
+// - resumable upload offset 지원
+```
 
-| 커맨드 | API | 메서드 |
-|--------|-----|--------|
-| `drive info --user-id <id>` | GET `/users/{userId}/drive/info` | 드라이브 정보 |
-| `drive list --user-id <id> [folderId]` | GET `/users/{userId}/drive/files[/{folderId}/children]` | 파일 목록 |
-| `drive get --user-id <id> <fileId>` | GET `/users/{userId}/drive/files/{fileId}` | 파일 상세 |
-| `drive download --user-id <id> <fileId>` | GET `.../download` | 파일 다운로드 URL |
-| `drive upload --user-id <id> [--folder <folderId>] <localPath>` | POST `.../files` | 업로드 URL 생성 → PUT 업로드 |
-| `drive mkdir --user-id <id> [--parent <folderId>] --name <n>` | POST `.../createfolder` | 폴더 생성 |
-| `drive delete --user-id <id> <fileId>` | DELETE `.../files/{fileId}` | 파일 삭제 |
-| `drive trash-list --user-id <id>` | GET `.../trash` | 휴지통 |
-| `drive trash-restore --user-id <id> <fileId>` | POST `.../trash/{fileId}/restore` | 복원 |
+**MyDrive 커맨드 (SDK 경로 검증 완료):**
 
----
-
-## Task 15: Drive 서비스 (SharedDrive)
-
-**추가 커맨드:**
-
-| 커맨드 | API | 메서드 |
-|--------|-----|--------|
-| `drive shared list-drives` | GET `/sharedrives` | 공유 드라이브 목록 |
-| `drive shared get-drive <driveId>` | GET `/sharedrives/{driveId}` | 공유 드라이브 상세 |
-| `drive shared list <driveId> [folderId]` | GET `/sharedrives/{driveId}/files/...` | 파일 목록 |
-| `drive shared get <driveId> <fileId>` | GET `.../files/{fileId}` | 파일 상세 |
-| `drive shared download <driveId> <fileId>` | GET `.../download` | 다운로드 |
-| `drive shared upload <driveId> [--folder <folderId>] <path>` | POST `.../files` | 업로드 |
-| `drive shared permissions <driveId>` | GET `.../permissions` | 권한 목록 |
+| 커맨드 | API |
+|--------|-----|
+| `drive info --user-id <id>` | GET `/users/{userId}/drive` |
+| `drive list --user-id <id> [--folder <folderId>]` | GET `/users/{userId}/drive/files` 또는 `GET .../files/{folderId}/children` |
+| `drive get --user-id <id> <fileId>` | GET `/users/{userId}/drive/files/{fileId}` |
+| `drive download --user-id <id> <fileId>` | GET `/users/{userId}/drive/files/{fileId}/download` |
+| `drive upload --user-id <id> [--folder <folderId>] <localPath>` | POST `/users/{userId}/drive/files` (루트) 또는 POST `.../files/{folderId}` (하위) → PUT uploadUrl |
+| `drive mkdir --user-id <id> [--parent <folderId>] --name <n>` | POST `/users/{userId}/drive/files/createfolder` (루트) 또는 POST `.../files/{folderId}/createfolder` (하위) |
+| `drive delete --user-id <id> <fileId>` | DELETE `/users/{userId}/drive/files/{fileId}` |
+| `drive trash-list --user-id <id>` | GET `/users/{userId}/drive/trash-files` |
+| `drive trash-restore --user-id <id> <fileId>` | POST `/users/{userId}/drive/trash-files/{fileId}/restore` |
 
 ---
 
-## Task 16: Drive 서비스 (GroupFolder + SharedFolder)
+## Task 16: Drive — SharedDrive
 
-**추가 커맨드:**
+**Files:**
+- Create: `internal/api/drive_shared.go`
+- Modify: `cmd/drive.go`
 
-| 커맨드 | API | 메서드 |
-|--------|-----|--------|
-| `drive group list-folders` | GET `/drive/group-folders` | 그룹 폴더 목록 |
-| `drive group list <folderId>` | GET `/drive/group-folders/{folderId}/files` | 파일 목록 |
-| `drive group get <folderId> <fileId>` | GET `.../files/{fileId}` | 파일 상세 |
-| `drive shared-folder list` | GET `/drive/shared-folders` | 공유 폴더 목록 |
-| `drive shared-folder files <folderId>` | GET `/drive/shared-folders/{folderId}/files` | 파일 목록 |
+| 커맨드 | API |
+|--------|-----|
+| `drive shared list-drives` | GET `/sharedrives` |
+| `drive shared get-drive <driveId>` | GET `/sharedrives/{driveId}` |
+| `drive shared list <driveId> [--folder <folderId>]` | GET `/sharedrives/{driveId}/files` 또는 `.../files/{folderId}/children` |
+| `drive shared get <driveId> <fileId>` | GET `/sharedrives/{driveId}/files/{fileId}` |
+| `drive shared download <driveId> <fileId>` | GET `.../files/{fileId}/download` |
+| `drive shared upload <driveId> [--folder <folderId>] <path>` | POST `.../files` → PUT uploadUrl |
 
 ---
 
-## Task 17: 통합 테스트 + 최종 빌드
+## Task 17: Drive — GroupFolder + SharedFolder
+
+**Files:**
+- Create: `internal/api/drive_group.go`
+- Create: `internal/api/drive_sharedfolder.go`
+- Modify: `cmd/drive.go`
+
+**GroupFolder (SDK: DriveGroupFolderApi):**
+
+| 커맨드 | API |
+|--------|-----|
+| `drive group list-folders` | GET `/drive/group-folders` (admin) |
+| `drive group list <groupFolderId> [--folder <folderId>]` | GET `/drive/group-folders/{id}/files` |
+| `drive group get <groupFolderId> <fileId>` | GET `/drive/group-folders/{id}/files/{fileId}` |
+
+**SharedFolder (SDK: DriveSharedFolderApi):**
+
+| 커맨드 | API |
+|--------|-----|
+| `drive shared-folder list --user-id <id>` | GET `/users/{userId}/drive/shared-folders` |
+| `drive shared-folder files <sharedFolderId> --user-id <id>` | GET `/users/{userId}/drive/shared-folders/{id}/files` |
+
+---
+
+## Task 18: 통합 테스트 + README 업데이트
 
 - `go test ./...` 전체 통과
 - `go vet ./...`
 - 바이너리 크기 확인 (목표: < 15MB)
 - 모든 서브커맨드 `--help` 확인
-- README 업데이트
+- README에 새 커맨드 추가
 
 ---
 
 ## 태스크 의존성
 
 ```
-Task 1 (Directory 확장) — 독립
-Task 2~12 (Contact ~ BusinessPlace) — 모두 독립, 병렬 가능
-Task 13 (SCIM) — API client baseURL 분기 필요
-Task 14~16 (Drive) — 14 → 15 → 16 순차
-Task 17 (통합) — 모두 완료 후
+Task 0 (HTTP verb 확장) ─┬→ Task 2~13 (각 서비스, 병렬 가능)
+Task 1 (공통 헬퍼)       ─┘
+                              ├→ Task 14 (SCIM, 별도 auth)
+                              └→ Task 15 (Drive MyDrive + upload helper)
+                                    → Task 16 (Drive SharedDrive)
+                                    → Task 17 (Drive Group/SharedFolder)
+                                        → Task 18 (통합)
 ```
 
-**병렬 실행 가능:** Task 1~12는 서로 독립. 서브에이전트로 병렬 디스패치 가능.
+**실행 순서:**
+1. Task 0 + 1 (선행 인프라)
+2. Task 2~13 (병렬 가능)
+3. Task 14 (SCIM)
+4. Task 15 → 16 → 17 (Drive 순차)
+5. Task 18 (통합)

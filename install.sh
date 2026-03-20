@@ -49,10 +49,34 @@ URL="https://github.com/${REPO}/releases/download/${LATEST}/${FILENAME}"
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
 
+CHECKSUM_URL="https://github.com/${REPO}/releases/download/${LATEST}/checksums.txt"
+
 echo "다운로드 중: ${URL}"
 curl -sL "$URL" -o "${TMPDIR}/${FILENAME}"
+curl -sL "$CHECKSUM_URL" -o "${TMPDIR}/checksums.txt"
 
-echo "설치 중: ${INSTALL_DIR}/${BINARY}"
+echo "체크섬 검증 중..."
+EXPECTED=$(grep "${FILENAME}" "${TMPDIR}/checksums.txt" | awk '{print $1}')
+if [ -n "$EXPECTED" ]; then
+  ACTUAL=$(sha256sum "${TMPDIR}/${FILENAME}" 2>/dev/null || shasum -a 256 "${TMPDIR}/${FILENAME}" 2>/dev/null | awk '{print $1}')
+  ACTUAL=$(echo "$ACTUAL" | awk '{print $1}')
+  if [ "$EXPECTED" != "$ACTUAL" ]; then
+    echo "체크섬 불일치! 다운로드가 손상되었을 수 있습니다." >&2
+    echo "  기대: $EXPECTED" >&2
+    echo "  실제: $ACTUAL" >&2
+    exit 1
+  fi
+  echo "체크섬 확인 완료"
+else
+  echo "경고: 체크섬을 확인할 수 없습니다" >&2
+fi
+
+BIN_EXT=""
+if [ "$OS" = "windows" ]; then
+  BIN_EXT=".exe"
+fi
+
+echo "설치 중: ${INSTALL_DIR}/${BINARY}${BIN_EXT}"
 if [ "$EXT" = "tar.gz" ]; then
   tar -xzf "${TMPDIR}/${FILENAME}" -C "$TMPDIR"
 else
@@ -60,10 +84,10 @@ else
 fi
 
 if [ -w "$INSTALL_DIR" ]; then
-  cp "${TMPDIR}/${BINARY}" "${INSTALL_DIR}/${BINARY}"
+  cp "${TMPDIR}/${BINARY}${BIN_EXT}" "${INSTALL_DIR}/${BINARY}${BIN_EXT}"
 else
-  sudo cp "${TMPDIR}/${BINARY}" "${INSTALL_DIR}/${BINARY}"
+  sudo cp "${TMPDIR}/${BINARY}${BIN_EXT}" "${INSTALL_DIR}/${BINARY}${BIN_EXT}"
 fi
-chmod +x "${INSTALL_DIR}/${BINARY}"
+chmod +x "${INSTALL_DIR}/${BINARY}${BIN_EXT}"
 
-echo "설치 완료: $(${INSTALL_DIR}/${BINARY} version)"
+echo "설치 완료: $("${INSTALL_DIR}/${BINARY}${BIN_EXT}" version)"

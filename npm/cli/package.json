@@ -21,6 +21,7 @@
     "type": "git",
     "url": "https://github.com/physics91/naverworks-cli"
   },
+  "files": ["bin/", "install.js", "package.json"],
   "os": ["linux", "darwin", "win32"],
   "cpu": ["x64", "arm64"]
 }

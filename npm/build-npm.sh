@@ -29,6 +29,10 @@ for entry in "${PLATFORMS[@]}"; do
   IFS=":" read -r NPM_PLATFORM GOOS GOARCH <<< "$entry"
   PKG_DIR="$NPM_DIR/$NPM_PLATFORM"
 
+  # 디렉터리 생성 및 이전 산출물 정리
+  mkdir -p "$PKG_DIR"
+  rm -f "$PKG_DIR/nw-cli" "$PKG_DIR/nw-cli.exe"
+
   EXT=""
   if [ "$GOOS" = "windows" ]; then
     EXT=".exe"

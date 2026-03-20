@@ -186,9 +186,75 @@ var authLogoutCmd = &cobra.Command{
 	},
 }
 
+var authRefreshCmd = &cobra.Command{
+	Use:   "refresh",
+	Short: "토큰 수동 갱신",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := config.Load(config.DefaultPath())
+		if err != nil {
+			return err
+		}
+		cfg.ApplyEnvOverrides()
+
+		store := authTokenStore()
+		token, err := store.Load()
+		if err != nil {
+			return err
+		}
+		if token == nil {
+			return fmt.Errorf("로그인되어 있지 않습니다. nw-cli auth login을 실행하세요")
+		}
+
+		if token.AuthMethod == "oauth" && token.RefreshToken != "" {
+			if err := auth.RefreshAccessToken(authBaseURL, cfg.ClientID, cfg.ClientSecret, token); err != nil {
+				return fmt.Errorf("OAuth 토큰 갱신 실패: %w", err)
+			}
+			if err := store.Save(token); err != nil {
+				return err
+			}
+			fmt.Fprintf(os.Stderr, "OAuth 토큰 갱신 완료 (만료: %s)\n", token.ExpiresAt.Format(time.RFC3339))
+			return nil
+		}
+
+		if token.AuthMethod == "jwt" {
+			if token.RefreshToken != "" {
+				if err := auth.RefreshAccessToken(authBaseURL, cfg.ClientID, cfg.ClientSecret, token); err == nil {
+					if err := store.Save(token); err != nil {
+						return err
+					}
+					fmt.Fprintf(os.Stderr, "JWT 토큰 갱신 완료 (refresh_token, 만료: %s)\n", token.ExpiresAt.Format(time.RFC3339))
+					return nil
+				}
+			}
+			assertion, err := auth.BuildJWTAssertion(cfg.ClientID, cfg.ServiceAccountID, cfg.PrivateKeyPath)
+			if err != nil {
+				return err
+			}
+			scope := cfg.Scope
+			if scope == "" {
+				scope = defaultJWTScope
+			}
+			newToken, err := auth.RequestJWTToken(authBaseURL, cfg.ClientID, cfg.ClientSecret, assertion, scope)
+			if err != nil {
+				return fmt.Errorf("JWT 토큰 재발급 실패: %w", err)
+			}
+			token.AccessToken = newToken.AccessToken
+			token.RefreshToken = newToken.RefreshToken
+			token.ExpiresAt = newToken.ExpiresAt
+			if err := store.Save(token); err != nil {
+				return err
+			}
+			fmt.Fprintf(os.Stderr, "JWT 토큰 재발급 완료 (assertion, 만료: %s)\n", token.ExpiresAt.Format(time.RFC3339))
+			return nil
+		}
+
+		return fmt.Errorf("토큰 갱신 불가: 지원하지 않는 인증 방식 %q", token.AuthMethod)
+	},
+}
+
 func init() {
 	authLoginCmd.Flags().Bool("jwt", false, "JWT Service Account 인증")
-	authCmd.AddCommand(authLoginCmd, authStatusCmd, authLogoutCmd)
+	authCmd.AddCommand(authLoginCmd, authStatusCmd, authLogoutCmd, authRefreshCmd)
 	rootCmd.AddCommand(authCmd)
 }
 

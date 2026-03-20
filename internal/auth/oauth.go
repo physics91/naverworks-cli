@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -205,14 +206,22 @@ func requestToken(tokenURL string, data url.Values) (*Token, error) {
 	}
 
 	var result struct {
-		AccessToken  string `json:"access_token"`
-		RefreshToken string `json:"refresh_token"`
-		TokenType    string `json:"token_type"`
-		ExpiresIn    int    `json:"expires_in"`
-		Scope        string `json:"scope"`
+		AccessToken  string          `json:"access_token"`
+		RefreshToken string          `json:"refresh_token"`
+		TokenType    string          `json:"token_type"`
+		ExpiresIn    json.RawMessage `json:"expires_in"`
+		Scope        string          `json:"scope"`
 	}
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, fmt.Errorf("토큰 응답 파싱 실패: %w", err)
+	}
+
+	expiresIn := 3600
+	if result.ExpiresIn != nil {
+		raw := strings.Trim(string(result.ExpiresIn), `"`)
+		if v, err := strconv.Atoi(raw); err == nil {
+			expiresIn = v
+		}
 	}
 
 	if result.AccessToken == "" {
@@ -224,7 +233,7 @@ func requestToken(tokenURL string, data url.Values) (*Token, error) {
 		AccessToken:  result.AccessToken,
 		RefreshToken: result.RefreshToken,
 		TokenType:    result.TokenType,
-		ExpiresAt:    time.Now().Add(time.Duration(result.ExpiresIn) * time.Second),
+		ExpiresAt:    time.Now().Add(time.Duration(expiresIn) * time.Second),
 		Scope:        result.Scope,
 	}, nil
 }

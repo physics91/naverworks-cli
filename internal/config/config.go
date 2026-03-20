@@ -17,16 +17,18 @@ type Config struct {
 	BotID                 string `json:"bot_id,omitempty"`
 	Scope                 string `json:"scope,omitempty"`
 	DefaultCalendarUserID string `json:"default_calendar_user_id,omitempty"`
+	ScimAccessToken       string `json:"scim_access_token,omitempty"`
 }
 
 var validKeys = map[string]bool{
 	"client_id": true, "client_secret": true, "service_account_id": true,
 	"private_key_path": true, "domain_id": true, "bot_id": true,
-	"scope": true, "default_calendar_user_id": true,
+	"scope": true, "default_calendar_user_id": true, "scim_access_token": true,
 }
 
 var sensitiveKeys = map[string]bool{
-	"client_secret": true,
+	"client_secret":    true,
+	"scim_access_token": true,
 }
 
 var envMap = map[string]string{
@@ -38,6 +40,7 @@ var envMap = map[string]string{
 	"bot_id":                   "NW_BOT_ID",
 	"scope":                    "NW_SCOPE",
 	"default_calendar_user_id": "NW_DEFAULT_CALENDAR_USER_ID",
+	"scim_access_token":        "NW_SCIM_ACCESS_TOKEN",
 }
 
 func IsValidKey(key string) bool {
@@ -113,6 +116,8 @@ func (c *Config) Set(key, value string) error {
 		c.Scope = value
 	case "default_calendar_user_id":
 		c.DefaultCalendarUserID = value
+	case "scim_access_token":
+		c.ScimAccessToken = value
 	}
 	return nil
 }
@@ -138,6 +143,8 @@ func (c *Config) Get(key string) (string, error) {
 		return c.Scope, nil
 	case "default_calendar_user_id":
 		return c.DefaultCalendarUserID, nil
+	case "scim_access_token":
+		return c.ScimAccessToken, nil
 	}
 	return "", nil
 }

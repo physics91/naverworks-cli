@@ -16,18 +16,9 @@ var calendarCmd = &cobra.Command{
 	Short: "캘린더 관리",
 }
 
+// resolveCalendarUserID는 공통 resolveUserID를 calendar 기본값으로 호출
 func resolveCalendarUserID(cmd *cobra.Command, authMethod string, defaultUID string) (string, error) {
-	userID, _ := cmd.Flags().GetString("user-id")
-	if userID == "" {
-		userID = defaultUID
-	}
-	if userID == "" {
-		return "", fmt.Errorf("--user-id를 지정하거나 config set default_calendar_user_id를 설정하세요")
-	}
-	if userID == "me" && authMethod == "jwt" {
-		return "", fmt.Errorf("JWT 모드에서는 --user-id me를 사용할 수 없습니다. 명시적 userId를 지정하세요")
-	}
-	return userID, nil
+	return resolveUserID(cmd, defaultUID, authMethod)
 }
 
 var calListCalendarsCmd = &cobra.Command{

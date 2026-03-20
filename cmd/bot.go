@@ -25,8 +25,9 @@ var botSendCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if cfg.BotID == "" {
-			return fmt.Errorf("bot_id가 설정되지 않았습니다. nw-cli config set bot_id <id>")
+		botID, err := resolveBotID(cmd, cfg.BotID)
+		if err != nil {
+			return err
 		}
 
 		client := buildAPIClient(cfg, token)
@@ -57,9 +58,9 @@ var botSendCmd = &cobra.Command{
 
 		var resp *api.Response
 		if to != "" {
-			resp, err = bot.SendTextToUser(cfg.BotID, to, text)
+			resp, err = bot.SendTextToUser(botID, to, text)
 		} else {
-			resp, err = bot.SendTextToChannel(cfg.BotID, channel, text)
+			resp, err = bot.SendTextToChannel(botID, channel, text)
 		}
 		if err != nil {
 			return err
@@ -83,13 +84,14 @@ var botGetChannelCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if cfg.BotID == "" {
-			return fmt.Errorf("bot_id가 설정되지 않았습니다")
+		botID, err := resolveBotID(cmd, cfg.BotID)
+		if err != nil {
+			return err
 		}
 		client := buildAPIClient(cfg, token)
 		bot := api.NewBotService(client)
 
-		resp, err := bot.GetChannel(cfg.BotID, args[0])
+		resp, err := bot.GetChannel(botID, args[0])
 		if err != nil {
 			return err
 		}
@@ -107,8 +109,9 @@ var botChannelMembersCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if cfg.BotID == "" {
-			return fmt.Errorf("bot_id가 설정되지 않았습니다")
+		botID, err := resolveBotID(cmd, cfg.BotID)
+		if err != nil {
+			return err
 		}
 		client := buildAPIClient(cfg, token)
 		bot := api.NewBotService(client)
@@ -120,7 +123,7 @@ var botChannelMembersCmd = &cobra.Command{
 		if all {
 			var allMembers []json.RawMessage
 			for {
-				resp, err := bot.ListChannelMembers(cfg.BotID, args[0], cursor, count)
+				resp, err := bot.ListChannelMembers(botID, args[0], cursor, count)
 				if err != nil {
 					return err
 				}
@@ -144,7 +147,7 @@ var botChannelMembersCmd = &cobra.Command{
 			return nil
 		}
 
-		resp, err := bot.ListChannelMembers(cfg.BotID, args[0], cursor, count)
+		resp, err := bot.ListChannelMembers(botID, args[0], cursor, count)
 		if err != nil {
 			return err
 		}
@@ -153,7 +156,20 @@ var botChannelMembersCmd = &cobra.Command{
 	},
 }
 
+func resolveBotID(cmd *cobra.Command, cfgBotID string) (string, error) {
+	flagBotID, _ := cmd.Flags().GetString("bot-id")
+	if flagBotID != "" {
+		return flagBotID, nil
+	}
+	if cfgBotID != "" {
+		return cfgBotID, nil
+	}
+	return "", fmt.Errorf("bot_id가 설정되지 않았습니다. --bot-id 플래그 또는 nw-cli config set bot_id <id>")
+}
+
 func init() {
+	botCmd.PersistentFlags().String("bot-id", "", "Bot ID (config 기본값 오버라이드)")
+
 	botSendCmd.Flags().String("to", "", "수신자 userId")
 	botSendCmd.Flags().String("channel", "", "채널 ID")
 	botSendCmd.Flags().String("text", "", "메시지 텍스트 (- 이면 stdin)")

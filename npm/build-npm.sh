@@ -2,7 +2,7 @@
 set -e
 
 VERSION="${1:?버전을 지정하세요 (예: 0.1.0)}"
-DIST_DIR="${2:?dist 디렉토리를 지정하세요}"
+DIST_DIR="$(cd "${2:?dist 디렉토리를 지정하세요}" && pwd)"
 NPM_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 PLATFORMS=(

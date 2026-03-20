@@ -13,8 +13,10 @@ description: Use when releasing a new version of nw-cli — builds cross-platfor
 
 1. `go test ./...` 전체 PASS
 2. `go vet ./...` 통과
-3. 작업 디렉토리 clean (`git status` 확인)
-4. 필요한 도구 설치 확인: `goreleaser`, `gh` (GitHub CLI), `npm`
+3. `go mod tidy` 후 변경 없음
+4. 작업 디렉토리 clean (`git status` 확인)
+5. 도구 설치: `goreleaser`, `gh` (GitHub CLI), `npm`
+6. 인증 상태: `gh auth status`, `npm whoami`
 
 ## 배포 절차
 
@@ -25,17 +27,28 @@ description: Use when releasing a new version of nw-cli — builds cross-platfor
 ### Step 2: 사전 검증
 
 ```bash
+# 코드 검증
+go mod tidy
 go test ./... -count=1
 go vet ./...
+
+# 워킹 트리 clean 확인
 git status
+
+# 인증 확인
+gh auth status
+npm whoami
 ```
 
-하나라도 실패하면 중단한다.
+하나라도 실패하면 중단한다. `go mod tidy`가 파일을 변경하면 커밋한 뒤 진행한다.
 
-### Step 3: Git 태그 생성
+### Step 3: Git 태그 생성 및 push
+
+태그를 먼저 원격에 push하여 GitHub Release와 소스 커밋을 일치시킨다.
 
 ```bash
 git tag v<VERSION>
+git push origin v<VERSION>
 ```
 
 ### Step 4: goreleaser로 크로스 플랫폼 빌드
@@ -44,7 +57,7 @@ git tag v<VERSION>
 goreleaser release --clean --skip=publish
 ```
 
-이렇게 하면 `dist/` 디렉토리에 5개 플랫폼 아카이브가 생성된다:
+`dist/` 디렉토리에 5개 플랫폼 아카이브가 생성된다:
 - `nw-cli_<VERSION>_linux_amd64.tar.gz`
 - `nw-cli_<VERSION>_linux_arm64.tar.gz`
 - `nw-cli_<VERSION>_darwin_amd64.tar.gz`
@@ -54,8 +67,11 @@ goreleaser release --clean --skip=publish
 
 ### Step 5: GitHub Release 생성
 
+`--verify-tag`로 원격 태그와 일치하는지 확인한다.
+
 ```bash
-gh release create v<VERSION> dist/nw-cli_*.{tar.gz,zip} dist/checksums.txt \
+gh release create v<VERSION> dist/nw-cli_*.tar.gz dist/nw-cli_*.zip dist/checksums.txt \
+  --verify-tag \
   --title "v<VERSION>" \
   --generate-notes
 ```
@@ -65,6 +81,8 @@ gh release create v<VERSION> dist/nw-cli_*.{tar.gz,zip} dist/checksums.txt \
 ```bash
 ./npm/build-npm.sh <VERSION> dist
 ```
+
+> 주의: `build-npm.sh`는 `npm/cli/package.json`의 버전을 수정한다. 배포 후 Step 9에서 정리한다.
 
 ### Step 7: npm 퍼블리시
 
@@ -85,17 +103,30 @@ done
 # GitHub Release 확인
 gh release view v<VERSION>
 
-# npm 확인
+# npm 메인 패키지 확인
 npm view nw-cli version
+
+# 현재 플랫폼 패키지 확인
+npm view @nw-cli/linux-x64 version   # Linux 예시
 
 # 설치 테스트
 npx nw-cli@<VERSION> version
 ```
 
-### Step 9: 태그 push
+### Step 9: 배포 후 정리
+
+`build-npm.sh`가 수정한 `npm/cli/package.json`을 원래대로 되돌린다:
 
 ```bash
-git push origin v<VERSION>
+git checkout -- npm/cli/package.json
+rm -rf dist/ npm/*/nw-cli npm/*/nw-cli.exe npm/*/package.json
+```
+
+또는 변경된 버전을 그대로 커밋할 수도 있다:
+
+```bash
+git add npm/cli/package.json
+git commit -m "chore: npm 패키지 버전을 v<VERSION>으로 업데이트"
 ```
 
 ## 롤백
@@ -116,6 +147,8 @@ done
 git tag -d v<VERSION>
 git push origin :refs/tags/v<VERSION>
 ```
+
+> **중요**: npm은 unpublish 후 같은 버전 번호를 재사용할 수 없다. 롤백 후 재배포 시 반드시 새 버전을 사용해야 한다 (예: `0.1.0` → `0.1.1`).
 
 ## goreleaser 미설치 시
 
@@ -149,8 +182,8 @@ GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/nw-c
 GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/nw-cli.exe . && \
   (cd dist && zip "nw-cli_${VERSION}_windows_amd64.zip" nw-cli.exe && rm nw-cli.exe)
 
-# 체크섬
-(cd dist && sha256sum nw-cli_*.{tar.gz,zip} > checksums.txt)
+# 체크섬 (macOS 호환)
+(cd dist && (sha256sum nw-cli_*.tar.gz nw-cli_*.zip 2>/dev/null || shasum -a 256 nw-cli_*.tar.gz nw-cli_*.zip) > checksums.txt)
 ```
 
 이후 Step 5부터 동일하게 진행한다.

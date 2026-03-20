@@ -192,6 +192,10 @@ func init() {
 	rootCmd.AddCommand(authCmd)
 }
 
+func authTokenStore() *auth.TokenStore {
+	return auth.NewTokenStore(auth.DefaultTokenPath())
+}
+
 func openBrowser(url string) error {
 	switch runtime.GOOS {
 	case "linux":

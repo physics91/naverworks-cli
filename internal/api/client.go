@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -113,6 +114,40 @@ func (c *Client) doWithRetry(method, path string, body []byte, retried401 bool) 
 	}
 
 	return nil, &APIError{StatusCode: 429, Code: "RATE_LIMIT_EXCEEDED", Description: "최대 재시도 횟수 초과"}
+}
+
+// UploadFile uploads a file to a pre-signed URL using PUT.
+// No Authorization header is sent (the URL is pre-signed).
+func (c *Client) UploadFile(uploadURL string, filePath string) error {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return fmt.Errorf("파일 열기 실패: %w", err)
+	}
+	defer f.Close()
+
+	stat, err := f.Stat()
+	if err != nil {
+		return fmt.Errorf("파일 정보 조회 실패: %w", err)
+	}
+
+	req, err := http.NewRequest("PUT", uploadURL, f)
+	if err != nil {
+		return fmt.Errorf("업로드 요청 생성 실패: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/octet-stream")
+	req.ContentLength = stat.Size()
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("업로드 네트워크 에러: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("업로드 실패 (HTTP %d): %s", resp.StatusCode, string(body))
+	}
+	return nil
 }
 
 func parseRateLimitReset(header http.Header, attempt int) time.Duration {

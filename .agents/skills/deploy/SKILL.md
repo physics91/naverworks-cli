@@ -5,14 +5,15 @@ description: Use when releasing a new version of nw-cli — autonomously builds 
 
 # nw-cli 자동 배포
 
-이 스킬은 AI 에이전트가 직접 실행한다. 안내가 아니라 **각 단계를 순서대로 실행**하고, 실패 시 즉시 중단하여 사용자에게 보고한다.
+이 스킬은 AI 에이전트가 직접 실행한다. 안내가 아니라 **각 단계를 순서대로 실행**하고, 실패 시 즉시 중단하여 롤백 후 사용자에게 보고한다.
 
 ## 실행 규칙
 
 1. **모든 단계를 직접 Bash로 실행한다.** 사용자에게 "이 명령을 실행하세요"라고 안내하지 않는다.
-2. 각 단계 실행 후 결과를 확인한다. 실패하면 즉시 중단하고 에러를 보고한다.
+2. 각 명령은 개별로 실행하고, 종료 코드를 확인한다. **0이 아니면 즉시 중단**하고 롤백으로 진입한다.
 3. 사용자 입력이 필요한 것은 **버전 번호**뿐이다. 인자로 주어지지 않으면 물어본다.
 4. 위험한 작업(태그 push, npm publish) 전에 사용자에게 확인을 받는다.
+5. **상태 추적**: 에이전트는 내부적으로 `COMPLETED_PHASES` 목록과 `PUBLISHED_PACKAGES` 목록을 유지한다. 롤백 시 이 목록만 역순 정리한다.
 
 ## 절차
 
@@ -24,15 +25,16 @@ description: Use when releasing a new version of nw-cli — autonomously builds 
 
 ### Phase 1: 사전 검증 (자동 실행)
 
-아래를 순서대로 실행한다. 하나라도 실패하면 **즉시 중단**:
+아래를 **개별 명령으로** 순서대로 실행한다. 하나라도 실패하면 **즉시 중단** (롤백 불필요):
 
 ```
-1. go mod tidy
-2. git diff --exit-code  (go mod tidy가 뭔가 바꿨으면 커밋하고 계속)
-3. go test ./... -count=1
-4. go vet ./...
-5. git status --porcelain  (비어있지 않으면 중단)
-6. goreleaser --version || go version  (goreleaser 없으면 수동 빌드 모드)
+1. go mod tidy && git diff --exit-code
+   → diff가 있으면 "go.mod/go.sum이 변경되었습니다. 먼저 커밋해주세요"로 중단
+2. go test ./... -count=1
+3. go vet ./...
+4. git status --porcelain  (출력이 있으면 "워킹 트리가 clean하지 않습니다"로 중단)
+5. goreleaser 존재 확인: command -v goreleaser (없으면 HAS_GORELEASER=false로 표시)
+6. 빌드 도구 확인: command -v tar && command -v zip (수동 빌드 시 필요)
 7. gh auth status
 8. npm whoami
 ```
@@ -43,19 +45,27 @@ description: Use when releasing a new version of nw-cli — autonomously builds 
 ✓ go test — 4 패키지 PASS
 ✓ go vet — 이상 없음
 ✓ git status — clean
-✓ goreleaser 1.x.x
+✓ goreleaser 1.x.x (또는 ✗ goreleaser 미설치 → 수동 빌드 모드)
 ✓ gh — physics91 인증됨
 ✓ npm — physics91 인증됨
 ```
 
-### Phase 2: 빌드 (자동 실행)
+### Phase 2: 태그 생성 (로컬만)
 
-goreleaser가 있으면:
+goreleaser가 태그를 요구하므로 **빌드 전에 로컬 태그를 생성**한다. push는 아직 하지 않는다.
+
+```bash
+git tag v<VERSION>
+```
+
+### Phase 3: 빌드 (자동 실행)
+
+`HAS_GORELEASER=true`이면:
 ```bash
 goreleaser release --clean --skip=publish
 ```
 
-없으면 수동 크로스 빌드:
+`HAS_GORELEASER=false`이면 (각 명령을 개별 실행, 실패 시 즉시 중단):
 ```bash
 VERSION=<VERSION>
 COMMIT=$(git rev-parse --short HEAD)
@@ -63,43 +73,37 @@ DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 LDFLAGS="-s -w -X github.com/physics91/naverworks-cli/cmd.version=$VERSION -X github.com/physics91/naverworks-cli/cmd.commit=$COMMIT -X github.com/physics91/naverworks-cli/cmd.buildDate=$DATE"
 
 mkdir -p dist
-
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/nw-cli . && \
-  tar -czf "dist/nw-cli_${VERSION}_linux_amd64.tar.gz" -C dist nw-cli && rm dist/nw-cli
-
-GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/nw-cli . && \
-  tar -czf "dist/nw-cli_${VERSION}_linux_arm64.tar.gz" -C dist nw-cli && rm dist/nw-cli
-
-GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/nw-cli . && \
-  tar -czf "dist/nw-cli_${VERSION}_darwin_amd64.tar.gz" -C dist nw-cli && rm dist/nw-cli
-
-GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/nw-cli . && \
-  tar -czf "dist/nw-cli_${VERSION}_darwin_arm64.tar.gz" -C dist nw-cli && rm dist/nw-cli
-
-GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/nw-cli.exe . && \
-  (cd dist && zip "nw-cli_${VERSION}_windows_amd64.zip" nw-cli.exe && rm nw-cli.exe)
-
-(cd dist && (sha256sum nw-cli_*.tar.gz nw-cli_*.zip 2>/dev/null || shasum -a 256 nw-cli_*.tar.gz nw-cli_*.zip) > checksums.txt)
 ```
 
-빌드 완료 후 산출물 목록을 보고:
+그 다음 **각 플랫폼을 개별 명령으로** 실행:
+```bash
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/nw-cli .
+tar -czf "dist/nw-cli_${VERSION}_linux_amd64.tar.gz" -C dist nw-cli
+rm dist/nw-cli
 ```
-✓ dist/nw-cli_0.1.0_linux_amd64.tar.gz (6.1MB)
-✓ dist/nw-cli_0.1.0_linux_arm64.tar.gz (5.9MB)
-✓ dist/nw-cli_0.1.0_darwin_amd64.tar.gz (6.3MB)
-✓ dist/nw-cli_0.1.0_darwin_arm64.tar.gz (6.0MB)
-✓ dist/nw-cli_0.1.0_windows_amd64.zip (6.2MB)
-✓ dist/checksums.txt
+(linux-arm64, darwin-amd64, darwin-arm64도 동일 패턴)
+
+```bash
+GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/nw-cli.exe .
+(cd dist && zip "nw-cli_${VERSION}_windows_amd64.zip" nw-cli.exe && rm nw-cli.exe)
 ```
 
-### Phase 3: 태그 + GitHub Release (확인 후 실행)
+체크섬:
+```bash
+cd dist && (sha256sum nw-cli_*.tar.gz nw-cli_*.zip 2>/dev/null || shasum -a 256 nw-cli_*.tar.gz nw-cli_*.zip) > checksums.txt && cd ..
+```
+
+빌드 완료 후 산출물 목록과 크기를 보고한다.
+
+### Phase 4: 태그 push + GitHub Release (확인 후 실행)
 
 **사용자에게 확인**: "v<VERSION> 태그를 push하고 GitHub Release를 생성합니다. 진행할까요?"
 
-승인 후 실행:
+승인 후 **개별 명령으로** 실행:
 ```bash
-git tag v<VERSION>
 git push origin v<VERSION>
+```
+```bash
 gh release create v<VERSION> dist/nw-cli_*.tar.gz dist/nw-cli_*.zip dist/checksums.txt \
   --verify-tag \
   --title "v<VERSION>" \
@@ -108,38 +112,52 @@ gh release create v<VERSION> dist/nw-cli_*.tar.gz dist/nw-cli_*.zip dist/checksu
 
 결과에서 Release URL을 출력한다.
 
-### Phase 4: npm 퍼블리시 (확인 후 실행)
+### Phase 5: npm 퍼블리시 (확인 후 실행)
 
 **사용자에게 확인**: "npm에 퍼블리시합니다. 진행할까요?"
 
 승인 후 실행:
 ```bash
 ./npm/build-npm.sh <VERSION> dist
-
-for dir in npm/linux-x64 npm/linux-arm64 npm/darwin-x64 npm/darwin-arm64 npm/win32-x64; do
-  if [ -f "$dir/nw-cli" ] || [ -f "$dir/nw-cli.exe" ]; then
-    (cd "$dir" && npm publish --access public)
-  fi
-done
-(cd npm/cli && npm publish --access public)
 ```
 
-### Phase 5: 검증 (자동 실행)
+플랫폼 패키지를 **하나씩** 퍼블리시하고, 성공한 패키지를 `PUBLISHED_PACKAGES`에 기록:
+```bash
+cd npm/linux-x64 && npm publish --access public && cd ../..
+# → PUBLISHED_PACKAGES에 "@nw-cli/linux-x64" 추가
+cd npm/linux-arm64 && npm publish --access public && cd ../..
+# → PUBLISHED_PACKAGES에 추가
+# ... darwin-x64, darwin-arm64, win32-x64도 동일
+```
 
+마지막에 메인 패키지:
+```bash
+cd npm/cli && npm publish --access public && cd ../..
+# → PUBLISHED_PACKAGES에 "nw-cli" 추가
+```
+
+**어느 패키지에서든 실패하면** 즉시 중단하고 롤백으로 진입한다.
+
+### Phase 6: 검증 (자동 실행)
+
+`PUBLISHED_PACKAGES`의 모든 패키지를 검증:
 ```bash
 gh release view v<VERSION>
 npm view nw-cli version
 npm view @nw-cli/linux-x64 version
+npm view @nw-cli/linux-arm64 version
+npm view @nw-cli/darwin-x64 version
+npm view @nw-cli/darwin-arm64 version
+npm view @nw-cli/win32-x64 version
 ```
 
-### Phase 6: 정리 (자동 실행)
+### Phase 7: 정리 (자동 실행)
 
 ```bash
 git checkout -- npm/cli/package.json
-rm -rf dist/ npm/*/nw-cli npm/*/nw-cli.exe
-# 플랫폼별 생성된 package.json 정리
+rm -rf dist/
 for dir in npm/linux-x64 npm/linux-arm64 npm/darwin-x64 npm/darwin-arm64 npm/win32-x64; do
-  rm -f "$dir/package.json"
+  rm -f "$dir/nw-cli" "$dir/nw-cli.exe" "$dir/package.json"
 done
 ```
 
@@ -158,15 +176,34 @@ npm: https://www.npmjs.com/package/nw-cli/v/<VERSION>
 
 ## 실패 시 롤백
 
-어느 단계에서든 실패하면, 이미 실행된 단계만 역순으로 롤백한다:
+에이전트는 `COMPLETED_PHASES`와 `PUBLISHED_PACKAGES`를 기반으로 **실제로 완료된 작업만** 역순으로 정리한다.
 
-| 실패 지점 | 롤백 범위 |
-|-----------|----------|
-| Phase 1 (검증) | 없음 |
-| Phase 2 (빌드) | `rm -rf dist/` |
-| Phase 3 (태그/릴리스) | `gh release delete v<VERSION> --yes && git push origin :refs/tags/v<VERSION> && git tag -d v<VERSION>` |
-| Phase 4 (npm) | 위 + `npm unpublish nw-cli@<VERSION>` + 각 플랫폼 패키지 unpublish |
+### 롤백 로직 (에이전트가 조건부 실행)
+
+```
+if "npm" in COMPLETED_PHASES:
+    for pkg in reversed(PUBLISHED_PACKAGES):
+        npm unpublish <pkg>@<VERSION>  # 실패해도 계속
+    git checkout -- npm/cli/package.json
+
+if "github_release" in COMPLETED_PHASES:
+    gh release delete v<VERSION> --yes  # 실패해도 계속
+
+if "tag_pushed" in COMPLETED_PHASES:
+    git push origin :refs/tags/v<VERSION>  # 실패해도 계속
+
+# 로컬 태그는 항상 정리
+git tag -d v<VERSION> 2>/dev/null
+
+# 빌드 산출물 정리
+rm -rf dist/
+for dir in npm/linux-x64 npm/linux-arm64 npm/darwin-x64 npm/darwin-arm64 npm/win32-x64; do
+  rm -f "$dir/nw-cli" "$dir/nw-cli.exe" "$dir/package.json"
+done
+```
 
 > **중요**: npm unpublish 후 같은 버전 번호 재사용 불가. 롤백 후에는 새 버전을 사용해야 한다.
 
-롤백도 **에이전트가 직접 실행**한다. 사용자에게 명령을 안내하지 않는다.
+롤백 각 명령은 **실패해도 다음 정리를 계속**한다 (정리 작업은 best-effort).
+
+롤백 완료 후 사용자에게 무엇이 정리되었고 무엇이 실패했는지 보고한다.

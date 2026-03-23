@@ -89,8 +89,11 @@ func (c *Client) doWithRetry(method, path string, body []byte, retried401 bool) 
 		if err != nil {
 			return nil, fmt.Errorf("네트워크 에러: %w", err)
 		}
-		respBody, _ := io.ReadAll(resp.Body)
+		respBody, err := io.ReadAll(resp.Body)
 		resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("응답 읽기 실패: %w", err)
+		}
 
 		switch {
 		case resp.StatusCode == 401 && !retried401 && c.refreshFn != nil:
@@ -105,9 +108,7 @@ func (c *Client) doWithRetry(method, path string, body []byte, retried401 bool) 
 			continue
 
 		case resp.StatusCode >= 400:
-			apiErr := &APIError{StatusCode: resp.StatusCode}
-			json.Unmarshal(respBody, apiErr)
-			return nil, apiErr
+			return nil, DecodeAPIError(resp.StatusCode, respBody)
 
 		default:
 			return &Response{StatusCode: resp.StatusCode, Body: respBody}, nil
@@ -150,14 +151,22 @@ func (c *Client) getDownloadURLWithRetry(path string, retried401 bool) (string, 
 		if err != nil {
 			return "", fmt.Errorf("네트워크 에러: %w", err)
 		}
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		resp.Body.Close()
+		if err != nil {
+			return "", fmt.Errorf("응답 읽기 실패: %w", err)
+		}
 
 		switch {
 		case resp.StatusCode == 301 || resp.StatusCode == 302:
 			location := resp.Header.Get("Location")
 			if location != "" {
 				return location, nil
+			}
+			return "", &APIError{
+				StatusCode:  resp.StatusCode,
+				Code:        "MISSING_REDIRECT_LOCATION",
+				Description: "리다이렉트 응답에 Location 헤더가 없습니다",
 			}
 
 		case resp.StatusCode == 401 && !retried401 && c.refreshFn != nil:
@@ -172,9 +181,7 @@ func (c *Client) getDownloadURLWithRetry(path string, retried401 bool) (string, 
 			continue
 
 		case resp.StatusCode >= 400:
-			apiErr := &APIError{StatusCode: resp.StatusCode}
-			json.Unmarshal(body, apiErr)
-			return "", apiErr
+			return "", DecodeAPIError(resp.StatusCode, body)
 
 		default:
 			// JSON 응답에 downloadUrl 필드가 있을 수 있음

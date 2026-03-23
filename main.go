@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
@@ -14,7 +15,8 @@ func main() {
 		errObj := map[string]map[string]string{
 			"error": {"code": "CLI_ERROR", "description": err.Error()},
 		}
-		if apiErr, ok := err.(*api.APIError); ok {
+		var apiErr *api.APIError
+		if errors.As(err, &apiErr) {
 			errObj["error"]["code"] = apiErr.Code
 			errObj["error"]["description"] = apiErr.Description
 		}

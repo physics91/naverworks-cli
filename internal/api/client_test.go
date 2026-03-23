@@ -230,3 +230,61 @@ func TestClient_Post_RetryPreservesBody(t *testing.T) {
 		t.Errorf("body not preserved on retry, got %q", lastBody)
 	}
 }
+
+func TestDecodeAPIError_ValidJSON(t *testing.T) {
+	body := []byte(`{"code":"INVALID","description":"bad request"}`)
+	apiErr := DecodeAPIError(400, body)
+	if apiErr.Code != "INVALID" {
+		t.Errorf("expected INVALID, got %q", apiErr.Code)
+	}
+	if apiErr.Description != "bad request" {
+		t.Errorf("expected 'bad request', got %q", apiErr.Description)
+	}
+}
+
+func TestDecodeAPIError_InvalidJSON(t *testing.T) {
+	body := []byte(`not json`)
+	apiErr := DecodeAPIError(500, body)
+	if apiErr.StatusCode != 500 {
+		t.Errorf("expected 500, got %d", apiErr.StatusCode)
+	}
+	if apiErr.Code != "UNKNOWN" {
+		t.Errorf("expected UNKNOWN, got %q", apiErr.Code)
+	}
+}
+
+func TestDecodeAPIError_EmptyBody(t *testing.T) {
+	apiErr := DecodeAPIError(502, nil)
+	if apiErr.Code != "UNKNOWN" {
+		t.Errorf("expected UNKNOWN, got %q", apiErr.Code)
+	}
+}
+
+func TestDecodeAPIError_OAuthStyle(t *testing.T) {
+	body := []byte(`{"error":"invalid_grant","error_description":"token expired"}`)
+	apiErr := DecodeAPIError(401, body)
+	if apiErr.Code != "invalid_grant" {
+		t.Errorf("expected invalid_grant, got %q", apiErr.Code)
+	}
+}
+
+func TestGetDownloadURL_MissingLocation(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(302)
+	}))
+	defer server.Close()
+
+	token := &auth.Token{AccessToken: "t", ExpiresAt: time.Now().Add(1 * time.Hour)}
+	client := NewClient(server.URL, token, nil)
+	_, err := client.GetDownloadURL("/test")
+	if err == nil {
+		t.Fatal("expected error for 302 without Location")
+	}
+	apiErr, ok := err.(*APIError)
+	if !ok {
+		t.Fatalf("expected APIError, got %T", err)
+	}
+	if apiErr.Code != "MISSING_REDIRECT_LOCATION" {
+		t.Errorf("expected MISSING_REDIRECT_LOCATION, got %q", apiErr.Code)
+	}
+}

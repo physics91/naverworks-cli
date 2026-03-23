@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** nw-cli에 나머지 13개 네이버웍스 서비스의 주요 CLI 명령을 추가한다 (MVP 범위). 전체 SDK API 노출은 phase 2에서 다룬다.
+**Goal:** naverworks에 나머지 13개 네이버웍스 서비스의 주요 CLI 명령을 추가한다 (MVP 범위). 전체 SDK API 노출은 phase 2에서 다룬다.
 
 **Architecture:** 기존 패턴을 반복하되, 선행 인프라 확장이 필요하다:
 1. HTTP client에 `Put`/`Patch`/`Delete` 메서드 추가

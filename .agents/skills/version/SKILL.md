@@ -1,9 +1,9 @@
 ---
 name: version
-description: Use when managing nw-cli versions — bump version, list tags, check current version. Triggers on "버전", "version", "/version", "bump".
+description: Use when managing naverworks versions — bump version, list tags, check current version. Triggers on "버전", "version", "/version", "bump".
 ---
 
-# nw-cli 버전 관리
+# naverworks 버전 관리
 
 이 스킬은 AI 에이전트가 직접 실행한다. 버전 조회, 범프, 태그 관리를 수행한다.
 
@@ -28,10 +28,10 @@ ldflags 주입 빌드로 바이너리 버전 확인:
 make build
 ```
 ```bash
-./nw-cli version
+./naverworks version
 ```
 ```bash
-rm -f nw-cli
+rm -f naverworks
 ```
 
 npm 패키지 버전 확인:

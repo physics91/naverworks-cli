@@ -164,7 +164,7 @@ func resolveBotID(cmd *cobra.Command, cfgBotID string) (string, error) {
 	if cfgBotID != "" {
 		return cfgBotID, nil
 	}
-	return "", fmt.Errorf("bot_id가 설정되지 않았습니다. --bot-id 플래그 또는 nw-cli config set bot_id <id>")
+	return "", fmt.Errorf("bot_id가 설정되지 않았습니다. --bot-id 플래그 또는 naverworks config set bot_id <id>")
 }
 
 func init() {

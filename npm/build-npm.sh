@@ -31,14 +31,14 @@ for entry in "${PLATFORMS[@]}"; do
 
   # 디렉터리 생성 및 이전 산출물 정리
   mkdir -p "$PKG_DIR"
-  rm -f "$PKG_DIR/nw-cli" "$PKG_DIR/nw-cli.exe"
+  rm -f "$PKG_DIR/naverworks" "$PKG_DIR/naverworks.exe"
 
   EXT=""
   if [ "$GOOS" = "windows" ]; then
     EXT=".exe"
   fi
 
-  ARCHIVE_NAME="nw-cli_${VERSION}_${GOOS}_${GOARCH}"
+  ARCHIVE_NAME="naverworks_${VERSION}_${GOOS}_${GOARCH}"
   ARCHIVE_PATH=""
 
   if [ "$GOOS" = "windows" ]; then
@@ -55,9 +55,9 @@ for entry in "${PLATFORMS[@]}"; do
   # package.json 생성
   cat > "$PKG_DIR/package.json" << EOF
 {
-  "name": "@nw-cli/${NPM_PLATFORM}",
+  "name": "@naverworks-cli/${NPM_PLATFORM}",
   "version": "${VERSION}",
-  "description": "nw-cli binary for ${NPM_PLATFORM}",
+  "description": "naverworks binary for ${NPM_PLATFORM}",
   "os": ["${GOOS/linux/linux}"],
   "cpu": ["${GOARCH/amd64/x64}"],
   "license": "MIT",
@@ -85,11 +85,11 @@ EOF
   else
     tar -xzf "$ARCHIVE_PATH" -C "$TMPDIR"
   fi
-  cp "$TMPDIR/nw-cli${EXT}" "$PKG_DIR/nw-cli${EXT}"
-  chmod +x "$PKG_DIR/nw-cli${EXT}"
+  cp "$TMPDIR/naverworks${EXT}" "$PKG_DIR/naverworks${EXT}"
+  chmod +x "$PKG_DIR/naverworks${EXT}"
   rm -rf "$TMPDIR"
 
-  echo "준비 완료: @nw-cli/${NPM_PLATFORM}@${VERSION}"
+  echo "준비 완료: @naverworks-cli/${NPM_PLATFORM}@${VERSION}"
 done
 
 echo ""
@@ -97,7 +97,7 @@ echo "npm 퍼블리시 명령어:"
 echo ""
 for entry in "${PLATFORMS[@]}"; do
   IFS=":" read -r NPM_PLATFORM _ _ <<< "$entry"
-  if [ -f "$NPM_DIR/$NPM_PLATFORM/nw-cli" ] || [ -f "$NPM_DIR/$NPM_PLATFORM/nw-cli.exe" ]; then
+  if [ -f "$NPM_DIR/$NPM_PLATFORM/naverworks" ] || [ -f "$NPM_DIR/$NPM_PLATFORM/naverworks.exe" ]; then
     echo "  cd $NPM_DIR/$NPM_PLATFORM && npm publish --access public"
   fi
 done

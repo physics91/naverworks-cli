@@ -41,7 +41,7 @@ var configSetCmd = &cobra.Command{
 		} else if len(args) == 2 {
 			value = args[1]
 		} else {
-			return fmt.Errorf("값을 지정하세요: nw-cli config set %s <value>", key)
+			return fmt.Errorf("값을 지정하세요: naverworks config set %s <value>", key)
 		}
 
 		if err := cfg.Set(key, value); err != nil {

@@ -107,7 +107,7 @@ var authSetupCmd = &cobra.Command{
 		}
 
 		fmt.Println()
-		fmt.Println("설정 완료. nw-cli auth login 으로 로그인하세요.")
+		fmt.Println("설정 완료. naverworks auth login 으로 로그인하세요.")
 		return nil
 	},
 }

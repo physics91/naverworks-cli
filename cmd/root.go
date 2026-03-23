@@ -7,7 +7,7 @@ import (
 var outputFormat string
 
 var rootCmd = &cobra.Command{
-	Use:           "nw-cli",
+	Use:           "naverworks",
 	Short:         "네이버웍스 CLI",
 	Long:          "네이버웍스 REST API v1.0 명령줄 도구",
 	SilenceUsage:  true,

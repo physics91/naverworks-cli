@@ -123,7 +123,7 @@ var authStatusCmd = &cobra.Command{
 			return err
 		}
 		if token == nil {
-			return fmt.Errorf("로그인되어 있지 않습니다. nw-cli auth login을 실행하세요")
+			return fmt.Errorf("로그인되어 있지 않습니다. naverworks auth login을 실행하세요")
 		}
 
 		status := map[string]interface{}{
@@ -202,7 +202,7 @@ var authRefreshCmd = &cobra.Command{
 			return err
 		}
 		if token == nil {
-			return fmt.Errorf("로그인되어 있지 않습니다. nw-cli auth login을 실행하세요")
+			return fmt.Errorf("로그인되어 있지 않습니다. naverworks auth login을 실행하세요")
 		}
 
 		if token.AuthMethod == "oauth" && token.RefreshToken != "" {

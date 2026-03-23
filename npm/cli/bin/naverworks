@@ -1,0 +1,20 @@
+#!/usr/bin/env node
+
+const { execFileSync } = require("child_process");
+const path = require("path");
+const fs = require("fs");
+
+const ext = process.platform === "win32" ? ".exe" : "";
+const binary = path.join(__dirname, `naverworks${ext}`);
+
+if (!fs.existsSync(binary)) {
+  console.error("naverworks 바이너리가 설치되지 않았습니다.");
+  console.error("npm install naverworks 를 다시 실행해주세요.");
+  process.exit(1);
+}
+
+try {
+  execFileSync(binary, process.argv.slice(2), { stdio: "inherit" });
+} catch (e) {
+  process.exit(e.status || 1);
+}

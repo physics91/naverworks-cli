@@ -2,7 +2,7 @@
 set -e
 
 REPO="physics91/naverworks-cli"
-BINARY="nw-cli"
+BINARY="naverworks"
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 
 get_os() {

@@ -1,9 +1,9 @@
 ---
 name: test
-description: Use when running tests for nw-cli — runs go test, go vet, and reports results. Triggers on "테스트", "test", "/test".
+description: Use when running tests for naverworks — runs go test, go vet, and reports results. Triggers on "테스트", "test", "/test".
 ---
 
-# nw-cli 테스트 실행
+# naverworks 테스트 실행
 
 이 스킬은 AI 에이전트가 직접 실행한다. 모든 명령을 순서대로 실행하고 결과를 보고한다.
 
@@ -43,13 +43,13 @@ go test ./... -v -count=1
 ### Phase 4: 빌드 확인
 
 ```bash
-go build -o /tmp/nw-cli-test .
+go build -o /tmp/naverworks-test .
 ```
 ```bash
-/tmp/nw-cli-test version
+/tmp/naverworks-test version
 ```
 ```bash
-rm -f /tmp/nw-cli-test
+rm -f /tmp/naverworks-test
 ```
 
 ### 보고

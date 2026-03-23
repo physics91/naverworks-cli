@@ -1,9 +1,9 @@
 ---
 name: build
-description: Use when building nw-cli binaries — single platform or cross-platform builds with version injection. Triggers on "빌드", "build", "/build".
+description: Use when building naverworks binaries — single platform or cross-platform builds with version injection. Triggers on "빌드", "build", "/build".
 ---
 
-# nw-cli 빌드
+# naverworks 빌드
 
 이 스킬은 AI 에이전트가 직접 실행한다. 로컬 또는 크로스 플랫폼 바이너리를 빌드한다.
 
@@ -37,10 +37,10 @@ go test ./... -count=1
 make build
 ```
 ```bash
-ls -lh nw-cli
+ls -lh naverworks
 ```
 ```bash
-./nw-cli version
+./naverworks version
 ```
 
 ### Phase 2b: 크로스 빌드 (all)
@@ -79,57 +79,57 @@ mkdir -p dist
 
 linux-amd64:
 ```bash
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/nw-cli .
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/naverworks .
 ```
 ```bash
-tar -czf "dist/nw-cli_${VERSION}_linux_amd64.tar.gz" -C dist nw-cli
+tar -czf "dist/naverworks_${VERSION}_linux_amd64.tar.gz" -C dist naverworks
 ```
 ```bash
-rm dist/nw-cli
+rm dist/naverworks
 ```
 
 linux-arm64:
 ```bash
-GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/nw-cli .
+GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/naverworks .
 ```
 ```bash
-tar -czf "dist/nw-cli_${VERSION}_linux_arm64.tar.gz" -C dist nw-cli
+tar -czf "dist/naverworks_${VERSION}_linux_arm64.tar.gz" -C dist naverworks
 ```
 ```bash
-rm dist/nw-cli
+rm dist/naverworks
 ```
 
 darwin-amd64:
 ```bash
-GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/nw-cli .
+GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/naverworks .
 ```
 ```bash
-tar -czf "dist/nw-cli_${VERSION}_darwin_amd64.tar.gz" -C dist nw-cli
+tar -czf "dist/naverworks_${VERSION}_darwin_amd64.tar.gz" -C dist naverworks
 ```
 ```bash
-rm dist/nw-cli
+rm dist/naverworks
 ```
 
 darwin-arm64:
 ```bash
-GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/nw-cli .
+GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/naverworks .
 ```
 ```bash
-tar -czf "dist/nw-cli_${VERSION}_darwin_arm64.tar.gz" -C dist nw-cli
+tar -czf "dist/naverworks_${VERSION}_darwin_arm64.tar.gz" -C dist naverworks
 ```
 ```bash
-rm dist/nw-cli
+rm dist/naverworks
 ```
 
 windows-amd64:
 ```bash
-GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/nw-cli.exe .
+GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/naverworks.exe .
 ```
 ```bash
-zip dist/nw-cli_${VERSION}_windows_amd64.zip -j dist/nw-cli.exe
+zip dist/naverworks_${VERSION}_windows_amd64.zip -j dist/naverworks.exe
 ```
 ```bash
-rm dist/nw-cli.exe
+rm dist/naverworks.exe
 ```
 
 > LDFLAGS는 Phase 2b 시작 시 아래와 같이 구성한다:
@@ -140,7 +140,7 @@ rm dist/nw-cli.exe
 로컬 빌드:
 ```
 빌드 완료:
-  nw-cli (6.1MB)
+  naverworks (6.1MB)
   버전: {"version":"dev","commit":"abc1234","build_date":"..."}
 ```
 
@@ -148,9 +148,9 @@ rm dist/nw-cli.exe
 ```
 빌드 완료: 5개 플랫폼
 
-  dist/nw-cli_0.1.0_linux_amd64.tar.gz     2.6MB
-  dist/nw-cli_0.1.0_linux_arm64.tar.gz     2.4MB
-  dist/nw-cli_0.1.0_darwin_amd64.tar.gz    2.6MB
-  dist/nw-cli_0.1.0_darwin_arm64.tar.gz    2.5MB
-  dist/nw-cli_0.1.0_windows_amd64.zip      2.7MB
+  dist/naverworks_0.1.0_linux_amd64.tar.gz     2.6MB
+  dist/naverworks_0.1.0_linux_arm64.tar.gz     2.4MB
+  dist/naverworks_0.1.0_darwin_amd64.tar.gz    2.6MB
+  dist/naverworks_0.1.0_darwin_arm64.tar.gz    2.5MB
+  dist/naverworks_0.1.0_windows_amd64.zip      2.7MB
 ```

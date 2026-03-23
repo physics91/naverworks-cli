@@ -47,7 +47,7 @@ jobs:
           VERSION: ${{ steps.version.outputs.VERSION }}
         run: |
           for dir in npm/linux-x64 npm/linux-arm64 npm/darwin-x64 npm/darwin-arm64 npm/win32-x64; do
-            if [ -f "$dir/nw-cli" ] || [ -f "$dir/nw-cli.exe" ]; then
+            if [ -f "$dir/naverworks" ] || [ -f "$dir/naverworks.exe" ]; then
               cd "$dir" && npm publish --access public && cd -
             fi
           done

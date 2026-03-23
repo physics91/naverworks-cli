@@ -1,6 +1,6 @@
 version: 2
 
-project_name: nw-cli
+project_name: naverworks
 
 before:
   hooks:
@@ -9,7 +9,7 @@ before:
 
 builds:
   - main: .
-    binary: nw-cli
+    binary: naverworks
     env:
       - CGO_ENABLED=0
     goos:

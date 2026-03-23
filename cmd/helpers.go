@@ -28,7 +28,7 @@ func loadConfigAndToken() (*config.Config, *auth.Token, error) {
 		return nil, nil, err
 	}
 	if token == nil {
-		return nil, nil, fmt.Errorf("로그인되어 있지 않습니다. nw-cli auth login을 실행하세요")
+		return nil, nil, fmt.Errorf("로그인되어 있지 않습니다. naverworks auth login을 실행하세요")
 	}
 	return cfg, token, nil
 }
@@ -74,7 +74,7 @@ func buildAPIClient(cfg *config.Config, token *auth.Token) *api.Client {
 
 func buildScimClient(cfg *config.Config) (*api.Client, error) {
 	if cfg.ScimAccessToken == "" {
-		return nil, fmt.Errorf("scim_access_token이 설정되지 않았습니다. nw-cli config set scim_access_token <token>")
+		return nil, fmt.Errorf("scim_access_token이 설정되지 않았습니다. naverworks config set scim_access_token <token>")
 	}
 	token := &auth.Token{
 		AuthMethod:  "scim",

@@ -1,9 +1,9 @@
 ---
 name: deploy
-description: Use when releasing a new version of nw-cli — autonomously builds cross-platform binaries, creates GitHub release, and publishes npm packages. Triggers on "배포", "릴리스", "deploy", "release", "/deploy".
+description: Use when releasing a new version of naverworks — autonomously builds cross-platform binaries, creates GitHub release, and publishes npm packages. Triggers on "배포", "릴리스", "deploy", "release", "/deploy".
 ---
 
-# nw-cli 자동 배포
+# naverworks 자동 배포
 
 이 스킬은 AI 에이전트가 직접 실행한다. 안내가 아니라 **각 단계를 순서대로 실행**하고, 실패 시 즉시 중단하여 롤백 후 사용자에게 보고한다.
 
@@ -82,35 +82,35 @@ mkdir -p dist
 그 다음 **각 플랫폼을 개별 명령으로** 실행:
 각 플랫폼을 **개별 명령 3개씩** 실행 (linux-amd64 예시):
 ```bash
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/nw-cli .
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/naverworks .
 ```
 ```bash
-tar -czf "dist/nw-cli_${VERSION}_linux_amd64.tar.gz" -C dist nw-cli
+tar -czf "dist/naverworks_${VERSION}_linux_amd64.tar.gz" -C dist naverworks
 ```
 ```bash
-rm dist/nw-cli
+rm dist/naverworks
 ```
 
 linux-arm64, darwin-amd64, darwin-arm64도 **동일하게 3개 명령으로 분리**한다.
 
 Windows:
 ```bash
-GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/nw-cli.exe .
+GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/naverworks.exe .
 ```
 ```bash
-zip dist/nw-cli_${VERSION}_windows_amd64.zip -j dist/nw-cli.exe
+zip dist/naverworks_${VERSION}_windows_amd64.zip -j dist/naverworks.exe
 ```
 ```bash
-rm dist/nw-cli.exe
+rm dist/naverworks.exe
 ```
 
 체크섬 (sha256sum 또는 shasum 중 사용 가능한 것):
 ```bash
-sha256sum dist/nw-cli_*.tar.gz dist/nw-cli_*.zip > dist/checksums.txt
+sha256sum dist/naverworks_*.tar.gz dist/naverworks_*.zip > dist/checksums.txt
 ```
 macOS에서 sha256sum이 없으면:
 ```bash
-shasum -a 256 dist/nw-cli_*.tar.gz dist/nw-cli_*.zip > dist/checksums.txt
+shasum -a 256 dist/naverworks_*.tar.gz dist/naverworks_*.zip > dist/checksums.txt
 ```
 
 빌드 완료 후 산출물 목록과 크기를 보고한다.
@@ -124,7 +124,7 @@ shasum -a 256 dist/nw-cli_*.tar.gz dist/nw-cli_*.zip > dist/checksums.txt
 git push origin v<VERSION>
 ```
 ```bash
-gh release create v<VERSION> dist/nw-cli_*.tar.gz dist/nw-cli_*.zip dist/checksums.txt \
+gh release create v<VERSION> dist/naverworks_*.tar.gz dist/naverworks_*.zip dist/checksums.txt \
   --verify-tag \
   --title "v<VERSION>" \
   --generate-notes
@@ -152,7 +152,7 @@ npm publish --access public
 ```bash
 cd ../..
 ```
-→ 성공 시 PUBLISHED_PACKAGES에 `@nw-cli/linux-x64` 추가
+→ 성공 시 PUBLISHED_PACKAGES에 `@naverworks-cli/linux-x64` 추가
 
 linux-arm64, darwin-x64, darwin-arm64, win32-x64도 **동일하게 3개 명령으로 분리**한다.
 
@@ -166,7 +166,7 @@ npm publish --access public
 ```bash
 cd ../..
 ```
-→ 성공 시 PUBLISHED_PACKAGES에 `nw-cli` 추가
+→ 성공 시 PUBLISHED_PACKAGES에 `naverworks` 추가
 
 **어느 패키지에서든 실패하면** 즉시 중단하고 롤백으로 진입한다.
 
@@ -175,12 +175,12 @@ cd ../..
 `PUBLISHED_PACKAGES`의 모든 패키지를 검증:
 ```bash
 gh release view v<VERSION>
-npm view nw-cli version
-npm view @nw-cli/linux-x64 version
-npm view @nw-cli/linux-arm64 version
-npm view @nw-cli/darwin-x64 version
-npm view @nw-cli/darwin-arm64 version
-npm view @nw-cli/win32-x64 version
+npm view naverworks version
+npm view @naverworks-cli/linux-x64 version
+npm view @naverworks-cli/linux-arm64 version
+npm view @naverworks-cli/darwin-x64 version
+npm view @naverworks-cli/darwin-arm64 version
+npm view @naverworks-cli/win32-x64 version
 ```
 
 ### Phase 7: 정리 (자동 실행)
@@ -189,7 +189,7 @@ npm view @nw-cli/win32-x64 version
 git checkout -- npm/cli/package.json
 rm -rf dist/
 for dir in npm/linux-x64 npm/linux-arm64 npm/darwin-x64 npm/darwin-arm64 npm/win32-x64; do
-  rm -f "$dir/nw-cli" "$dir/nw-cli.exe" "$dir/package.json"
+  rm -f "$dir/naverworks" "$dir/naverworks.exe" "$dir/package.json"
 done
 ```
 
@@ -199,11 +199,11 @@ done
 배포 완료: v<VERSION>
 
 GitHub Release: https://github.com/physics91/naverworks-cli/releases/tag/v<VERSION>
-npm: https://www.npmjs.com/package/nw-cli/v/<VERSION>
+npm: https://www.npmjs.com/package/naverworks/v/<VERSION>
 
 설치:
-  npm install -g nw-cli@<VERSION>
-  npx nw-cli@<VERSION> version
+  npm install -g naverworks@<VERSION>
+  npx naverworks@<VERSION> version
 ```
 
 ## 실패 시 롤백
@@ -230,7 +230,7 @@ git tag -d v<VERSION> 2>/dev/null
 # 빌드 산출물 정리
 rm -rf dist/
 for dir in npm/linux-x64 npm/linux-arm64 npm/darwin-x64 npm/darwin-arm64 npm/win32-x64; do
-  rm -f "$dir/nw-cli" "$dir/nw-cli.exe" "$dir/package.json"
+  rm -f "$dir/naverworks" "$dir/naverworks.exe" "$dir/package.json"
 done
 ```
 

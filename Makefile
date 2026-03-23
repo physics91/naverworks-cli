@@ -9,10 +9,10 @@ LDFLAGS := -s -w \
 .PHONY: build test clean
 
 build:
-	go build -ldflags "$(LDFLAGS)" -o nw-cli .
+	go build -ldflags "$(LDFLAGS)" -o naverworks .
 
 test:
 	go test ./... -v
 
 clean:
-	rm -f nw-cli
+	rm -f naverworks

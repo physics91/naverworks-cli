@@ -1,19 +1,19 @@
 {
-  "name": "nw-cli",
+  "name": "naverworks",
   "version": "0.1.0",
   "description": "네이버웍스(NAVER WORKS) REST API CLI",
   "bin": {
-    "nw-cli": "bin/nw-cli"
+    "naverworks": "bin/naverworks"
   },
   "scripts": {
     "postinstall": "node install.js"
   },
   "optionalDependencies": {
-    "@nw-cli/linux-x64": "0.1.0",
-    "@nw-cli/linux-arm64": "0.1.0",
-    "@nw-cli/darwin-x64": "0.1.0",
-    "@nw-cli/darwin-arm64": "0.1.0",
-    "@nw-cli/win32-x64": "0.1.0"
+    "@naverworks-cli/linux-x64": "0.1.0",
+    "@naverworks-cli/linux-arm64": "0.1.0",
+    "@naverworks-cli/darwin-x64": "0.1.0",
+    "@naverworks-cli/darwin-arm64": "0.1.0",
+    "@naverworks-cli/win32-x64": "0.1.0"
   },
   "keywords": ["naverworks", "naver-works", "line-works", "cli"],
   "license": "MIT",

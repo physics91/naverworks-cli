@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** 네이버웍스 REST API v1.0을 래핑하는 Go CLI 도구(nw-cli)를 구현한다. v0.1은 bot, directory, calendar 3개 서비스를 지원한다.
+**Goal:** 네이버웍스 REST API v1.0을 래핑하는 Go CLI 도구(naverworks)를 구현한다. v0.1은 bot, directory, calendar 3개 서비스를 지원한다.
 
 **Architecture:** cobra 기반 서브커맨드 구조. `internal/config`로 설정 관리, `internal/auth`로 JWT/OAuth 토큰 관리, `internal/api`로 HTTP 클라이언트(401 재시도 1회, 429 백오프 최대 3회), `internal/output`으로 JSON/테이블 출력. 각 서비스 커맨드가 `loadConfigAndToken()` + `buildAPIClient()`를 호출하는 per-command 초기화 방식을 사용한다 (PersistentPreRunE 대신 — auth/config/version 건너뛰기 복잡도 회피).
 
@@ -82,7 +82,7 @@ import (
 var outputFormat string
 
 var rootCmd = &cobra.Command{
-	Use:   "nw-cli",
+	Use:   "naverworks",
 	Short: "네이버웍스 CLI",
 	Long:  "네이버웍스 REST API v1.0 명령줄 도구",
 	SilenceUsage:  true,
@@ -131,10 +131,10 @@ func init() {
 
 **Step 6: 빌드 및 실행 테스트**
 
-Run: `go build -o nw-cli . && ./nw-cli version`
+Run: `go build -o naverworks . && ./naverworks version`
 Expected: `{"version":"dev","commit":"none","build_date":"unknown"}`
 
-Run: `./nw-cli --help`
+Run: `./naverworks --help`
 Expected: cobra 기본 도움말 출력
 
 **Step 7: Makefile 작성**
@@ -152,13 +152,13 @@ LDFLAGS := -s -w \
 .PHONY: build test clean
 
 build:
-	go build -ldflags "$(LDFLAGS)" -o nw-cli .
+	go build -ldflags "$(LDFLAGS)" -o naverworks .
 
 test:
 	go test ./... -v
 
 clean:
-	rm -f nw-cli
+	rm -f naverworks
 ```
 
 **Step 8: 커밋**
@@ -455,7 +455,7 @@ var configSetCmd = &cobra.Command{
 		} else if len(args) == 2 {
 			value = args[1]
 		} else {
-			return fmt.Errorf("값을 지정하세요: nw-cli config set %s <value>", key)
+			return fmt.Errorf("값을 지정하세요: naverworks config set %s <value>", key)
 		}
 
 		if err := cfg.Set(key, value); err != nil {
@@ -517,7 +517,7 @@ func init() {
 
 **Step 6: 빌드 및 통합 테스트**
 
-Run: `go build -o nw-cli . && ./nw-cli config set client_id test123 && ./nw-cli config get client_id`
+Run: `go build -o naverworks . && ./naverworks config set client_id test123 && ./naverworks config get client_id`
 Expected: `test123`
 
 **Step 7: 커밋**
@@ -1817,7 +1817,7 @@ var authStatusCmd = &cobra.Command{
 			return err
 		}
 		if token == nil {
-			return fmt.Errorf("로그인되어 있지 않습니다. nw-cli auth login을 실행하세요")
+			return fmt.Errorf("로그인되어 있지 않습니다. naverworks auth login을 실행하세요")
 		}
 
 		status := map[string]interface{}{
@@ -1928,7 +1928,7 @@ func fetchUserName(accessToken string) (string, error) {
 
 **Step 2: 빌드 확인**
 
-Run: `go build -o nw-cli .`
+Run: `go build -o naverworks .`
 Expected: 성공
 
 **Step 3: 커밋**
@@ -2118,7 +2118,7 @@ var botSendCmd = &cobra.Command{
 			return err
 		}
 		if cfg.BotID == "" {
-			return fmt.Errorf("bot_id가 설정되지 않았습니다. nw-cli config set bot_id <id>")
+			return fmt.Errorf("bot_id가 설정되지 않았습니다. naverworks config set bot_id <id>")
 		}
 
 		client := buildAPIClient(cfg, token)
@@ -2237,7 +2237,7 @@ func loadConfigAndToken() (*config.Config, *auth.Token, error) {
 		return nil, nil, err
 	}
 	if token == nil {
-		return nil, nil, fmt.Errorf("로그인되어 있지 않습니다. nw-cli auth login을 실행하세요")
+		return nil, nil, fmt.Errorf("로그인되어 있지 않습니다. naverworks auth login을 실행하세요")
 	}
 	return cfg, token, nil
 }
@@ -2255,7 +2255,7 @@ func buildAPIClient(cfg *config.Config, token *auth.Token) *api.Client {
 
 **Step 6: 빌드 확인**
 
-Run: `go build -o nw-cli .`
+Run: `go build -o naverworks .`
 Expected: 성공
 
 **Step 7: 커밋**
@@ -2503,7 +2503,7 @@ func init() {
 
 **Step 4: 테스트 통과 + 빌드 확인**
 
-Run: `go test ./internal/api/ -v && go build -o nw-cli .`
+Run: `go test ./internal/api/ -v && go build -o naverworks .`
 Expected: PASS + 빌드 성공
 
 **Step 5: 커밋**
@@ -2892,7 +2892,7 @@ func init() {
 
 **Step 4: 테스트 통과 + 빌드 확인**
 
-Run: `go test ./internal/api/ -v && go build -o nw-cli .`
+Run: `go test ./internal/api/ -v && go build -o naverworks .`
 Expected: PASS + 빌드 성공
 
 **Step 5: 커밋**
@@ -2913,27 +2913,27 @@ Expected: 모든 테스트 PASS
 
 **Step 2: 빌드 및 CLI 동작 확인**
 
-Run: `make build && ./nw-cli --help`
+Run: `make build && ./naverworks --help`
 Expected: 모든 서브커맨드 표시 (auth, config, bot, directory, calendar, version)
 
-Run: `./nw-cli version`
+Run: `./naverworks version`
 Expected: 빌드 정보 JSON
 
-Run: `./nw-cli auth --help`
+Run: `./naverworks auth --help`
 Expected: login, status, logout 서브커맨드
 
-Run: `./nw-cli bot --help`
+Run: `./naverworks bot --help`
 Expected: send, get-channel, channel-members 서브커맨드
 
-Run: `./nw-cli directory --help`
+Run: `./naverworks directory --help`
 Expected: list-users, get-user, list-groups, get-group 서브커맨드
 
-Run: `./nw-cli calendar --help`
+Run: `./naverworks calendar --help`
 Expected: list-calendars, list-events, get-event, create-event 서브커맨드
 
 **Step 3: 바이너리 크기 확인**
 
-Run: `ls -lh nw-cli`
+Run: `ls -lh naverworks`
 Expected: < 15MB
 
 **Step 4: 최종 커밋**

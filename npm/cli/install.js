@@ -2,11 +2,11 @@ const fs = require("fs");
 const path = require("path");
 
 const PLATFORM_MAP = {
-  "linux-x64": "@nw-cli/linux-x64",
-  "linux-arm64": "@nw-cli/linux-arm64",
-  "darwin-x64": "@nw-cli/darwin-x64",
-  "darwin-arm64": "@nw-cli/darwin-arm64",
-  "win32-x64": "@nw-cli/win32-x64",
+  "linux-x64": "@naverworks-cli/linux-x64",
+  "linux-arm64": "@naverworks-cli/linux-arm64",
+  "darwin-x64": "@naverworks-cli/darwin-x64",
+  "darwin-arm64": "@naverworks-cli/darwin-arm64",
+  "win32-x64": "@naverworks-cli/win32-x64",
 };
 
 function getPlatformPackage() {
@@ -26,7 +26,7 @@ function getBinaryPath(pkg) {
   const ext = process.platform === "win32" ? ".exe" : "";
   try {
     const pkgDir = path.dirname(require.resolve(`${pkg}/package.json`));
-    return path.join(pkgDir, `nw-cli${ext}`);
+    return path.join(pkgDir, `naverworks${ext}`);
   } catch {
     return null;
   }
@@ -48,7 +48,7 @@ function install() {
   }
 
   const ext = process.platform === "win32" ? ".exe" : "";
-  const dest = path.join(binDir, `nw-cli${ext}`);
+  const dest = path.join(binDir, `naverworks${ext}`);
 
   fs.copyFileSync(binaryPath, dest);
   fs.chmodSync(dest, 0o755);

@@ -52,7 +52,9 @@ func TestPaginateAll_MultiplePages(t *testing.T) {
 	}
 
 	var items []json.RawMessage
-	json.Unmarshal(result, &items)
+	if err := json.Unmarshal(result, &items); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
 	if len(items) != 2 {
 		t.Errorf("expected 2 items, got %d", len(items))
 	}

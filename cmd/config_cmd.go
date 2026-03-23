@@ -90,6 +90,7 @@ var configListCmd = &cobra.Command{
 			"bot_id":                  cfg.GetMasked("bot_id"),
 			"scope":                   cfg.GetMasked("scope"),
 			"default_calendar_user_id": cfg.GetMasked("default_calendar_user_id"),
+			"scim_access_token":        cfg.GetMasked("scim_access_token"),
 		}
 		data, _ := json.MarshalIndent(masked, "", "  ")
 		fmt.Println(string(data))

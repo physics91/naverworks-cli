@@ -85,3 +85,101 @@ func TestTokenStore_Delete(t *testing.T) {
 		t.Error("expected nil after delete")
 	}
 }
+
+func TestProfileTokenStore_SaveAndLoad(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "token.json")
+
+	store := NewProfileTokenStore(path, "work")
+	token := &Token{
+		AuthMethod:  "oauth",
+		AccessToken: "work-token",
+		ExpiresAt:   time.Now().Add(1 * time.Hour),
+	}
+	if err := store.Save(token); err != nil {
+		t.Fatalf("save failed: %v", err)
+	}
+
+	loaded, err := store.Load()
+	if err != nil {
+		t.Fatalf("load failed: %v", err)
+	}
+	if loaded.AccessToken != "work-token" {
+		t.Errorf("expected work-token, got %q", loaded.AccessToken)
+	}
+}
+
+func TestProfileTokenStore_MultipleProfiles(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "token.json")
+
+	store1 := NewProfileTokenStore(path, "work")
+	store1.Save(&Token{AuthMethod: "oauth", AccessToken: "work-tk", ExpiresAt: time.Now().Add(1 * time.Hour)})
+
+	store2 := NewProfileTokenStore(path, "staging")
+	store2.Save(&Token{AuthMethod: "jwt", AccessToken: "stg-tk", ExpiresAt: time.Now().Add(1 * time.Hour)})
+
+	t1, _ := store1.Load()
+	t2, _ := store2.Load()
+
+	if t1.AccessToken != "work-tk" {
+		t.Errorf("work profile: expected work-tk, got %q", t1.AccessToken)
+	}
+	if t2.AccessToken != "stg-tk" {
+		t.Errorf("staging profile: expected stg-tk, got %q", t2.AccessToken)
+	}
+}
+
+func TestProfileTokenStore_MigrateLegacy(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "token.json")
+
+	// Save in legacy format
+	legacy := &Token{AuthMethod: "oauth", AccessToken: "legacy-tk", ExpiresAt: time.Now().Add(1 * time.Hour)}
+	legacyStore := NewTokenStore(path)
+	legacyStore.Save(legacy)
+
+	// Load with profile store — auto migration
+	profileStore := NewProfileTokenStore(path, "default")
+	loaded, err := profileStore.Load()
+	if err != nil {
+		t.Fatalf("load failed: %v", err)
+	}
+	if loaded.AccessToken != "legacy-tk" {
+		t.Errorf("expected legacy-tk, got %q", loaded.AccessToken)
+	}
+}
+
+func TestProfileTokenStore_DeleteProfile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "token.json")
+
+	store := NewProfileTokenStore(path, "temp")
+	store.Save(&Token{AuthMethod: "jwt", AccessToken: "tmp", ExpiresAt: time.Now().Add(1 * time.Hour)})
+	store.Delete()
+
+	loaded, _ := store.Load()
+	if loaded != nil {
+		t.Error("expected nil after delete")
+	}
+}
+
+func TestProfileTokenStore_DeleteNonDefault_PreservesLegacy(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "token.json")
+
+	// Save legacy format
+	legacy := &Token{AuthMethod: "oauth", AccessToken: "default-tk", ExpiresAt: time.Now().Add(1 * time.Hour)}
+	legacyStore := NewTokenStore(path)
+	legacyStore.Save(legacy)
+
+	// Delete staging profile — should preserve default token
+	stagingStore := NewProfileTokenStore(path, "staging")
+	stagingStore.Delete()
+
+	defaultStore := NewProfileTokenStore(path, "default")
+	loaded, _ := defaultStore.Load()
+	if loaded == nil || loaded.AccessToken != "default-tk" {
+		t.Error("default token should be preserved after deleting non-default profile")
+	}
+}

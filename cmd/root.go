@@ -4,7 +4,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var outputFormat string
+var (
+	outputFormat string
+	profileName  string
+)
 
 var rootCmd = &cobra.Command{
 	Use:           "naverworks",
@@ -16,6 +19,7 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&outputFormat, "output", "json", "출력 형식 (json|table)")
+	rootCmd.PersistentFlags().StringVar(&profileName, "profile", "", "설정/토큰 프로필명")
 }
 
 func Execute() error {

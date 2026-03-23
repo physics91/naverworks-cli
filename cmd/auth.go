@@ -30,13 +30,12 @@ var authLoginCmd = &cobra.Command{
 	Short: "로그인",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		useJWT, _ := cmd.Flags().GetBool("jwt")
-		cfg, err := config.Load(config.DefaultPath())
+		cfg, name, err := loadActiveConfig()
 		if err != nil {
 			return err
 		}
-		cfg.ApplyEnvOverrides()
 
-		store := auth.NewTokenStore(auth.DefaultTokenPath())
+		store := auth.NewProfileTokenStore(auth.DefaultTokenPath(), name)
 
 		if useJWT {
 			return loginJWT(cfg, store)
@@ -45,7 +44,7 @@ var authLoginCmd = &cobra.Command{
 	},
 }
 
-func loginJWT(cfg *config.Config, store *auth.TokenStore) error {
+func loginJWT(cfg *config.Config, store *auth.ProfileTokenStore) error {
 	if cfg.ClientID == "" || cfg.ClientSecret == "" || cfg.ServiceAccountID == "" || cfg.PrivateKeyPath == "" {
 		return fmt.Errorf("JWT 인증에 필요한 설정이 누락되었습니다: client_id, client_secret, service_account_id, private_key_path")
 	}
@@ -73,7 +72,7 @@ func loginJWT(cfg *config.Config, store *auth.TokenStore) error {
 	return store.Save(token)
 }
 
-func loginOAuth(cfg *config.Config, store *auth.TokenStore) error {
+func loginOAuth(cfg *config.Config, store *auth.ProfileTokenStore) error {
 	if cfg.ClientID == "" || cfg.ClientSecret == "" {
 		return fmt.Errorf("OAuth 인증에 필요한 설정이 누락되었습니다: client_id, client_secret")
 	}
@@ -117,7 +116,12 @@ var authStatusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "인증 상태 확인",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		store := auth.NewTokenStore(auth.DefaultTokenPath())
+		_, name, err := loadActiveConfig()
+		if err != nil {
+			// If no config exists, still try to load token with default profile
+			name = "default"
+		}
+		store := auth.NewProfileTokenStore(auth.DefaultTokenPath(), name)
 		token, err := store.Load()
 		if err != nil {
 			return err
@@ -156,13 +160,13 @@ var authLogoutCmd = &cobra.Command{
 	Use:   "logout",
 	Short: "로그아웃",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load(config.DefaultPath())
+		cfg, name, err := loadActiveConfig()
 		if err != nil {
 			cfg = &config.Config{}
+			name = "default"
 		}
-		cfg.ApplyEnvOverrides()
 
-		store := auth.NewTokenStore(auth.DefaultTokenPath())
+		store := auth.NewProfileTokenStore(auth.DefaultTokenPath(), name)
 		token, err := store.Load()
 		if err != nil {
 			return err
@@ -190,13 +194,12 @@ var authRefreshCmd = &cobra.Command{
 	Use:   "refresh",
 	Short: "토큰 수동 갱신",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load(config.DefaultPath())
+		cfg, name, err := loadActiveConfig()
 		if err != nil {
 			return err
 		}
-		cfg.ApplyEnvOverrides()
 
-		store := authTokenStore()
+		store := auth.NewProfileTokenStore(auth.DefaultTokenPath(), name)
 		token, err := store.Load()
 		if err != nil {
 			return err
@@ -256,10 +259,6 @@ func init() {
 	authLoginCmd.Flags().Bool("jwt", false, "JWT Service Account 인증")
 	authCmd.AddCommand(authLoginCmd, authStatusCmd, authLogoutCmd, authRefreshCmd)
 	rootCmd.AddCommand(authCmd)
-}
-
-func authTokenStore() *auth.TokenStore {
-	return auth.NewTokenStore(auth.DefaultTokenPath())
 }
 
 func openBrowser(url string) error {

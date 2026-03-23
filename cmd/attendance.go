@@ -20,7 +20,7 @@ var attendanceStatusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "근태 상태 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -28,7 +28,7 @@ var attendanceStatusCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewAttendanceService(client)
 
 		resp, err := svc.GetStatus(userID)
@@ -44,7 +44,7 @@ var attendanceClockInCmd = &cobra.Command{
 	Use:   "clock-in",
 	Short: "출근 기록",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -52,7 +52,7 @@ var attendanceClockInCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewAttendanceService(client)
 
 		date, _ := cmd.Flags().GetString("date")
@@ -78,7 +78,7 @@ var attendanceClockOutCmd = &cobra.Command{
 	Use:   "clock-out",
 	Short: "퇴근 기록",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -86,7 +86,7 @@ var attendanceClockOutCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewAttendanceService(client)
 
 		date, _ := cmd.Flags().GetString("date")
@@ -112,11 +112,11 @@ var attendanceListAbsencesCmd = &cobra.Command{
 	Use:   "list-absences",
 	Short: "부재 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewAttendanceService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -153,11 +153,11 @@ var attendanceListAnnualLeavesCmd = &cobra.Command{
 	Use:   "list-annual-leaves",
 	Short: "연차 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewAttendanceService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")

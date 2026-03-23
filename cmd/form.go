@@ -20,11 +20,11 @@ var formListResponsesCmd = &cobra.Command{
 	Short: "설문 응답 목록 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewFormService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -62,11 +62,11 @@ var formDownloadAttachmentCmd = &cobra.Command{
 	Short: "설문 응답 첨부파일 다운로드",
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewFormService(client)
 
 		downloadURL, err := svc.DownloadAttachment(args[0], args[1], args[2])

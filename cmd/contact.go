@@ -20,11 +20,11 @@ var contactListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "연락처 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewContactService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -61,7 +61,7 @@ var contactListUserCmd = &cobra.Command{
 	Use:   "list-user",
 	Short: "사용자별 연락처 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -69,7 +69,7 @@ var contactListUserCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewContactService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -107,11 +107,11 @@ var contactGetCmd = &cobra.Command{
 	Short: "연락처 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewContactService(client)
 
 		resp, err := svc.GetContact(args[0])
@@ -127,11 +127,11 @@ var contactCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "연락처 생성",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewContactService(client)
 
 		var body map[string]interface{}
@@ -166,11 +166,11 @@ var contactUpdateCmd = &cobra.Command{
 	Short: "연락처 수정",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewContactService(client)
 
 		var body map[string]interface{}
@@ -203,11 +203,11 @@ var contactDeleteCmd = &cobra.Command{
 	Short: "연락처 삭제",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewContactService(client)
 
 		resp, err := svc.DeleteContact(args[0])
@@ -227,11 +227,11 @@ var contactListTagsCmd = &cobra.Command{
 	Use:   "list-tags",
 	Short: "연락처 태그 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewContactService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -268,7 +268,7 @@ var contactListUserTagsCmd = &cobra.Command{
 	Use:   "list-user-tags",
 	Short: "사용자별 연락처 태그 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -276,7 +276,7 @@ var contactListUserTagsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewContactService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")

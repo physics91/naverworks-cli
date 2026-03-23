@@ -19,11 +19,11 @@ var dirListUsersCmd = &cobra.Command{
 	Use:   "list-users",
 	Short: "사용자 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		dir := api.NewDirectoryService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -61,11 +61,11 @@ var dirGetUserCmd = &cobra.Command{
 	Short: "사용자 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		dir := api.NewDirectoryService(client)
 
 		resp, err := dir.GetUser(args[0])
@@ -81,11 +81,11 @@ var dirListGroupsCmd = &cobra.Command{
 	Use:   "list-groups",
 	Short: "그룹 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		dir := api.NewDirectoryService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -123,11 +123,11 @@ var dirGetGroupCmd = &cobra.Command{
 	Short: "그룹 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		dir := api.NewDirectoryService(client)
 
 		resp, err := dir.GetGroup(args[0])
@@ -143,11 +143,11 @@ var dirListOrgUnitsCmd = &cobra.Command{
 	Use:   "list-orgunits",
 	Short: "조직 단위 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		dir := api.NewDirectoryService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -185,11 +185,11 @@ var dirGetOrgUnitCmd = &cobra.Command{
 	Short: "조직 단위 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		dir := api.NewDirectoryService(client)
 
 		resp, err := dir.GetOrgUnit(args[0])
@@ -205,11 +205,11 @@ var dirListLevelsCmd = &cobra.Command{
 	Use:   "list-levels",
 	Short: "직급 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		dir := api.NewDirectoryService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -246,11 +246,11 @@ var dirListPositionsCmd = &cobra.Command{
 	Use:   "list-positions",
 	Short: "직책 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		dir := api.NewDirectoryService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -287,11 +287,11 @@ var dirListUserTypesCmd = &cobra.Command{
 	Use:   "list-user-types",
 	Short: "사용자 유형 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		dir := api.NewDirectoryService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -328,11 +328,11 @@ var dirListEmploymentTypesCmd = &cobra.Command{
 	Use:   "list-employment-types",
 	Short: "고용 유형 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		dir := api.NewDirectoryService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")

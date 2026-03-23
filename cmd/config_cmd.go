@@ -21,10 +21,24 @@ var configSetCmd = &cobra.Command{
 	Args:  cobra.RangeArgs(1, 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		path := config.DefaultPath()
-		cfg, err := config.Load(path)
+		pc, err := config.LoadProfileConfig(path)
 		if err != nil {
 			return err
 		}
+
+		_, name, err := pc.ActiveProfile(profileName)
+		if err != nil {
+			// Profile doesn't exist yet, create it
+			name = profileName
+			if name == "" {
+				name = pc.CurrentProfile
+				if name == "" {
+					name = "default"
+				}
+			}
+			pc.EnsureProfile(name)
+		}
+		cfg := pc.Profiles[name]
 
 		key := args[0]
 		if !config.IsValidKey(key) {
@@ -47,7 +61,7 @@ var configSetCmd = &cobra.Command{
 		if err := cfg.Set(key, value); err != nil {
 			return err
 		}
-		return cfg.Save(path)
+		return pc.Save(path)
 	},
 }
 
@@ -59,12 +73,10 @@ var configGetCmd = &cobra.Command{
 		if !config.IsValidKey(args[0]) {
 			return fmt.Errorf("유효하지 않은 설정 키: %s", args[0])
 		}
-		path := config.DefaultPath()
-		cfg, err := config.Load(path)
+		cfg, _, err := loadActiveConfig()
 		if err != nil {
 			return err
 		}
-		cfg.ApplyEnvOverrides()
 		fmt.Println(cfg.GetMasked(args[0]))
 		return nil
 	},
@@ -74,12 +86,10 @@ var configListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "전체 설정 목록",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		path := config.DefaultPath()
-		cfg, err := config.Load(path)
+		cfg, _, err := loadActiveConfig()
 		if err != nil {
 			return err
 		}
-		cfg.ApplyEnvOverrides()
 
 		masked := map[string]string{
 			"client_id":                cfg.GetMasked("client_id"),

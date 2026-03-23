@@ -20,7 +20,7 @@ var taskListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "태스크 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -28,7 +28,7 @@ var taskListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewTaskService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -66,11 +66,11 @@ var taskGetCmd = &cobra.Command{
 	Short: "태스크 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewTaskService(client)
 
 		resp, err := svc.GetTask(args[0])
@@ -86,7 +86,7 @@ var taskCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "태스크 생성",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -94,7 +94,7 @@ var taskCreateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewTaskService(client)
 
 		var body map[string]interface{}
@@ -125,11 +125,11 @@ var taskUpdateCmd = &cobra.Command{
 	Short: "태스크 수정",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewTaskService(client)
 
 		var body map[string]interface{}
@@ -159,11 +159,11 @@ var taskDeleteCmd = &cobra.Command{
 	Short: "태스크 삭제",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewTaskService(client)
 
 		resp, err := svc.DeleteTask(args[0])
@@ -183,7 +183,7 @@ var taskListCategoriesCmd = &cobra.Command{
 	Use:   "list-categories",
 	Short: "태스크 카테고리 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -191,7 +191,7 @@ var taskListCategoriesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewTaskService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")

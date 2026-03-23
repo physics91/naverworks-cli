@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/physics91/naverworks-cli/internal/api"
-	"github.com/physics91/naverworks-cli/internal/config"
 	"github.com/physics91/naverworks-cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -23,11 +22,10 @@ var scimListUsersCmd = &cobra.Command{
 	Use:   "list-users",
 	Short: "SCIM 사용자 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load(config.DefaultPath())
+		cfg, _, err := loadActiveConfig()
 		if err != nil {
 			return err
 		}
-		cfg.ApplyEnvOverrides()
 		client, err := buildScimClient(cfg)
 		if err != nil {
 			return err
@@ -52,11 +50,10 @@ var scimGetUserCmd = &cobra.Command{
 	Short: "SCIM 사용자 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load(config.DefaultPath())
+		cfg, _, err := loadActiveConfig()
 		if err != nil {
 			return err
 		}
-		cfg.ApplyEnvOverrides()
 		client, err := buildScimClient(cfg)
 		if err != nil {
 			return err
@@ -76,11 +73,10 @@ var scimCreateUserCmd = &cobra.Command{
 	Use:   "create-user",
 	Short: "SCIM 사용자 생성",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load(config.DefaultPath())
+		cfg, _, err := loadActiveConfig()
 		if err != nil {
 			return err
 		}
-		cfg.ApplyEnvOverrides()
 		client, err := buildScimClient(cfg)
 		if err != nil {
 			return err
@@ -110,11 +106,10 @@ var scimUpdateUserCmd = &cobra.Command{
 	Short: "SCIM 사용자 전체 수정 (PUT)",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load(config.DefaultPath())
+		cfg, _, err := loadActiveConfig()
 		if err != nil {
 			return err
 		}
-		cfg.ApplyEnvOverrides()
 		client, err := buildScimClient(cfg)
 		if err != nil {
 			return err
@@ -144,11 +139,10 @@ var scimPatchUserCmd = &cobra.Command{
 	Short: "SCIM 사용자 부분 수정 (PATCH)",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load(config.DefaultPath())
+		cfg, _, err := loadActiveConfig()
 		if err != nil {
 			return err
 		}
-		cfg.ApplyEnvOverrides()
 		client, err := buildScimClient(cfg)
 		if err != nil {
 			return err
@@ -178,11 +172,10 @@ var scimDeleteUserCmd = &cobra.Command{
 	Short: "SCIM 사용자 삭제",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load(config.DefaultPath())
+		cfg, _, err := loadActiveConfig()
 		if err != nil {
 			return err
 		}
-		cfg.ApplyEnvOverrides()
 		client, err := buildScimClient(cfg)
 		if err != nil {
 			return err
@@ -208,11 +201,10 @@ var scimListGroupsCmd = &cobra.Command{
 	Use:   "list-groups",
 	Short: "SCIM 그룹 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load(config.DefaultPath())
+		cfg, _, err := loadActiveConfig()
 		if err != nil {
 			return err
 		}
-		cfg.ApplyEnvOverrides()
 		client, err := buildScimClient(cfg)
 		if err != nil {
 			return err
@@ -237,11 +229,10 @@ var scimGetGroupCmd = &cobra.Command{
 	Short: "SCIM 그룹 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load(config.DefaultPath())
+		cfg, _, err := loadActiveConfig()
 		if err != nil {
 			return err
 		}
-		cfg.ApplyEnvOverrides()
 		client, err := buildScimClient(cfg)
 		if err != nil {
 			return err
@@ -261,11 +252,10 @@ var scimCreateGroupCmd = &cobra.Command{
 	Use:   "create-group",
 	Short: "SCIM 그룹 생성",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load(config.DefaultPath())
+		cfg, _, err := loadActiveConfig()
 		if err != nil {
 			return err
 		}
-		cfg.ApplyEnvOverrides()
 		client, err := buildScimClient(cfg)
 		if err != nil {
 			return err
@@ -295,11 +285,10 @@ var scimUpdateGroupCmd = &cobra.Command{
 	Short: "SCIM 그룹 전체 수정 (PUT)",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load(config.DefaultPath())
+		cfg, _, err := loadActiveConfig()
 		if err != nil {
 			return err
 		}
-		cfg.ApplyEnvOverrides()
 		client, err := buildScimClient(cfg)
 		if err != nil {
 			return err
@@ -329,11 +318,10 @@ var scimPatchGroupCmd = &cobra.Command{
 	Short: "SCIM 그룹 부분 수정 (PATCH)",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load(config.DefaultPath())
+		cfg, _, err := loadActiveConfig()
 		if err != nil {
 			return err
 		}
-		cfg.ApplyEnvOverrides()
 		client, err := buildScimClient(cfg)
 		if err != nil {
 			return err
@@ -363,11 +351,10 @@ var scimDeleteGroupCmd = &cobra.Command{
 	Short: "SCIM 그룹 삭제",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load(config.DefaultPath())
+		cfg, _, err := loadActiveConfig()
 		if err != nil {
 			return err
 		}
-		cfg.ApplyEnvOverrides()
 		client, err := buildScimClient(cfg)
 		if err != nil {
 			return err

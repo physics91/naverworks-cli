@@ -19,11 +19,11 @@ var hrListExtensionPropertiesCmd = &cobra.Command{
 	Use:   "list-extension-properties",
 	Short: "확장 속성 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewHRService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -61,11 +61,11 @@ var hrGetUserPropertiesCmd = &cobra.Command{
 	Short: "사용자 확장 속성 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewHRService(client)
 
 		resp, err := svc.GetUserExtensionProperties(args[0])
@@ -81,11 +81,11 @@ var hrListLeaveTypesCmd = &cobra.Command{
 	Use:   "list-leave-types",
 	Short: "휴직 유형 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewHRService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -122,11 +122,11 @@ var hrListOnLeaveCmd = &cobra.Command{
 	Use:   "list-on-leave",
 	Short: "휴직 중 사용자 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewHRService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")

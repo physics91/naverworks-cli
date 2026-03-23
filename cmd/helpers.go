@@ -15,27 +15,32 @@ const (
 	scimBaseURL = "https://www.worksapis.com/scim/v2"
 )
 
-func loadConfigAndToken() (*config.Config, *auth.Token, error) {
-	cfg, err := config.Load(config.DefaultPath())
+func loadConfigAndToken() (*config.Config, *auth.Token, string, error) {
+	pc, err := config.LoadProfileConfig(config.DefaultPath())
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, "", err
 	}
-	cfg.ApplyEnvOverrides()
 
-	store := auth.NewTokenStore(auth.DefaultTokenPath())
+	profile, name, err := pc.ActiveProfile(profileName)
+	if err != nil {
+		return nil, nil, "", err
+	}
+	profile.ApplyEnvOverrides()
+
+	store := auth.NewProfileTokenStore(auth.DefaultTokenPath(), name)
 	token, err := store.Load()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, "", err
 	}
 	if token == nil {
-		return nil, nil, fmt.Errorf("로그인되어 있지 않습니다. naverworks auth login을 실행하세요")
+		return nil, nil, "", fmt.Errorf("로그인되어 있지 않습니다. naverworks auth login을 실행하세요")
 	}
-	return cfg, token, nil
+	return profile, token, name, nil
 }
 
-func buildAPIClient(cfg *config.Config, token *auth.Token) *api.Client {
+func buildAPIClient(cfg *config.Config, token *auth.Token, activeProfileName string) *api.Client {
 	refreshFn := func(t *auth.Token) error {
-		store := auth.NewTokenStore(auth.DefaultTokenPath())
+		store := auth.NewProfileTokenStore(auth.DefaultTokenPath(), activeProfileName)
 
 		if t.AuthMethod == "oauth" && t.RefreshToken != "" {
 			if err := auth.RefreshAccessToken(authBaseURL, cfg.ClientID, cfg.ClientSecret, t); err == nil {
@@ -97,4 +102,17 @@ func resolveUserID(cmd *cobra.Command, defaultUID string, authMethod string) (st
 		return "", fmt.Errorf("JWT 모드에서는 --user-id me를 사용할 수 없습니다. 명시적 userId를 지정하세요")
 	}
 	return userID, nil
+}
+
+func loadActiveConfig() (*config.Config, string, error) {
+	pc, err := config.LoadProfileConfig(config.DefaultPath())
+	if err != nil {
+		return nil, "", err
+	}
+	profile, name, err := pc.ActiveProfile(profileName)
+	if err != nil {
+		return nil, "", err
+	}
+	profile.ApplyEnvOverrides()
+	return profile, name, nil
 }

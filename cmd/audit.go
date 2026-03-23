@@ -19,11 +19,11 @@ var auditDownloadLogsCmd = &cobra.Command{
 	Use:   "download-logs",
 	Short: "감사 로그 다운로드",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewAuditService(client)
 
 		startTime, _ := cmd.Flags().GetString("start-time")
@@ -47,11 +47,11 @@ var auditListPolicyGroupsCmd = &cobra.Command{
 	Use:   "list-policy-groups",
 	Short: "감사 정책 그룹 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewAuditService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -93,11 +93,11 @@ var monitoringDownloadMessagesCmd = &cobra.Command{
 	Use:   "download-messages",
 	Short: "메시지 콘텐츠 다운로드",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewMonitoringService(client)
 
 		startTime, _ := cmd.Flags().GetString("start-time")

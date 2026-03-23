@@ -21,7 +21,7 @@ var botSendCmd = &cobra.Command{
 	Use:   "send",
 	Short: "메시지 전송",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -30,7 +30,7 @@ var botSendCmd = &cobra.Command{
 			return err
 		}
 
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		bot := api.NewBotService(client)
 
 		to, _ := cmd.Flags().GetString("to")
@@ -80,7 +80,7 @@ var botGetChannelCmd = &cobra.Command{
 	Short: "채널 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -88,7 +88,7 @@ var botGetChannelCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		bot := api.NewBotService(client)
 
 		resp, err := bot.GetChannel(botID, args[0])
@@ -105,7 +105,7 @@ var botChannelMembersCmd = &cobra.Command{
 	Short: "채널 멤버 목록",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -113,7 +113,7 @@ var botChannelMembersCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		bot := api.NewBotService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")

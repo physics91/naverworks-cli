@@ -20,11 +20,11 @@ var bpListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "사업장 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewBusinessPlaceService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -62,11 +62,11 @@ var bpGetCmd = &cobra.Command{
 	Short: "사업장 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewBusinessPlaceService(client)
 
 		resp, err := svc.GetBusinessPlace(args[0])
@@ -82,11 +82,11 @@ var bpCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "사업장 생성",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewBusinessPlaceService(client)
 
 		var body map[string]interface{}
@@ -117,11 +117,11 @@ var bpUpdateCmd = &cobra.Command{
 	Short: "사업장 수정",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewBusinessPlaceService(client)
 
 		var body map[string]interface{}
@@ -151,11 +151,11 @@ var bpDeleteCmd = &cobra.Command{
 	Short: "사업장 삭제",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewBusinessPlaceService(client)
 
 		resp, err := svc.DeleteBusinessPlace(args[0])

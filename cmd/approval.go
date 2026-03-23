@@ -19,7 +19,7 @@ var approvalListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "사용자별 결재 문서 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -27,7 +27,7 @@ var approvalListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewApprovalService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -64,11 +64,11 @@ var approvalListAllCmd = &cobra.Command{
 	Use:   "list-all",
 	Short: "전체 결재 문서 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewApprovalService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -106,11 +106,11 @@ var approvalGetCmd = &cobra.Command{
 	Short: "결재 문서 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewApprovalService(client)
 
 		resp, err := svc.GetDocument(args[0])
@@ -126,11 +126,11 @@ var approvalListCategoriesCmd = &cobra.Command{
 	Use:   "list-categories",
 	Short: "결재 카테고리 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewApprovalService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -168,11 +168,11 @@ var approvalGetCategoryCmd = &cobra.Command{
 	Short: "결재 카테고리 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewApprovalService(client)
 
 		resp, err := svc.GetCategory(args[0])
@@ -188,11 +188,11 @@ var approvalListFormsCmd = &cobra.Command{
 	Use:   "list-forms",
 	Short: "결재 양식 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewApprovalService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")

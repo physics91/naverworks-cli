@@ -20,11 +20,11 @@ var boardListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "게시판 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewBoardService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -62,11 +62,11 @@ var boardGetCmd = &cobra.Command{
 	Short: "게시판 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewBoardService(client)
 
 		resp, err := svc.GetBoard(args[0])
@@ -83,11 +83,11 @@ var boardListPostsCmd = &cobra.Command{
 	Short: "게시글 목록 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewBoardService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -125,11 +125,11 @@ var boardGetPostCmd = &cobra.Command{
 	Short: "게시글 상세 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewBoardService(client)
 
 		resp, err := svc.GetPost(args[0], args[1])
@@ -146,11 +146,11 @@ var boardCreatePostCmd = &cobra.Command{
 	Short: "게시글 생성",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewBoardService(client)
 
 		title, _ := cmd.Flags().GetString("title")
@@ -178,11 +178,11 @@ var boardUpdatePostCmd = &cobra.Command{
 	Short: "게시글 수정",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewBoardService(client)
 
 		title, _ := cmd.Flags().GetString("title")
@@ -210,11 +210,11 @@ var boardDeletePostCmd = &cobra.Command{
 	Short: "게시글 삭제",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewBoardService(client)
 
 		resp, err := svc.DeletePost(args[0], args[1])
@@ -235,11 +235,11 @@ var boardListCommentsCmd = &cobra.Command{
 	Short: "댓글 목록 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewBoardService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")

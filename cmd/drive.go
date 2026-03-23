@@ -23,7 +23,7 @@ var driveInfoCmd = &cobra.Command{
 	Use:   "info",
 	Short: "내 드라이브 정보 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -31,7 +31,7 @@ var driveInfoCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewDriveService(client)
 
 		resp, err := svc.GetDriveInfo(userID)
@@ -47,7 +47,7 @@ var driveListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "내 드라이브 파일 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -55,7 +55,7 @@ var driveListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewDriveService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -81,7 +81,7 @@ var driveGetCmd = &cobra.Command{
 	Short: "파일 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -89,7 +89,7 @@ var driveGetCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewDriveService(client)
 
 		resp, err := svc.GetFile(userID, args[0])
@@ -106,7 +106,7 @@ var driveDownloadCmd = &cobra.Command{
 	Short: "파일 다운로드 URL 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -114,7 +114,7 @@ var driveDownloadCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewDriveService(client)
 
 		downloadURL, err := svc.GetDownloadURL(userID, args[0])
@@ -132,7 +132,7 @@ var driveUploadCmd = &cobra.Command{
 	Short: "파일 업로드",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -140,7 +140,7 @@ var driveUploadCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewDriveService(client)
 
 		localPath := args[0]
@@ -187,7 +187,7 @@ var driveMkdirCmd = &cobra.Command{
 	Use:   "mkdir",
 	Short: "폴더 생성",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, pName, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -195,7 +195,7 @@ var driveMkdirCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, pName)
 		svc := api.NewDriveService(client)
 
 		name, _ := cmd.Flags().GetString("name")
@@ -223,7 +223,7 @@ var driveDeleteCmd = &cobra.Command{
 	Short: "파일 삭제",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -231,7 +231,7 @@ var driveDeleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewDriveService(client)
 
 		resp, err := svc.DeleteFile(userID, args[0])
@@ -251,7 +251,7 @@ var driveTrashListCmd = &cobra.Command{
 	Use:   "trash-list",
 	Short: "휴지통 파일 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -259,7 +259,7 @@ var driveTrashListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewDriveService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -279,7 +279,7 @@ var driveTrashRestoreCmd = &cobra.Command{
 	Short: "휴지통 파일 복원",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -287,7 +287,7 @@ var driveTrashRestoreCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewDriveService(client)
 
 		resp, err := svc.RestoreTrashFile(userID, args[0])
@@ -314,11 +314,11 @@ var driveSharedListDrivesCmd = &cobra.Command{
 	Use:   "list-drives",
 	Short: "공유 드라이브 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewSharedDriveService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -338,11 +338,11 @@ var driveSharedGetDriveCmd = &cobra.Command{
 	Short: "공유 드라이브 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewSharedDriveService(client)
 
 		resp, err := svc.GetDrive(args[0])
@@ -359,11 +359,11 @@ var driveSharedListCmd = &cobra.Command{
 	Short: "공유 드라이브 파일 목록 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewSharedDriveService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -389,11 +389,11 @@ var driveSharedGetCmd = &cobra.Command{
 	Short: "공유 드라이브 파일 상세 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewSharedDriveService(client)
 
 		resp, err := svc.GetFile(args[0], args[1])
@@ -410,11 +410,11 @@ var driveSharedDownloadCmd = &cobra.Command{
 	Short: "공유 드라이브 파일 다운로드 URL 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewSharedDriveService(client)
 
 		downloadURL, err := svc.GetDownloadURL(args[0], args[1])
@@ -432,11 +432,11 @@ var driveSharedUploadCmd = &cobra.Command{
 	Short: "공유 드라이브 파일 업로드",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewSharedDriveService(client)
 
 		localPath := args[1]
@@ -485,11 +485,11 @@ var driveGroupGetFolderCmd = &cobra.Command{
 	Short: "그룹 폴더 정보 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewGroupFolderService(client)
 
 		resp, err := svc.GetFolder(args[0])
@@ -506,11 +506,11 @@ var driveGroupListCmd = &cobra.Command{
 	Short: "그룹 폴더 파일 목록 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewGroupFolderService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -536,11 +536,11 @@ var driveGroupGetCmd = &cobra.Command{
 	Short: "그룹 폴더 파일 상세 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewGroupFolderService(client)
 
 		resp, err := svc.GetFile(args[0], args[1])
@@ -563,7 +563,7 @@ var driveSharedFolderListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "공유 폴더 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -571,7 +571,7 @@ var driveSharedFolderListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewDriveService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")
@@ -591,7 +591,7 @@ var driveSharedFolderFilesCmd = &cobra.Command{
 	Short: "공유 폴더 파일 목록 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, err := loadConfigAndToken()
+		cfg, token, name, err := loadConfigAndToken()
 		if err != nil {
 			return err
 		}
@@ -599,7 +599,7 @@ var driveSharedFolderFilesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token)
+		client := buildAPIClient(cfg, token, name)
 		svc := api.NewDriveService(client)
 
 		cursor, _ := cmd.Flags().GetString("cursor")

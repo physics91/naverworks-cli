@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/physics91/naverworks-cli/internal/auth"
 	"github.com/physics91/naverworks-cli/internal/config"
 	"github.com/spf13/cobra"
 )
@@ -17,10 +18,25 @@ var authSetupCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		reader := bufio.NewReader(os.Stdin)
 		path := config.DefaultPath()
-		cfg, err := config.Load(path)
+		pc, err := config.LoadProfileConfig(path)
 		if err != nil {
-			cfg = &config.Config{}
+			pc = config.NewProfileConfig()
+			pc.EnsureProfile("default")
 		}
+
+		_, name, err := pc.ActiveProfile(profileName)
+		if err != nil {
+			// Profile doesn't exist yet, create it
+			name = profileName
+			if name == "" {
+				name = pc.CurrentProfile
+				if name == "" {
+					name = "default"
+				}
+			}
+			pc.EnsureProfile(name)
+		}
+		cfg := pc.Profiles[name]
 
 		fmt.Println("네이버웍스 CLI 인증 설정을 시작합니다.")
 		fmt.Println()
@@ -84,7 +100,7 @@ var authSetupCmd = &cobra.Command{
 		cfg.DefaultCalendarUserID = prompt(reader, "기본 Calendar User ID (선택, OAuth면 'me' 가능)", cfg.DefaultCalendarUserID)
 
 		// 저장
-		if err := cfg.Save(path); err != nil {
+		if err := pc.Save(path); err != nil {
 			return fmt.Errorf("설정 저장 실패: %w", err)
 		}
 
@@ -97,7 +113,7 @@ var authSetupCmd = &cobra.Command{
 		doLogin = strings.ToLower(strings.TrimSpace(doLogin))
 		if doLogin == "" || doLogin == "y" || doLogin == "yes" {
 			fmt.Println()
-			store := authTokenStore()
+			store := auth.NewProfileTokenStore(auth.DefaultTokenPath(), name)
 			if authMethod == "jwt" {
 				fmt.Println("JWT 인증을 시작합니다...")
 				return loginJWT(cfg, store)

@@ -40,7 +40,15 @@ go install github.com/physics91/naverworks-cli@latest
 
 ## 빠른 시작
 
-### 1. 설정
+### 1. 대화형 설정 (권장)
+
+```bash
+naverworks auth setup
+```
+
+질문-답변 형식으로 인증에 필요한 설정을 구성하고 바로 로그인까지 진행합니다.
+
+### 1-1. 수동 설정
 
 ```bash
 # 필수 설정
@@ -137,12 +145,30 @@ echo "배포 완료" | naverworks bot send --to user@example.com --text -
 naverworks directory list-users | jq '.users[].userName'
 ```
 
+## 프로필
+
+여러 환경(개발/운영 등)을 관리할 때 프로필을 사용합니다.
+
+```bash
+# 특정 프로필에 설정
+naverworks --profile staging config set client_id STAGING_CLIENT_ID
+naverworks --profile staging auth login --jwt
+
+# 프로필 지정하여 명령 실행
+naverworks --profile staging directory list-users
+
+# 환경변수로 프로필 지정
+export NW_PROFILE=staging
+naverworks directory list-users
+```
+
 ## 환경변수
 
 설정 파일 대신 환경변수를 사용할 수 있습니다 (환경변수가 우선):
 
 | 환경변수 | 설정 키 |
 |---------|---------|
+| `NW_PROFILE` | 활성 프로필명 |
 | `NW_CLIENT_ID` | client_id |
 | `NW_CLIENT_SECRET` | client_secret |
 | `NW_SERVICE_ACCOUNT_ID` | service_account_id |
@@ -151,6 +177,7 @@ naverworks directory list-users | jq '.users[].userName'
 | `NW_BOT_ID` | bot_id |
 | `NW_SCOPE` | scope |
 | `NW_DEFAULT_CALENDAR_USER_ID` | default_calendar_user_id |
+| `NW_SCIM_ACCESS_TOKEN` | scim_access_token |
 
 ## 릴리스
 

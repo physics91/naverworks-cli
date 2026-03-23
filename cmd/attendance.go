@@ -126,26 +126,16 @@ var attendanceListAbsencesCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"absenceId", "userId"}, "absences")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListAbsences(cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					Absences         []json.RawMessage `json:"absences"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.Absences...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListAbsences(c, count)
+			}, "absences")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"absences": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"absences": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}
@@ -177,26 +167,16 @@ var attendanceListAnnualLeavesCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"userId", "totalDays"}, "annualLeaves")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListAnnualLeaves(cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					AnnualLeaves     []json.RawMessage `json:"annualLeaves"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.AnnualLeaves...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListAnnualLeaves(c, count)
+			}, "annualLeaves")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"annualLeaves": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"annualLeaves": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}

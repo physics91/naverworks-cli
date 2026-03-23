@@ -54,26 +54,16 @@ var calListCalendarsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"calendarId", "calendarName"}, "calendarPersonals")
 
 		if all {
-			var allCalendars []json.RawMessage
-			for {
-				resp, err := cal.ListCalendars(userID, cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					CalendarPersonals []json.RawMessage `json:"calendarPersonals"`
-					ResponseMetaData  struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allCalendars = append(allCalendars, page.CalendarPersonals...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return cal.ListCalendars(userID, c, count)
+			}, "calendarPersonals")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"calendarPersonals": allCalendars})
+			merged, err := json.Marshal(map[string]interface{}{"calendarPersonals": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}

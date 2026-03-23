@@ -61,26 +61,16 @@ var auditListPolicyGroupsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"policyGroupId", "policyGroupName"}, "policyGroups")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListPolicyGroups(cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					PolicyGroups     []json.RawMessage `json:"policyGroups"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.PolicyGroups...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListPolicyGroups(c, count)
+			}, "policyGroups")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"policyGroups": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"policyGroups": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}

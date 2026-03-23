@@ -34,26 +34,16 @@ var boardListCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"boardId", "boardName"}, "boards")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListBoards(cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					Boards           []json.RawMessage `json:"boards"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.Boards...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListBoards(c, count)
+			}, "boards")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"boards": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"boards": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}
@@ -107,26 +97,16 @@ var boardListPostsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"postId", "title"}, "posts")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListPosts(args[0], cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					Posts            []json.RawMessage `json:"posts"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.Posts...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListPosts(args[0], c, count)
+			}, "posts")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"posts": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"posts": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}
@@ -269,26 +249,16 @@ var boardListCommentsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"commentId", "content"}, "comments")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListComments(args[0], args[1], cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					Comments         []json.RawMessage `json:"comments"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.Comments...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListComments(args[0], args[1], c, count)
+			}, "comments")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"comments": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"comments": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}

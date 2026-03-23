@@ -34,26 +34,16 @@ var contactListCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"contactId", "name", "email"}, "contacts")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListContacts(cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					Contacts         []json.RawMessage `json:"contacts"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.Contacts...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListContacts(c, count)
+			}, "contacts")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"contacts": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"contacts": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}
@@ -89,26 +79,16 @@ var contactListUserCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"contactId", "name", "email"}, "contacts")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListUserContacts(userID, cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					Contacts         []json.RawMessage `json:"contacts"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.Contacts...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListUserContacts(userID, c, count)
+			}, "contacts")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"contacts": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"contacts": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}
@@ -261,26 +241,16 @@ var contactListTagsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"tagId", "tagName"}, "contactTags")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListTags(cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					ContactTags      []json.RawMessage `json:"contactTags"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.ContactTags...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListTags(c, count)
+			}, "contactTags")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"contactTags": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"contactTags": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}
@@ -316,26 +286,16 @@ var contactListUserTagsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"tagId", "tagName"}, "contactTags")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListUserTags(userID, cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					ContactTags      []json.RawMessage `json:"contactTags"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.ContactTags...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListUserTags(userID, c, count)
+			}, "contactTags")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"contactTags": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"contactTags": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}

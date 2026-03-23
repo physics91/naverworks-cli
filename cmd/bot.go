@@ -121,29 +121,18 @@ var botChannelMembersCmd = &cobra.Command{
 		all, _ := cmd.Flags().GetBool("all")
 
 		if all {
-			var allMembers []json.RawMessage
-			for {
-				resp, err := bot.ListChannelMembers(botID, args[0], cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					Members          []json.RawMessage `json:"members"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allMembers = append(allMembers, page.Members...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return bot.ListChannelMembers(botID, args[0], c, count)
+			}, "members")
+			if err != nil {
+				return err
+			}
+			merged, err := json.Marshal(map[string]interface{}{"members": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
 			}
 			formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"userId"}, "members")
-			merged := map[string]interface{}{"members": allMembers}
-			data, _ := json.Marshal(merged)
-			formatter.PrintRaw(data)
+			formatter.PrintRaw(merged)
 			return nil
 		}
 

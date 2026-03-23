@@ -38,26 +38,16 @@ var taskListCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"taskId", "title"}, "tasks")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListTasks(userID, cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					Tasks            []json.RawMessage `json:"tasks"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.Tasks...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListTasks(userID, c, count)
+			}, "tasks")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"tasks": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"tasks": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}
@@ -211,26 +201,16 @@ var taskListCategoriesCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"categoryId", "categoryName"}, "taskCategories")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListCategories(userID, cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					TaskCategories   []json.RawMessage `json:"taskCategories"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.TaskCategories...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListCategories(userID, c, count)
+			}, "taskCategories")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"taskCategories": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"taskCategories": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}

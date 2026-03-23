@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/physics91/naverworks-cli/internal/api"
@@ -33,26 +34,16 @@ var formListResponsesCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"responseId"}, "responses")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListResponses(args[0], cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					Responses        []json.RawMessage `json:"responses"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.Responses...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListResponses(args[0], c, count)
+			}, "responses")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"responses": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"responses": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}

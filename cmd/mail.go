@@ -134,26 +134,16 @@ var mailListFoldersCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"folderId", "folderName"}, "mailFolders")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListFolders(userID, cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					MailFolders      []json.RawMessage `json:"mailFolders"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.MailFolders...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListFolders(userID, c, count)
+			}, "mailFolders")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"mailFolders": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"mailFolders": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}
@@ -215,26 +205,16 @@ var mailListCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"mailId", "subject"}, "mails")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListMails(userID, args[0], cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					Mails            []json.RawMessage `json:"mails"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.Mails...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListMails(userID, args[0], c, count)
+			}, "mails")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"mails": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"mails": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}

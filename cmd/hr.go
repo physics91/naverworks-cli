@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/physics91/naverworks-cli/internal/api"
@@ -32,26 +33,16 @@ var hrListExtensionPropertiesCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"propertyId", "propertyName"}, "extensionProperties")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListExtensionProperties(cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					ExtensionProperties []json.RawMessage `json:"extensionProperties"`
-					ResponseMetaData    struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.ExtensionProperties...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListExtensionProperties(c, count)
+			}, "extensionProperties")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"extensionProperties": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"extensionProperties": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}
@@ -104,26 +95,16 @@ var hrListLeaveTypesCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"leaveTypeId", "leaveTypeName"}, "leaveOfAbsences")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListLeaveOfAbsences(cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					LeaveOfAbsences  []json.RawMessage `json:"leaveOfAbsences"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.LeaveOfAbsences...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListLeaveOfAbsences(c, count)
+			}, "leaveOfAbsences")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"leaveOfAbsences": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"leaveOfAbsences": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}
@@ -155,26 +136,16 @@ var hrListOnLeaveCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"userId", "userName"}, "onLeaveUsers")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListOnLeaveUsers(cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					OnLeaveUsers     []json.RawMessage `json:"onLeaveUsers"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.OnLeaveUsers...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListOnLeaveUsers(c, count)
+			}, "onLeaveUsers")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"onLeaveUsers": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"onLeaveUsers": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}

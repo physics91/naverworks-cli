@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/physics91/naverworks-cli/internal/api"
@@ -36,26 +37,16 @@ var approvalListCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"approvalDocumentId", "title"}, "documents")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListUserDocuments(userID, cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					Documents        []json.RawMessage `json:"documents"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.Documents...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListUserDocuments(userID, c, count)
+			}, "documents")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"documents": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"documents": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}
@@ -87,26 +78,16 @@ var approvalListAllCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"approvalDocumentId", "title"}, "documents")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListDocuments(cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					Documents        []json.RawMessage `json:"documents"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.Documents...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListDocuments(c, count)
+			}, "documents")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"documents": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"documents": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}
@@ -159,26 +140,16 @@ var approvalListCategoriesCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"categoryId", "categoryName"}, "categories")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListCategories(cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					Categories       []json.RawMessage `json:"categories"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.Categories...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListCategories(c, count)
+			}, "categories")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"categories": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"categories": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}
@@ -231,26 +202,16 @@ var approvalListFormsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"documentFormId", "documentFormName"}, "documentForms")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListDocumentForms(cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					DocumentForms    []json.RawMessage `json:"documentForms"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.DocumentForms...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListDocumentForms(c, count)
+			}, "documentForms")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"documentForms": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"documentForms": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}

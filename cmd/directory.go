@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/physics91/naverworks-cli/internal/api"
@@ -32,26 +33,16 @@ var dirListUsersCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"userId", "userName", "email"}, "users")
 
 		if all {
-			var allUsers []json.RawMessage
-			for {
-				resp, err := dir.ListUsers(cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					Users            []json.RawMessage `json:"users"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allUsers = append(allUsers, page.Users...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return dir.ListUsers(c, count)
+			}, "users")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"users": allUsers})
+			merged, err := json.Marshal(map[string]interface{}{"users": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}
@@ -104,26 +95,16 @@ var dirListGroupsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"groupId", "groupName"}, "groups")
 
 		if all {
-			var allGroups []json.RawMessage
-			for {
-				resp, err := dir.ListGroups(cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					Groups           []json.RawMessage `json:"groups"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allGroups = append(allGroups, page.Groups...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return dir.ListGroups(c, count)
+			}, "groups")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"groups": allGroups})
+			merged, err := json.Marshal(map[string]interface{}{"groups": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}
@@ -176,26 +157,16 @@ var dirListOrgUnitsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"orgUnitId", "orgUnitName"}, "orgUnits")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := dir.ListOrgUnits(cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					OrgUnits         []json.RawMessage `json:"orgUnits"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.OrgUnits...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return dir.ListOrgUnits(c, count)
+			}, "orgUnits")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"orgUnits": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"orgUnits": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}
@@ -248,26 +219,16 @@ var dirListLevelsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"levelId", "levelName"}, "levels")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := dir.ListLevels(cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					Levels           []json.RawMessage `json:"levels"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.Levels...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return dir.ListLevels(c, count)
+			}, "levels")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"levels": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"levels": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}
@@ -299,26 +260,16 @@ var dirListPositionsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"positionId", "positionName"}, "positions")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := dir.ListPositions(cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					Positions        []json.RawMessage `json:"positions"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.Positions...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return dir.ListPositions(c, count)
+			}, "positions")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"positions": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"positions": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}
@@ -350,26 +301,16 @@ var dirListUserTypesCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"userTypeId", "userTypeName"}, "userTypes")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := dir.ListUserTypes(cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					UserTypes        []json.RawMessage `json:"userTypes"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.UserTypes...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return dir.ListUserTypes(c, count)
+			}, "userTypes")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"userTypes": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"userTypes": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}
@@ -401,26 +342,16 @@ var dirListEmploymentTypesCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"employmentTypeId", "employmentTypeName"}, "employmentTypes")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := dir.ListEmploymentTypes(cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					EmploymentTypes  []json.RawMessage `json:"employmentTypes"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.EmploymentTypes...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return dir.ListEmploymentTypes(c, count)
+			}, "employmentTypes")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"employmentTypes": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"employmentTypes": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}

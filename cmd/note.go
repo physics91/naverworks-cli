@@ -85,26 +85,16 @@ var noteListPostsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"postId", "title"}, "posts")
 
 		if all {
-			var allItems []json.RawMessage
-			for {
-				resp, err := svc.ListPosts(args[0], cursor, count)
-				if err != nil {
-					return err
-				}
-				var page struct {
-					Posts            []json.RawMessage `json:"posts"`
-					ResponseMetaData struct {
-						NextCursor string `json:"nextCursor"`
-					} `json:"responseMetaData"`
-				}
-				json.Unmarshal(resp.Body, &page)
-				allItems = append(allItems, page.Posts...)
-				if page.ResponseMetaData.NextCursor == "" {
-					break
-				}
-				cursor = page.ResponseMetaData.NextCursor
+			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+				return svc.ListPosts(args[0], c, count)
+			}, "posts")
+			if err != nil {
+				return err
 			}
-			merged, _ := json.Marshal(map[string]interface{}{"posts": allItems})
+			merged, err := json.Marshal(map[string]interface{}{"posts": json.RawMessage(items)})
+			if err != nil {
+				return fmt.Errorf("결과 직렬화 실패: %w", err)
+			}
 			formatter.PrintRaw(merged)
 			return nil
 		}

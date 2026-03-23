@@ -26,6 +26,6 @@ func ExtractNextCursor(body []byte) string {
 			NextCursor string `json:"nextCursor"`
 		} `json:"responseMetaData"`
 	}
-	json.Unmarshal(body, &resp)
+	_ = json.Unmarshal(body, &resp)
 	return resp.ResponseMetaData.NextCursor
 }

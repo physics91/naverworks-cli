@@ -76,3 +76,89 @@ func TestIsValidKey(t *testing.T) {
 		t.Error("expected invalid to be invalid")
 	}
 }
+
+func TestProfileConfig_SaveAndLoad(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+
+	// v0.1.0 CLI에서는 SetCurrentProfile을 직접 호출하지 않음.
+	// 이 테스트는 저장 구조의 정합성을 검증.
+	cfg := NewProfileConfig()
+	cfg.SetCurrentProfile("work")
+	profile := cfg.EnsureProfile("work")
+	profile.ClientID = "work-id"
+	profile.BotID = "work-bot"
+
+	if err := cfg.Save(path); err != nil {
+		t.Fatalf("save failed: %v", err)
+	}
+
+	loaded, err := LoadProfileConfig(path)
+	if err != nil {
+		t.Fatalf("load failed: %v", err)
+	}
+	if loaded.CurrentProfile != "work" {
+		t.Errorf("expected current_profile=work, got %q", loaded.CurrentProfile)
+	}
+	p, _, err := loaded.ActiveProfile("")
+	if err != nil {
+		t.Fatalf("active profile: %v", err)
+	}
+	if p.ClientID != "work-id" {
+		t.Errorf("expected client_id=work-id, got %q", p.ClientID)
+	}
+}
+
+func TestProfileConfig_FlagOverride(t *testing.T) {
+	cfg := NewProfileConfig()
+	cfg.SetCurrentProfile("default")
+	cfg.EnsureProfile("default").ClientID = "def-id"
+	cfg.EnsureProfile("staging").ClientID = "stg-id"
+
+	p, name, _ := cfg.ActiveProfile("staging")
+	if name != "staging" {
+		t.Errorf("expected name=staging, got %q", name)
+	}
+	if p.ClientID != "stg-id" {
+		t.Errorf("expected stg-id, got %q", p.ClientID)
+	}
+}
+
+func TestProfileConfig_MigrateLegacy(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+
+	// 레거시 형식으로 저장
+	legacy := &Config{ClientID: "legacy-id", BotID: "legacy-bot"}
+	if err := legacy.Save(path); err != nil {
+		t.Fatalf("legacy save: %v", err)
+	}
+
+	// 프로필 형식으로 로드 — 자동 마이그레이션
+	loaded, err := LoadProfileConfig(path)
+	if err != nil {
+		t.Fatalf("load failed: %v", err)
+	}
+	p, name, _ := loaded.ActiveProfile("")
+	if name != "default" {
+		t.Errorf("expected migrated to default, got %q", name)
+	}
+	if p.ClientID != "legacy-id" {
+		t.Errorf("expected legacy-id, got %q", p.ClientID)
+	}
+}
+
+func TestProfileConfig_EnvOverride(t *testing.T) {
+	t.Setenv("NW_PROFILE", "env-profile")
+
+	cfg := NewProfileConfig()
+	cfg.EnsureProfile("env-profile").ClientID = "env-id"
+
+	p, name, _ := cfg.ActiveProfile("")
+	if name != "env-profile" {
+		t.Errorf("expected env-profile from NW_PROFILE, got %q", name)
+	}
+	if p.ClientID != "env-id" {
+		t.Errorf("expected env-id, got %q", p.ClientID)
+	}
+}

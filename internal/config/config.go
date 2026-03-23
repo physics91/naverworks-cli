@@ -164,3 +164,103 @@ func (c *Config) ApplyEnvOverrides() {
 		}
 	}
 }
+
+type ProfileConfig struct {
+	CurrentProfile string             `json:"current_profile"`
+	Profiles       map[string]*Config `json:"profiles"`
+}
+
+func NewProfileConfig() *ProfileConfig {
+	return &ProfileConfig{
+		CurrentProfile: "default",
+		Profiles:       make(map[string]*Config),
+	}
+}
+
+func (pc *ProfileConfig) EnsureProfile(name string) *Config {
+	if pc.Profiles == nil {
+		pc.Profiles = make(map[string]*Config)
+	}
+	if _, ok := pc.Profiles[name]; !ok {
+		pc.Profiles[name] = &Config{}
+	}
+	return pc.Profiles[name]
+}
+
+func (pc *ProfileConfig) SetCurrentProfile(name string) {
+	pc.CurrentProfile = name
+}
+
+// ActiveProfile returns the active profile by priority:
+// flagProfile > NW_PROFILE env > current_profile > "default"
+func (pc *ProfileConfig) ActiveProfile(flagProfile string) (*Config, string, error) {
+	name := pc.CurrentProfile
+	if name == "" {
+		name = "default"
+	}
+
+	if envProfile := os.Getenv("NW_PROFILE"); envProfile != "" {
+		name = envProfile
+	}
+	if flagProfile != "" {
+		name = flagProfile
+	}
+
+	profile, ok := pc.Profiles[name]
+	if !ok {
+		return nil, name, fmt.Errorf("프로필 '%s'을(를) 찾을 수 없습니다", name)
+	}
+	return profile, name, nil
+}
+
+func LoadProfileConfig(path string) (*ProfileConfig, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			pc := NewProfileConfig()
+			pc.EnsureProfile("default")
+			return pc, nil
+		}
+		return nil, fmt.Errorf("config 읽기 실패: %w", err)
+	}
+
+	// Try profile format first
+	pc := &ProfileConfig{}
+	if err := json.Unmarshal(data, pc); err == nil && pc.Profiles != nil && len(pc.Profiles) > 0 {
+		return pc, nil
+	}
+
+	// Legacy format → migrate to default profile
+	legacy := &Config{}
+	if err := json.Unmarshal(data, legacy); err != nil {
+		return nil, fmt.Errorf("config 파싱 실패: %w", err)
+	}
+	pc = NewProfileConfig()
+	pc.Profiles["default"] = legacy
+	return pc, nil
+}
+
+func (pc *ProfileConfig) Save(path string) error {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		return fmt.Errorf("디렉토리 생성 실패: %w", err)
+	}
+	if runtime.GOOS != "windows" {
+		if err := os.Chmod(dir, 0700); err != nil {
+			return fmt.Errorf("디렉토리 권한 설정 실패: %w", err)
+		}
+	}
+	data, err := json.MarshalIndent(pc, "", "  ")
+	if err != nil {
+		return fmt.Errorf("config 직렬화 실패: %w", err)
+	}
+	if err := os.WriteFile(path, data, 0600); err != nil {
+		return err
+	}
+	if runtime.GOOS != "windows" {
+		if err := os.Chmod(path, 0600); err != nil {
+			return fmt.Errorf("파일 권한 설정 실패: %w", err)
+		}
+	}
+	return nil
+}

@@ -12,6 +12,7 @@ When a trigger condition below is matched, the corresponding skill **must** be i
 | `build` | "빌드", "build", `/build` | Build local or cross-platform binaries |
 | `version` | "버전", "version", `/version`, "bump" | Check, bump, or manage version tags |
 | `deploy` | "배포", "릴리스", "deploy", "release", `/deploy` | Cross-build → GitHub Release → npm publish |
+| `naverworks-profile` | "프로필", "인증", "NW_PROFILE", "auth setup" | Multi-profile setup, auth, and troubleshooting |
 
 ## Skill Invocation Order
 

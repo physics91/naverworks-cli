@@ -174,11 +174,7 @@ var boardListCommentsCmd = &cobra.Command{
 }
 
 func init() {
-	for _, c := range []*cobra.Command{boardListCmd, boardListPostsCmd, boardListCommentsCmd} {
-		c.Flags().String("cursor", "", "페이지네이션 커서")
-		c.Flags().Int("count", 0, "페이지 크기")
-		c.Flags().Bool("all", false, "전체 페이지 자동 순회")
-	}
+	addListFlags(boardListCmd, boardListPostsCmd, boardListCommentsCmd)
 
 	boardCreatePostCmd.Flags().String("title", "", "게시글 제목 (필수)")
 	boardCreatePostCmd.Flags().String("body", "", "게시글 본문")

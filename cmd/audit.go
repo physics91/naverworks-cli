@@ -89,9 +89,7 @@ func init() {
 	auditDownloadLogsCmd.Flags().String("end-time", "", "종료 시간 (필수)")
 	auditDownloadLogsCmd.Flags().String("service", "", "서비스 필터")
 
-	auditListPolicyGroupsCmd.Flags().String("cursor", "", "페이지네이션 커서")
-	auditListPolicyGroupsCmd.Flags().Int("count", 0, "페이지 크기")
-	auditListPolicyGroupsCmd.Flags().Bool("all", false, "전체 페이지 자동 순회")
+	addListFlags(auditListPolicyGroupsCmd)
 
 	auditCmd.AddCommand(auditDownloadLogsCmd, auditListPolicyGroupsCmd)
 	rootCmd.AddCommand(auditCmd)

@@ -164,9 +164,7 @@ var noteDeletePostCmd = &cobra.Command{
 }
 
 func init() {
-	noteListPostsCmd.Flags().String("cursor", "", "페이지네이션 커서")
-	noteListPostsCmd.Flags().Int("count", 0, "페이지 크기")
-	noteListPostsCmd.Flags().Bool("all", false, "전체 페이지 자동 순회")
+	addListFlags(noteListPostsCmd)
 
 	noteCreatePostCmd.Flags().String("title", "", "게시글 제목 (필수)")
 	noteCreatePostCmd.Flags().String("body", "", "게시글 본문")

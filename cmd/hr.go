@@ -74,11 +74,7 @@ var hrListOnLeaveCmd = &cobra.Command{
 }
 
 func init() {
-	for _, c := range []*cobra.Command{hrListExtensionPropertiesCmd, hrListLeaveTypesCmd, hrListOnLeaveCmd} {
-		c.Flags().String("cursor", "", "페이지네이션 커서")
-		c.Flags().Int("count", 0, "페이지 크기")
-		c.Flags().Bool("all", false, "전체 페이지 자동 순회")
-	}
+	addListFlags(hrListExtensionPropertiesCmd, hrListLeaveTypesCmd, hrListOnLeaveCmd)
 
 	hrCmd.AddCommand(hrListExtensionPropertiesCmd, hrGetUserPropertiesCmd, hrListLeaveTypesCmd, hrListOnLeaveCmd)
 	rootCmd.AddCommand(hrCmd)

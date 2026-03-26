@@ -172,11 +172,7 @@ var dirListEmploymentTypesCmd = &cobra.Command{
 }
 
 func init() {
-	for _, cmd := range []*cobra.Command{dirListUsersCmd, dirListGroupsCmd, dirListOrgUnitsCmd, dirListLevelsCmd, dirListPositionsCmd, dirListUserTypesCmd, dirListEmploymentTypesCmd} {
-		cmd.Flags().String("cursor", "", "페이지네이션 커서")
-		cmd.Flags().Int("count", 0, "페이지 크기")
-		cmd.Flags().Bool("all", false, "전체 페이지 자동 순회")
-	}
+	addListFlags(dirListUsersCmd, dirListGroupsCmd, dirListOrgUnitsCmd, dirListLevelsCmd, dirListPositionsCmd, dirListUserTypesCmd, dirListEmploymentTypesCmd)
 	directoryCmd.AddCommand(dirListUsersCmd, dirGetUserCmd, dirListGroupsCmd, dirGetGroupCmd,
 		dirListOrgUnitsCmd, dirGetOrgUnitCmd, dirListLevelsCmd, dirListPositionsCmd,
 		dirListUserTypesCmd, dirListEmploymentTypesCmd)

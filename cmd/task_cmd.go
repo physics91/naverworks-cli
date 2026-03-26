@@ -163,11 +163,7 @@ var taskListCategoriesCmd = &cobra.Command{
 }
 
 func init() {
-	for _, c := range []*cobra.Command{taskListCmd, taskListCategoriesCmd} {
-		c.Flags().String("cursor", "", "페이지네이션 커서")
-		c.Flags().Int("count", 0, "페이지 크기")
-		c.Flags().Bool("all", false, "전체 페이지 자동 순회")
-	}
+	addListFlags(taskListCmd, taskListCategoriesCmd)
 	for _, c := range []*cobra.Command{taskListCmd, taskCreateCmd, taskListCategoriesCmd} {
 		c.Flags().String("user-id", "", "사용자 ID (OAuth: me 허용)")
 	}

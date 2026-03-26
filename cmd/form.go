@@ -49,9 +49,7 @@ var formDownloadAttachmentCmd = &cobra.Command{
 }
 
 func init() {
-	formListResponsesCmd.Flags().String("cursor", "", "페이지네이션 커서")
-	formListResponsesCmd.Flags().Int("count", 0, "페이지 크기")
-	formListResponsesCmd.Flags().Bool("all", false, "전체 페이지 자동 순회")
+	addListFlags(formListResponsesCmd)
 
 	formCmd.AddCommand(formListResponsesCmd, formDownloadAttachmentCmd)
 	rootCmd.AddCommand(formCmd)

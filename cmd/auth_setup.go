@@ -42,7 +42,11 @@ var authSetupCmd = &cobra.Command{
 		fmt.Println()
 
 		// Step 1: 인증 방식 선택
-		authMethod := prompt(reader, "인증 방식을 선택하세요 [oauth/jwt]", defaultVal(cfg.ServiceAccountID != "", "jwt", "oauth"))
+		defaultAuthMethod := "oauth"
+		if cfg.ServiceAccountID != "" {
+			defaultAuthMethod = "jwt"
+		}
+		authMethod := prompt(reader, "인증 방식을 선택하세요 [oauth/jwt]", defaultAuthMethod)
 		authMethod = strings.ToLower(strings.TrimSpace(authMethod))
 		if authMethod != "oauth" && authMethod != "jwt" {
 			return fmt.Errorf("유효하지 않은 인증 방식: %s (oauth 또는 jwt)", authMethod)
@@ -137,13 +141,6 @@ func prompt(reader *bufio.Reader, question string, defaultVal string) string {
 		return defaultVal
 	}
 	return input
-}
-
-func defaultVal(condition bool, ifTrue, ifFalse string) string {
-	if condition {
-		return ifTrue
-	}
-	return ifFalse
 }
 
 func init() {

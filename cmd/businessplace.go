@@ -133,9 +133,7 @@ var bpDeleteCmd = &cobra.Command{
 }
 
 func init() {
-	bpListCmd.Flags().String("cursor", "", "페이지네이션 커서")
-	bpListCmd.Flags().Int("count", 0, "페이지 크기")
-	bpListCmd.Flags().Bool("all", false, "전체 페이지 자동 순회")
+	addListFlags(bpListCmd)
 
 	bpCreateCmd.Flags().String("name", "", "사업장 이름 (필수)")
 	bpCreateCmd.Flags().String("data", "", "전체 JSON 페이로드")

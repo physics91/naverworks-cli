@@ -170,11 +170,7 @@ func init() {
 	for _, c := range []*cobra.Command{mailSendCmd, mailGetCmd, mailDeleteCmd, mailListFoldersCmd, mailGetFolderCmd, mailListCmd} {
 		c.Flags().String("user-id", "", "사용자 ID (OAuth: me 허용)")
 	}
-	for _, c := range []*cobra.Command{mailListFoldersCmd, mailListCmd} {
-		c.Flags().String("cursor", "", "페이지네이션 커서")
-		c.Flags().Int("count", 0, "페이지 크기")
-		c.Flags().Bool("all", false, "전체 페이지 자동 순회")
-	}
+	addListFlags(mailListFoldersCmd, mailListCmd)
 
 	mailSendCmd.Flags().String("to", "", "수신자 (필수)")
 	mailSendCmd.Flags().String("subject", "", "제목 (필수)")

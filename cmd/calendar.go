@@ -197,9 +197,7 @@ func init() {
 		cmd.Flags().String("user-id", "", "사용자 ID (OAuth: me 허용)")
 	}
 	calListCalendarsCmd.Flags().Bool("default", false, "기본 캘린더만 조회")
-	calListCalendarsCmd.Flags().String("cursor", "", "페이지네이션 커서")
-	calListCalendarsCmd.Flags().Int("count", 0, "페이지 크기")
-	calListCalendarsCmd.Flags().Bool("all", false, "전체 페이지 자동 순회")
+	addListFlags(calListCalendarsCmd)
 
 	calListEventsCmd.Flags().String("calendar-id", "", "캘린더 ID (필수)")
 	calListEventsCmd.Flags().String("from", "", "시작 시간 RFC3339 (필수)")

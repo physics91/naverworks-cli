@@ -189,3 +189,11 @@ func printDownloadURL(downloadURL string) {
 	result, _ := json.Marshal(map[string]string{"download_url": downloadURL})
 	printBody(result)
 }
+
+func addListFlags(cmds ...*cobra.Command) {
+	for _, c := range cmds {
+		c.Flags().String("cursor", "", "페이지네이션 커서")
+		c.Flags().Int("count", 0, "페이지 크기")
+		c.Flags().Bool("all", false, "전체 페이지 자동 순회")
+	}
+}

@@ -133,9 +133,7 @@ func init() {
 	botSendCmd.Flags().String("channel", "", "채널 ID")
 	botSendCmd.Flags().String("text", "", "메시지 텍스트 (- 이면 stdin)")
 
-	botChannelMembersCmd.Flags().String("cursor", "", "페이지네이션 커서")
-	botChannelMembersCmd.Flags().Int("count", 0, "페이지 크기")
-	botChannelMembersCmd.Flags().Bool("all", false, "전체 페이지 자동 순회")
+	addListFlags(botChannelMembersCmd)
 
 	botCmd.AddCommand(botSendCmd, botGetChannelCmd, botChannelMembersCmd)
 	rootCmd.AddCommand(botCmd)

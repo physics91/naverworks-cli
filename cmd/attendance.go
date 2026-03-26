@@ -114,11 +114,7 @@ func init() {
 	for _, c := range []*cobra.Command{attendanceStatusCmd, attendanceClockInCmd, attendanceClockOutCmd} {
 		c.Flags().String("user-id", "", "사용자 ID (OAuth: me 허용)")
 	}
-	for _, c := range []*cobra.Command{attendanceListAbsencesCmd, attendanceListAnnualLeavesCmd} {
-		c.Flags().String("cursor", "", "페이지네이션 커서")
-		c.Flags().Int("count", 0, "페이지 크기")
-		c.Flags().Bool("all", false, "전체 페이지 자동 순회")
-	}
+	addListFlags(attendanceListAbsencesCmd, attendanceListAnnualLeavesCmd)
 
 	attendanceClockInCmd.Flags().String("date", "", "기준 날짜 YYYY-MM-DD (필수)")
 	attendanceClockInCmd.Flags().String("time", "", "출근 시간 HH:mm (필수)")

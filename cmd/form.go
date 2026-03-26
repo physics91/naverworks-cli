@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
-
 	"github.com/physics91/naverworks-cli/internal/api"
 	"github.com/spf13/cobra"
 )
@@ -45,8 +43,7 @@ var formDownloadAttachmentCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		result, _ := json.Marshal(map[string]string{"download_url": downloadURL})
-		printBody(result)
+		printDownloadURL(downloadURL)
 		return nil
 	},
 }

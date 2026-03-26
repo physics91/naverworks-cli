@@ -119,8 +119,7 @@ var driveDownloadCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		result, _ := json.Marshal(map[string]string{"download_url": downloadURL})
-		printBody(result)
+		printDownloadURL(downloadURL)
 		return nil
 	},
 }
@@ -142,38 +141,26 @@ var driveUploadCmd = &cobra.Command{
 		svc := api.NewDriveService(client)
 
 		localPath := args[0]
-		fileName := filepath.Base(localPath)
 		folder, _ := cmd.Flags().GetString("folder")
 
-		stat, err := os.Stat(localPath)
+		fileName, fileSize, err := statFileForUpload(localPath)
 		if err != nil {
-			return fmt.Errorf("파일 정보 조회 실패: %w", err)
+			return err
 		}
-		fileSize := stat.Size()
 
-		body := map[string]interface{}{"fileName": fileName}
+		uploadBody := map[string]interface{}{"fileName": fileName}
 
 		var resp *api.Response
 		if folder != "" {
-			resp, err = svc.CreateUploadURLInFolder(userID, folder, body, fileSize)
+			resp, err = svc.CreateUploadURLInFolder(userID, folder, uploadBody, fileSize)
 		} else {
-			resp, err = svc.CreateUploadURL(userID, body, fileSize)
+			resp, err = svc.CreateUploadURL(userID, uploadBody, fileSize)
 		}
 		if err != nil {
 			return err
 		}
 
-		var result struct {
-			UploadURL string `json:"uploadUrl"`
-		}
-		if err := json.Unmarshal(resp.Body, &result); err != nil {
-			return fmt.Errorf("업로드 URL 파싱 실패: %w", err)
-		}
-		if result.UploadURL == "" {
-			return fmt.Errorf("업로드 URL을 받지 못했습니다")
-		}
-
-		if err := svc.UploadFile(result.UploadURL, localPath); err != nil {
+		if err := doUploadFromResponse(svc, resp.Body, localPath); err != nil {
 			return err
 		}
 		printBody(resp.Body)
@@ -411,8 +398,7 @@ var driveSharedDownloadCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		result, _ := json.Marshal(map[string]string{"download_url": downloadURL})
-		printBody(result)
+		printDownloadURL(downloadURL)
 		return nil
 	},
 }
@@ -430,32 +416,20 @@ var driveSharedUploadCmd = &cobra.Command{
 		svc := api.NewSharedDriveService(client)
 
 		localPath := args[1]
-		fileName := filepath.Base(localPath)
 
-		stat, err := os.Stat(localPath)
-		if err != nil {
-			return fmt.Errorf("파일 정보 조회 실패: %w", err)
-		}
-		fileSize := stat.Size()
-
-		body := map[string]interface{}{"fileName": fileName}
-
-		resp, err := svc.CreateUploadURL(args[0], body, fileSize)
+		fileName, fileSize, err := statFileForUpload(localPath)
 		if err != nil {
 			return err
 		}
 
-		var result struct {
-			UploadURL string `json:"uploadUrl"`
-		}
-		if err := json.Unmarshal(resp.Body, &result); err != nil {
-			return fmt.Errorf("업로드 URL 파싱 실패: %w", err)
-		}
-		if result.UploadURL == "" {
-			return fmt.Errorf("업로드 URL을 받지 못했습니다")
+		uploadBody := map[string]interface{}{"fileName": fileName}
+
+		resp, err := svc.CreateUploadURL(args[0], uploadBody, fileSize)
+		if err != nil {
+			return err
 		}
 
-		if err := svc.UploadFile(result.UploadURL, localPath); err != nil {
+		if err := doUploadFromResponse(svc, resp.Body, localPath); err != nil {
 			return err
 		}
 		printBody(resp.Body)
@@ -602,6 +576,31 @@ var driveSharedFolderFilesCmd = &cobra.Command{
 		printBody(resp.Body)
 		return nil
 	},
+}
+
+type fileUploader interface {
+	UploadFile(uploadURL, filePath string) error
+}
+
+func statFileForUpload(localPath string) (fileName string, fileSize int64, err error) {
+	stat, err := os.Stat(localPath)
+	if err != nil {
+		return "", 0, fmt.Errorf("파일 정보 조회 실패: %w", err)
+	}
+	return filepath.Base(localPath), stat.Size(), nil
+}
+
+func doUploadFromResponse(svc fileUploader, respBody []byte, localPath string) error {
+	var result struct {
+		UploadURL string `json:"uploadUrl"`
+	}
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return fmt.Errorf("업로드 URL 파싱 실패: %w", err)
+	}
+	if result.UploadURL == "" {
+		return fmt.Errorf("업로드 URL을 받지 못했습니다")
+	}
+	return svc.UploadFile(result.UploadURL, localPath)
 }
 
 func init() {

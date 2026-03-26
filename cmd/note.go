@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/physics91/naverworks-cli/internal/api"
 	"github.com/spf13/cobra"
 )
@@ -104,16 +102,10 @@ var noteCreatePostCmd = &cobra.Command{
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewNoteService(client)
 
-		title, _ := cmd.Flags().GetString("title")
-		body, _ := cmd.Flags().GetString("body")
-		if title == "" {
-			return fmt.Errorf("--title은 필수입니다")
+		post, err := requireTitleBodyPost(cmd)
+		if err != nil {
+			return err
 		}
-		if body == "" {
-			return fmt.Errorf("--body는 필수입니다")
-		}
-
-		post := map[string]interface{}{"title": title, "body": body}
 
 		resp, err := svc.CreatePost(args[0], post)
 		if err != nil {
@@ -136,16 +128,10 @@ var noteUpdatePostCmd = &cobra.Command{
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewNoteService(client)
 
-		title, _ := cmd.Flags().GetString("title")
-		body, _ := cmd.Flags().GetString("body")
-		if title == "" {
-			return fmt.Errorf("--title은 필수입니다")
+		post, err := requireTitleBodyPost(cmd)
+		if err != nil {
+			return err
 		}
-		if body == "" {
-			return fmt.Errorf("--body는 필수입니다")
-		}
-
-		post := map[string]interface{}{"title": title, "body": body}
 
 		resp, err := svc.UpdatePost(args[0], args[1], post)
 		if err != nil {

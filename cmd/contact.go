@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/physics91/naverworks-cli/internal/api"
@@ -79,19 +78,17 @@ var contactCreateCmd = &cobra.Command{
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewContactService(client)
 
-		var body map[string]interface{}
-		data, _ := cmd.Flags().GetString("data")
-		if data != "" {
-			if err := json.Unmarshal([]byte(data), &body); err != nil {
-				return fmt.Errorf("--data JSON 파싱 실패: %w", err)
-			}
-		} else {
-			name, _ := cmd.Flags().GetString("name")
+		body, err := parseOptionalJSONData(cmd)
+		if err != nil {
+			return err
+		}
+		if body == nil {
+			contactName, _ := cmd.Flags().GetString("name")
 			email, _ := cmd.Flags().GetString("email")
-			if name == "" {
+			if contactName == "" {
 				return fmt.Errorf("--name은 필수입니다")
 			}
-			body = map[string]interface{}{"name": name}
+			body = map[string]interface{}{"name": contactName}
 			if email != "" {
 				body["email"] = email
 			}
@@ -118,16 +115,14 @@ var contactUpdateCmd = &cobra.Command{
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewContactService(client)
 
-		var body map[string]interface{}
-		data, _ := cmd.Flags().GetString("data")
-		if data != "" {
-			if err := json.Unmarshal([]byte(data), &body); err != nil {
-				return fmt.Errorf("--data JSON 파싱 실패: %w", err)
-			}
-		} else {
+		body, err := parseOptionalJSONData(cmd)
+		if err != nil {
+			return err
+		}
+		if body == nil {
 			body = map[string]interface{}{}
-			if name, _ := cmd.Flags().GetString("name"); name != "" {
-				body["name"] = name
+			if contactName, _ := cmd.Flags().GetString("name"); contactName != "" {
+				body["name"] = contactName
 			}
 			if email, _ := cmd.Flags().GetString("email"); email != "" {
 				body["email"] = email

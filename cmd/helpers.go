@@ -166,3 +166,32 @@ func loadActiveConfig() (*config.Config, string, error) {
 	profile.ApplyEnvOverrides()
 	return profile, name, nil
 }
+
+func requireTitleBodyPost(cmd *cobra.Command) (map[string]interface{}, error) {
+	title, _ := cmd.Flags().GetString("title")
+	body, _ := cmd.Flags().GetString("body")
+	if title == "" {
+		return nil, fmt.Errorf("--title은 필수입니다")
+	}
+	if body == "" {
+		return nil, fmt.Errorf("--body는 필수입니다")
+	}
+	return map[string]interface{}{"title": title, "body": body}, nil
+}
+
+func parseOptionalJSONData(cmd *cobra.Command) (map[string]interface{}, error) {
+	data, _ := cmd.Flags().GetString("data")
+	if data == "" {
+		return nil, nil
+	}
+	var body map[string]interface{}
+	if err := json.Unmarshal([]byte(data), &body); err != nil {
+		return nil, fmt.Errorf("--data JSON 파싱 실패: %w", err)
+	}
+	return body, nil
+}
+
+func printDownloadURL(downloadURL string) {
+	result, _ := json.Marshal(map[string]string{"download_url": downloadURL})
+	printBody(result)
+}

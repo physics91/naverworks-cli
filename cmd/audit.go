@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/physics91/naverworks-cli/internal/api"
@@ -35,8 +34,7 @@ var auditDownloadLogsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		result, _ := json.Marshal(map[string]string{"download_url": downloadURL})
-		printBody(result)
+		printDownloadURL(downloadURL)
 		return nil
 	},
 }
@@ -81,8 +79,7 @@ var monitoringDownloadMessagesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		result, _ := json.Marshal(map[string]string{"download_url": downloadURL})
-		printBody(result)
+		printDownloadURL(downloadURL)
 		return nil
 	},
 }

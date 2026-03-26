@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/physics91/naverworks-cli/internal/api"
@@ -69,13 +68,11 @@ var taskCreateCmd = &cobra.Command{
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewTaskService(client)
 
-		var body map[string]interface{}
-		data, _ := cmd.Flags().GetString("data")
-		if data != "" {
-			if err := json.Unmarshal([]byte(data), &body); err != nil {
-				return fmt.Errorf("--data JSON 파싱 실패: %w", err)
-			}
-		} else {
+		body, err := parseOptionalJSONData(cmd)
+		if err != nil {
+			return err
+		}
+		if body == nil {
 			title, _ := cmd.Flags().GetString("title")
 			if title == "" {
 				return fmt.Errorf("--title은 필수입니다")
@@ -104,13 +101,11 @@ var taskUpdateCmd = &cobra.Command{
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewTaskService(client)
 
-		var body map[string]interface{}
-		data, _ := cmd.Flags().GetString("data")
-		if data != "" {
-			if err := json.Unmarshal([]byte(data), &body); err != nil {
-				return fmt.Errorf("--data JSON 파싱 실패: %w", err)
-			}
-		} else {
+		body, err := parseOptionalJSONData(cmd)
+		if err != nil {
+			return err
+		}
+		if body == nil {
 			body = map[string]interface{}{}
 			if title, _ := cmd.Flags().GetString("title"); title != "" {
 				body["title"] = title

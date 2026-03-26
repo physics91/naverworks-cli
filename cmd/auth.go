@@ -226,23 +226,8 @@ var authRefreshCmd = &cobra.Command{
 					return nil
 				}
 			}
-			assertion, err := auth.BuildJWTAssertion(cfg.ClientID, cfg.ServiceAccountID, cfg.PrivateKeyPath)
-			if err != nil {
-				return err
-			}
-			scope := cfg.Scope
-			if scope == "" {
-				scope = defaultJWTScope
-			}
-			newToken, err := auth.RequestJWTToken(authBaseURL, cfg.ClientID, cfg.ClientSecret, assertion, scope)
-			if err != nil {
+			if err := refreshJWTTokenFromAssertion(cfg, token, store); err != nil {
 				return fmt.Errorf("JWT 토큰 재발급 실패: %w", err)
-			}
-			token.AccessToken = newToken.AccessToken
-			token.RefreshToken = newToken.RefreshToken
-			token.ExpiresAt = newToken.ExpiresAt
-			if err := store.Save(token); err != nil {
-				return err
 			}
 			fmt.Fprintf(os.Stderr, "JWT 토큰 재발급 완료 (assertion, 만료: %s)\n", token.ExpiresAt.Format(time.RFC3339))
 			return nil

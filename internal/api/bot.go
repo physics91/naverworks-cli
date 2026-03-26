@@ -14,7 +14,7 @@ func NewBotService(client *Client) *BotService {
 	return &BotService{client: client}
 }
 
-func (s *BotService) SendTextToUser(botID, userID, text string) (*Response, error) {
+func buildTextMessageBody(text string) ([]byte, error) {
 	body := map[string]interface{}{
 		"content": map[string]interface{}{
 			"type": "text",
@@ -24,20 +24,22 @@ func (s *BotService) SendTextToUser(botID, userID, text string) (*Response, erro
 	data, err := json.Marshal(body)
 	if err != nil {
 		return nil, fmt.Errorf("메시지 직렬화 실패: %w", err)
+	}
+	return data, nil
+}
+
+func (s *BotService) SendTextToUser(botID, userID, text string) (*Response, error) {
+	data, err := buildTextMessageBody(text)
+	if err != nil {
+		return nil, err
 	}
 	return s.client.Post(fmt.Sprintf("/bots/%s/users/%s/messages", url.PathEscape(botID), url.PathEscape(userID)), data)
 }
 
 func (s *BotService) SendTextToChannel(botID, channelID, text string) (*Response, error) {
-	body := map[string]interface{}{
-		"content": map[string]interface{}{
-			"type": "text",
-			"text": text,
-		},
-	}
-	data, err := json.Marshal(body)
+	data, err := buildTextMessageBody(text)
 	if err != nil {
-		return nil, fmt.Errorf("메시지 직렬화 실패: %w", err)
+		return nil, err
 	}
 	return s.client.Post(fmt.Sprintf("/bots/%s/channels/%s/messages", url.PathEscape(botID), url.PathEscape(channelID)), data)
 }

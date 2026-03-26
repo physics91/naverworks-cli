@@ -36,6 +36,26 @@ func loadConfigAndToken() (*config.Config, *auth.Token, string, error) {
 	return profile, token, name, nil
 }
 
+// refreshJWTTokenFromAssertion obtains a new JWT token via assertion and updates t in place.
+func refreshJWTTokenFromAssertion(cfg *config.Config, t *auth.Token, store *auth.ProfileTokenStore) error {
+	assertion, err := auth.BuildJWTAssertion(cfg.ClientID, cfg.ServiceAccountID, cfg.PrivateKeyPath)
+	if err != nil {
+		return err
+	}
+	scope := cfg.Scope
+	if scope == "" {
+		scope = defaultJWTScope
+	}
+	newToken, err := auth.RequestJWTToken(authBaseURL, cfg.ClientID, cfg.ClientSecret, assertion, scope)
+	if err != nil {
+		return err
+	}
+	t.AccessToken = newToken.AccessToken
+	t.RefreshToken = newToken.RefreshToken
+	t.ExpiresAt = newToken.ExpiresAt
+	return store.Save(t)
+}
+
 func buildAPIClient(cfg *config.Config, token *auth.Token, activeProfileName string) *api.Client {
 	refreshFn := func(t *auth.Token) error {
 		store := auth.NewProfileTokenStore(auth.DefaultTokenPath(), activeProfileName)
@@ -52,22 +72,7 @@ func buildAPIClient(cfg *config.Config, token *auth.Token, activeProfileName str
 					return store.Save(t)
 				}
 			}
-			assertion, err := auth.BuildJWTAssertion(cfg.ClientID, cfg.ServiceAccountID, cfg.PrivateKeyPath)
-			if err != nil {
-				return err
-			}
-			scope := cfg.Scope
-			if scope == "" {
-				scope = defaultJWTScope
-			}
-			newToken, err := auth.RequestJWTToken(authBaseURL, cfg.ClientID, cfg.ClientSecret, assertion, scope)
-			if err != nil {
-				return err
-			}
-			t.AccessToken = newToken.AccessToken
-			t.RefreshToken = newToken.RefreshToken
-			t.ExpiresAt = newToken.ExpiresAt
-			return store.Save(t)
+			return refreshJWTTokenFromAssertion(cfg, t, store)
 		}
 
 		return fmt.Errorf("토큰 갱신 불가")

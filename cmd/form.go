@@ -15,11 +15,10 @@ var formListResponsesCmd = &cobra.Command{
 	Short: "설문 응답 목록 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, _, _, err := newAPIClient()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token, name)
 		svc := api.NewFormService(client)
 		return runListCmd(cmd, []string{"responseId"}, "responses", func(c string, n int) (*api.Response, error) {
 			return svc.ListResponses(args[0], c, n)
@@ -32,11 +31,10 @@ var formDownloadAttachmentCmd = &cobra.Command{
 	Short: "설문 응답 첨부파일 다운로드",
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, _, _, err := newAPIClient()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token, name)
 		svc := api.NewFormService(client)
 
 		downloadURL, err := svc.DownloadAttachment(args[0], args[1], args[2])

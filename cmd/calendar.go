@@ -19,7 +19,7 @@ var calListCalendarsCmd = &cobra.Command{
 	Use:   "list-calendars",
 	Short: "캘린더 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, cfg, token, err := newAPIClient()
 		if err != nil {
 			return err
 		}
@@ -27,8 +27,6 @@ var calListCalendarsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		client := buildAPIClient(cfg, token, name)
 		cal := api.NewCalendarService(client)
 
 		useDefault, _ := cmd.Flags().GetBool("default")
@@ -51,7 +49,7 @@ var calListEventsCmd = &cobra.Command{
 	Use:   "list-events",
 	Short: "일정 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, cfg, token, err := newAPIClient()
 		if err != nil {
 			return err
 		}
@@ -83,7 +81,6 @@ var calListEventsCmd = &cobra.Command{
 			return fmt.Errorf("--from과 --until 간격은 최대 31일입니다")
 		}
 
-		client := buildAPIClient(cfg, token, name)
 		cal := api.NewCalendarService(client)
 
 		resp, err := cal.ListEvents(userID, calendarID, from, until)
@@ -101,7 +98,7 @@ var calGetEventCmd = &cobra.Command{
 	Use:   "get-event",
 	Short: "일정 상세 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, cfg, token, err := newAPIClient()
 		if err != nil {
 			return err
 		}
@@ -116,7 +113,6 @@ var calGetEventCmd = &cobra.Command{
 			return fmt.Errorf("--calendar-id와 --event-id는 필수입니다")
 		}
 
-		client := buildAPIClient(cfg, token, name)
 		cal := api.NewCalendarService(client)
 
 		resp, err := cal.GetEvent(userID, calendarID, eventID)
@@ -132,7 +128,7 @@ var calCreateEventCmd = &cobra.Command{
 	Use:   "create-event",
 	Short: "일정 생성",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, cfg, token, err := newAPIClient()
 		if err != nil {
 			return err
 		}
@@ -180,7 +176,6 @@ var calCreateEventCmd = &cobra.Command{
 			event["location"] = location
 		}
 
-		client := buildAPIClient(cfg, token, name)
 		cal := api.NewCalendarService(client)
 
 		resp, err := cal.CreateEvent(userID, calendarID, event)

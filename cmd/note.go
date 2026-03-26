@@ -15,11 +15,10 @@ var noteCreateCmd = &cobra.Command{
 	Short: "노트 생성",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, _, _, err := newAPIClient()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token, name)
 		svc := api.NewNoteService(client)
 
 		resp, err := svc.CreateNote(args[0])
@@ -36,11 +35,10 @@ var noteDeleteCmd = &cobra.Command{
 	Short: "노트 삭제",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, _, _, err := newAPIClient()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token, name)
 		svc := api.NewNoteService(client)
 
 		resp, err := svc.DeleteNote(args[0])
@@ -57,11 +55,10 @@ var noteListPostsCmd = &cobra.Command{
 	Short: "노트 게시글 목록 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, _, _, err := newAPIClient()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token, name)
 		svc := api.NewNoteService(client)
 		return runListCmd(cmd, []string{"postId", "title"}, "posts", func(c string, n int) (*api.Response, error) {
 			return svc.ListPosts(args[0], c, n)
@@ -74,11 +71,10 @@ var noteGetPostCmd = &cobra.Command{
 	Short: "노트 게시글 상세 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, _, _, err := newAPIClient()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token, name)
 		svc := api.NewNoteService(client)
 
 		resp, err := svc.GetPost(args[0], args[1])
@@ -95,11 +91,10 @@ var noteCreatePostCmd = &cobra.Command{
 	Short: "노트 게시글 생성",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, _, _, err := newAPIClient()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token, name)
 		svc := api.NewNoteService(client)
 
 		post, err := requireTitleBodyPost(cmd)
@@ -121,11 +116,10 @@ var noteUpdatePostCmd = &cobra.Command{
 	Short: "노트 게시글 수정",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, _, _, err := newAPIClient()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token, name)
 		svc := api.NewNoteService(client)
 
 		post, err := requireTitleBodyPost(cmd)
@@ -147,11 +141,10 @@ var noteDeletePostCmd = &cobra.Command{
 	Short: "노트 게시글 삭제",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, _, _, err := newAPIClient()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token, name)
 		svc := api.NewNoteService(client)
 
 		resp, err := svc.DeletePost(args[0], args[1])

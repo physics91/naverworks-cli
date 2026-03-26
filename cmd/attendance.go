@@ -16,7 +16,7 @@ var attendanceStatusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "근태 상태 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, cfg, token, err := newAPIClient()
 		if err != nil {
 			return err
 		}
@@ -24,7 +24,6 @@ var attendanceStatusCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token, name)
 		svc := api.NewAttendanceService(client)
 
 		resp, err := svc.GetStatus(userID)
@@ -57,7 +56,7 @@ var attendanceClockOutCmd = &cobra.Command{
 }
 
 func runClockCmd(cmd *cobra.Command, fn func(*api.AttendanceService, string, string, string) (*api.Response, error)) error {
-	cfg, token, name, err := loadConfigAndToken()
+	client, cfg, token, err := newAPIClient()
 	if err != nil {
 		return err
 	}
@@ -65,7 +64,6 @@ func runClockCmd(cmd *cobra.Command, fn func(*api.AttendanceService, string, str
 	if err != nil {
 		return err
 	}
-	client := buildAPIClient(cfg, token, name)
 	svc := api.NewAttendanceService(client)
 
 	date, _ := cmd.Flags().GetString("date")
@@ -86,11 +84,10 @@ var attendanceListAbsencesCmd = &cobra.Command{
 	Use:   "list-absences",
 	Short: "부재 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, _, _, err := newAPIClient()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token, name)
 		svc := api.NewAttendanceService(client)
 		return runListCmd(cmd, []string{"absenceId", "userId"}, "absences", svc.ListAbsences)
 	},
@@ -100,11 +97,10 @@ var attendanceListAnnualLeavesCmd = &cobra.Command{
 	Use:   "list-annual-leaves",
 	Short: "연차 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, _, _, err := newAPIClient()
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token, name)
 		svc := api.NewAttendanceService(client)
 		return runListCmd(cmd, []string{"userId", "totalDays"}, "annualLeaves", svc.ListAnnualLeaves)
 	},

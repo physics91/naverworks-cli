@@ -75,6 +75,14 @@ func buildAPIClient(cfg *config.Config, token *auth.Token, activeProfileName str
 	return api.NewClient(apiBaseURL, token, refreshFn)
 }
 
+func newAPIClient() (*api.Client, *config.Config, *auth.Token, error) {
+	cfg, token, name, err := loadConfigAndToken()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return buildAPIClient(cfg, token, name), cfg, token, nil
+}
+
 func buildScimClient(cfg *config.Config) (*api.Client, error) {
 	if cfg.ScimAccessToken == "" {
 		return nil, fmt.Errorf("scim_access_token이 설정되지 않았습니다. naverworks config set scim_access_token <token>")

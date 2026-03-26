@@ -16,7 +16,7 @@ var mailSendCmd = &cobra.Command{
 	Use:   "send",
 	Short: "메일 전송",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, cfg, token, err := newAPIClient()
 		if err != nil {
 			return err
 		}
@@ -24,7 +24,6 @@ var mailSendCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token, name)
 		svc := api.NewMailService(client)
 
 		to, _ := cmd.Flags().GetString("to")
@@ -55,7 +54,7 @@ var mailGetCmd = &cobra.Command{
 	Short: "메일 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, cfg, token, err := newAPIClient()
 		if err != nil {
 			return err
 		}
@@ -63,7 +62,6 @@ var mailGetCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token, name)
 		svc := api.NewMailService(client)
 
 		resp, err := svc.GetMail(userID, args[0])
@@ -80,7 +78,7 @@ var mailDeleteCmd = &cobra.Command{
 	Short: "메일 삭제",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, cfg, token, err := newAPIClient()
 		if err != nil {
 			return err
 		}
@@ -88,7 +86,6 @@ var mailDeleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token, name)
 		svc := api.NewMailService(client)
 
 		resp, err := svc.DeleteMail(userID, args[0])
@@ -104,7 +101,7 @@ var mailListFoldersCmd = &cobra.Command{
 	Use:   "list-folders",
 	Short: "메일 폴더 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, cfg, token, err := newAPIClient()
 		if err != nil {
 			return err
 		}
@@ -112,7 +109,6 @@ var mailListFoldersCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token, name)
 		svc := api.NewMailService(client)
 		return runListCmd(cmd, []string{"folderId", "folderName"}, "mailFolders", func(c string, n int) (*api.Response, error) {
 			return svc.ListFolders(userID, c, n)
@@ -125,7 +121,7 @@ var mailGetFolderCmd = &cobra.Command{
 	Short: "메일 폴더 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, cfg, token, err := newAPIClient()
 		if err != nil {
 			return err
 		}
@@ -133,7 +129,6 @@ var mailGetFolderCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token, name)
 		svc := api.NewMailService(client)
 
 		resp, err := svc.GetFolder(userID, args[0])
@@ -150,7 +145,7 @@ var mailListCmd = &cobra.Command{
 	Short: "메일 목록 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
+		client, cfg, token, err := newAPIClient()
 		if err != nil {
 			return err
 		}
@@ -158,7 +153,6 @@ var mailListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		client := buildAPIClient(cfg, token, name)
 		svc := api.NewMailService(client)
 		return runListCmd(cmd, []string{"mailId", "subject"}, "mails", func(c string, n int) (*api.Response, error) {
 			return svc.ListMails(userID, args[0], c, n)

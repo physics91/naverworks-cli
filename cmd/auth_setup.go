@@ -88,9 +88,6 @@ var authSetupCmd = &cobra.Command{
 		if authMethod == "jwt" {
 			defaultScope = defaultJWTScope
 		}
-		if cfg.Scope == "" {
-			cfg.Scope = ""
-		}
 		scopeInput := prompt(reader, fmt.Sprintf("Scope (기본값: %s)", defaultScope), cfg.Scope)
 		if scopeInput != "" {
 			cfg.Scope = scopeInput

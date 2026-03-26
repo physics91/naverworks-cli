@@ -38,18 +38,9 @@ var taskListCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"taskId", "title"}, "tasks")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return svc.ListTasks(userID, c, count)
-			}, "tasks")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"tasks": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "tasks", formatter)
 		}
 
 		resp, err := svc.ListTasks(userID, cursor, count)
@@ -201,18 +192,9 @@ var taskListCategoriesCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"categoryId", "categoryName"}, "taskCategories")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return svc.ListCategories(userID, c, count)
-			}, "taskCategories")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"taskCategories": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "taskCategories", formatter)
 		}
 
 		resp, err := svc.ListCategories(userID, cursor, count)

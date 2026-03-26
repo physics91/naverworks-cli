@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -121,19 +120,10 @@ var botChannelMembersCmd = &cobra.Command{
 		all, _ := cmd.Flags().GetBool("all")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
-				return bot.ListChannelMembers(botID, args[0], c, count)
-			}, "members")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"members": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
 			formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"userId"}, "members")
-			formatter.PrintRaw(merged)
-			return nil
+			return paginateAndPrint(func(c string) (*api.Response, error) {
+				return bot.ListChannelMembers(botID, args[0], c, count)
+			}, "members", formatter)
 		}
 
 		resp, err := bot.ListChannelMembers(botID, args[0], cursor, count)

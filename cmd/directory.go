@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
-	"fmt"
 	"os"
 
 	"github.com/physics91/naverworks-cli/internal/api"
@@ -33,18 +31,9 @@ var dirListUsersCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"userId", "userName", "email"}, "users")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return dir.ListUsers(c, count)
-			}, "users")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"users": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "users", formatter)
 		}
 
 		resp, err := dir.ListUsers(cursor, count)
@@ -95,18 +84,9 @@ var dirListGroupsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"groupId", "groupName"}, "groups")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return dir.ListGroups(c, count)
-			}, "groups")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"groups": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "groups", formatter)
 		}
 
 		resp, err := dir.ListGroups(cursor, count)
@@ -157,18 +137,9 @@ var dirListOrgUnitsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"orgUnitId", "orgUnitName"}, "orgUnits")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return dir.ListOrgUnits(c, count)
-			}, "orgUnits")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"orgUnits": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "orgUnits", formatter)
 		}
 
 		resp, err := dir.ListOrgUnits(cursor, count)
@@ -219,18 +190,9 @@ var dirListLevelsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"levelId", "levelName"}, "levels")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return dir.ListLevels(c, count)
-			}, "levels")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"levels": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "levels", formatter)
 		}
 
 		resp, err := dir.ListLevels(cursor, count)
@@ -260,18 +222,9 @@ var dirListPositionsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"positionId", "positionName"}, "positions")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return dir.ListPositions(c, count)
-			}, "positions")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"positions": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "positions", formatter)
 		}
 
 		resp, err := dir.ListPositions(cursor, count)
@@ -301,18 +254,9 @@ var dirListUserTypesCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"userTypeId", "userTypeName"}, "userTypes")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return dir.ListUserTypes(c, count)
-			}, "userTypes")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"userTypes": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "userTypes", formatter)
 		}
 
 		resp, err := dir.ListUserTypes(cursor, count)
@@ -342,18 +286,9 @@ var dirListEmploymentTypesCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"employmentTypeId", "employmentTypeName"}, "employmentTypes")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return dir.ListEmploymentTypes(c, count)
-			}, "employmentTypes")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"employmentTypes": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "employmentTypes", formatter)
 		}
 
 		resp, err := dir.ListEmploymentTypes(cursor, count)

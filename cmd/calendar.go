@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -16,11 +15,6 @@ var calendarCmd = &cobra.Command{
 	Short: "캘린더 관리",
 }
 
-// resolveCalendarUserID는 공통 resolveUserID를 calendar 기본값으로 호출
-func resolveCalendarUserID(cmd *cobra.Command, authMethod string, defaultUID string) (string, error) {
-	return resolveUserID(cmd, defaultUID, authMethod)
-}
-
 var calListCalendarsCmd = &cobra.Command{
 	Use:   "list-calendars",
 	Short: "캘린더 목록 조회",
@@ -29,7 +23,7 @@ var calListCalendarsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		userID, err := resolveCalendarUserID(cmd, token.AuthMethod, cfg.DefaultCalendarUserID)
+		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
 		if err != nil {
 			return err
 		}
@@ -54,18 +48,9 @@ var calListCalendarsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"calendarId", "calendarName"}, "calendarPersonals")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return cal.ListCalendars(userID, c, count)
-			}, "calendarPersonals")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"calendarPersonals": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "calendarPersonals", formatter)
 		}
 
 		resp, err := cal.ListCalendars(userID, cursor, count)
@@ -85,7 +70,7 @@ var calListEventsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		userID, err := resolveCalendarUserID(cmd, token.AuthMethod, cfg.DefaultCalendarUserID)
+		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
 		if err != nil {
 			return err
 		}
@@ -135,7 +120,7 @@ var calGetEventCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		userID, err := resolveCalendarUserID(cmd, token.AuthMethod, cfg.DefaultCalendarUserID)
+		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
 		if err != nil {
 			return err
 		}
@@ -166,7 +151,7 @@ var calCreateEventCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		userID, err := resolveCalendarUserID(cmd, token.AuthMethod, cfg.DefaultCalendarUserID)
+		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
 		if err != nil {
 			return err
 		}

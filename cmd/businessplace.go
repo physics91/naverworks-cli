@@ -34,18 +34,9 @@ var bpListCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"businessPlaceId", "businessPlaceName"}, "businessPlaces")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return svc.ListBusinessPlaces(c, count)
-			}, "businessPlaces")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"businessPlaces": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "businessPlaces", formatter)
 		}
 
 		resp, err := svc.ListBusinessPlaces(cursor, count)

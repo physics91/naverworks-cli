@@ -1,12 +1,14 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/physics91/naverworks-cli/internal/api"
 	"github.com/physics91/naverworks-cli/internal/auth"
 	"github.com/physics91/naverworks-cli/internal/config"
+	"github.com/physics91/naverworks-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -102,6 +104,19 @@ func resolveUserID(cmd *cobra.Command, defaultUID string, authMethod string) (st
 		return "", fmt.Errorf("JWT 모드에서는 --user-id me를 사용할 수 없습니다. 명시적 userId를 지정하세요")
 	}
 	return userID, nil
+}
+
+func paginateAndPrint(fetch api.FetchFunc, key string, formatter *output.Formatter) error {
+	items, err := api.PaginateAll(fetch, key)
+	if err != nil {
+		return err
+	}
+	merged, err := json.Marshal(map[string]json.RawMessage{key: items})
+	if err != nil {
+		return fmt.Errorf("결과 직렬화 실패: %w", err)
+	}
+	formatter.PrintRaw(merged)
+	return nil
 }
 
 func loadActiveConfig() (*config.Config, string, error) {

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -34,18 +33,9 @@ var boardListCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"boardId", "boardName"}, "boards")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return svc.ListBoards(c, count)
-			}, "boards")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"boards": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "boards", formatter)
 		}
 
 		resp, err := svc.ListBoards(cursor, count)
@@ -97,18 +87,9 @@ var boardListPostsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"postId", "title"}, "posts")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return svc.ListPosts(args[0], c, count)
-			}, "posts")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"posts": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "posts", formatter)
 		}
 
 		resp, err := svc.ListPosts(args[0], cursor, count)
@@ -249,18 +230,9 @@ var boardListCommentsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"commentId", "content"}, "comments")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return svc.ListComments(args[0], args[1], c, count)
-			}, "comments")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"comments": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "comments", formatter)
 		}
 
 		resp, err := svc.ListComments(args[0], args[1], cursor, count)

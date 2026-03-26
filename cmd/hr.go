@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
-	"fmt"
 	"os"
 
 	"github.com/physics91/naverworks-cli/internal/api"
@@ -33,18 +31,9 @@ var hrListExtensionPropertiesCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"propertyId", "propertyName"}, "extensionProperties")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return svc.ListExtensionProperties(c, count)
-			}, "extensionProperties")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"extensionProperties": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "extensionProperties", formatter)
 		}
 
 		resp, err := svc.ListExtensionProperties(cursor, count)
@@ -95,18 +84,9 @@ var hrListLeaveTypesCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"leaveTypeId", "leaveTypeName"}, "leaveOfAbsences")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return svc.ListLeaveOfAbsences(c, count)
-			}, "leaveOfAbsences")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"leaveOfAbsences": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "leaveOfAbsences", formatter)
 		}
 
 		resp, err := svc.ListLeaveOfAbsences(cursor, count)
@@ -136,18 +116,9 @@ var hrListOnLeaveCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"userId", "userName"}, "onLeaveUsers")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return svc.ListOnLeaveUsers(c, count)
-			}, "onLeaveUsers")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"onLeaveUsers": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "onLeaveUsers", formatter)
 		}
 
 		resp, err := svc.ListOnLeaveUsers(cursor, count)

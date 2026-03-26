@@ -34,18 +34,9 @@ var contactListCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"contactId", "name", "email"}, "contacts")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return svc.ListContacts(c, count)
-			}, "contacts")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"contacts": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "contacts", formatter)
 		}
 
 		resp, err := svc.ListContacts(cursor, count)
@@ -79,18 +70,9 @@ var contactListUserCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"contactId", "name", "email"}, "contacts")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return svc.ListUserContacts(userID, c, count)
-			}, "contacts")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"contacts": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "contacts", formatter)
 		}
 
 		resp, err := svc.ListUserContacts(userID, cursor, count)
@@ -241,18 +223,9 @@ var contactListTagsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"tagId", "tagName"}, "contactTags")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return svc.ListTags(c, count)
-			}, "contactTags")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"contactTags": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "contactTags", formatter)
 		}
 
 		resp, err := svc.ListTags(cursor, count)
@@ -286,18 +259,9 @@ var contactListUserTagsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"tagId", "tagName"}, "contactTags")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return svc.ListUserTags(userID, c, count)
-			}, "contactTags")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"contactTags": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "contactTags", formatter)
 		}
 
 		resp, err := svc.ListUserTags(userID, cursor, count)

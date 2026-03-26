@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -126,18 +125,9 @@ var attendanceListAbsencesCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"absenceId", "userId"}, "absences")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return svc.ListAbsences(c, count)
-			}, "absences")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"absences": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "absences", formatter)
 		}
 
 		resp, err := svc.ListAbsences(cursor, count)
@@ -167,18 +157,9 @@ var attendanceListAnnualLeavesCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"userId", "totalDays"}, "annualLeaves")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return svc.ListAnnualLeaves(c, count)
-			}, "annualLeaves")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"annualLeaves": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "annualLeaves", formatter)
 		}
 
 		resp, err := svc.ListAnnualLeaves(cursor, count)

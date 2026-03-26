@@ -70,7 +70,7 @@ func Load(path string) (*Config, error) {
 	return cfg, nil
 }
 
-func (c *Config) Save(path string) error {
+func saveSecureJSON(v interface{}, path string) error {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return fmt.Errorf("디렉토리 생성 실패: %w", err)
@@ -80,7 +80,7 @@ func (c *Config) Save(path string) error {
 			return fmt.Errorf("디렉토리 권한 설정 실패: %w", err)
 		}
 	}
-	data, err := json.MarshalIndent(c, "", "  ")
+	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return fmt.Errorf("config 직렬화 실패: %w", err)
 	}
@@ -93,6 +93,10 @@ func (c *Config) Save(path string) error {
 		}
 	}
 	return nil
+}
+
+func (c *Config) Save(path string) error {
+	return saveSecureJSON(c, path)
 }
 
 func (c *Config) Set(key, value string) error {
@@ -241,26 +245,5 @@ func LoadProfileConfig(path string) (*ProfileConfig, error) {
 }
 
 func (pc *ProfileConfig) Save(path string) error {
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0700); err != nil {
-		return fmt.Errorf("디렉토리 생성 실패: %w", err)
-	}
-	if runtime.GOOS != "windows" {
-		if err := os.Chmod(dir, 0700); err != nil {
-			return fmt.Errorf("디렉토리 권한 설정 실패: %w", err)
-		}
-	}
-	data, err := json.MarshalIndent(pc, "", "  ")
-	if err != nil {
-		return fmt.Errorf("config 직렬화 실패: %w", err)
-	}
-	if err := os.WriteFile(path, data, 0600); err != nil {
-		return err
-	}
-	if runtime.GOOS != "windows" {
-		if err := os.Chmod(path, 0600); err != nil {
-			return fmt.Errorf("파일 권한 설정 실패: %w", err)
-		}
-	}
-	return nil
+	return saveSecureJSON(pc, path)
 }

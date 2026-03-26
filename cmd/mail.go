@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -134,18 +133,9 @@ var mailListFoldersCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"folderId", "folderName"}, "mailFolders")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return svc.ListFolders(userID, c, count)
-			}, "mailFolders")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"mailFolders": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "mailFolders", formatter)
 		}
 
 		resp, err := svc.ListFolders(userID, cursor, count)
@@ -205,18 +195,9 @@ var mailListCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"mailId", "subject"}, "mails")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return svc.ListMails(userID, args[0], c, count)
-			}, "mails")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"mails": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "mails", formatter)
 		}
 
 		resp, err := svc.ListMails(userID, args[0], cursor, count)

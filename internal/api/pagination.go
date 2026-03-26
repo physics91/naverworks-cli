@@ -2,8 +2,8 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/url"
+	"strconv"
 )
 
 func BuildPaginationQuery(cursor string, count int) string {
@@ -12,7 +12,7 @@ func BuildPaginationQuery(cursor string, count int) string {
 		params.Set("cursor", cursor)
 	}
 	if count > 0 {
-		params.Set("count", fmt.Sprintf("%d", count))
+		params.Set("count", strconv.Itoa(count))
 	}
 	if len(params) > 0 {
 		return "?" + params.Encode()

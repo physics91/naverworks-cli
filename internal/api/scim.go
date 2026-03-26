@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strconv"
 )
 
 type ScimService struct {
@@ -17,10 +18,10 @@ func NewScimService(client *Client) *ScimService {
 func buildScimListQuery(startIndex, count int, filter string) string {
 	params := url.Values{}
 	if startIndex > 0 {
-		params.Set("startIndex", fmt.Sprintf("%d", startIndex))
+		params.Set("startIndex", strconv.Itoa(startIndex))
 	}
 	if count > 0 {
-		params.Set("count", fmt.Sprintf("%d", count))
+		params.Set("count", strconv.Itoa(count))
 	}
 	if filter != "" {
 		params.Set("filter", filter)

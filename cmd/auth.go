@@ -135,9 +135,6 @@ var authStatusCmd = &cobra.Command{
 			"expires_at":  token.ExpiresAt.Format(time.RFC3339),
 			"scopes":      strings.Fields(token.Scope),
 		}
-		if len(status["scopes"].([]string)) == 0 {
-			status["scopes"] = []string{}
-		}
 
 		if token.AuthMethod == "jwt" {
 			status["service_account_id"] = token.ServiceAccountID

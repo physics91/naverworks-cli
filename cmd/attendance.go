@@ -40,29 +40,9 @@ var attendanceClockInCmd = &cobra.Command{
 	Use:   "clock-in",
 	Short: "출근 기록",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
-		if err != nil {
-			return err
-		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
-		if err != nil {
-			return err
-		}
-		client := buildAPIClient(cfg, token, name)
-		svc := api.NewAttendanceService(client)
-
-		date, _ := cmd.Flags().GetString("date")
-		timeVal, _ := cmd.Flags().GetString("time")
-		if date == "" || timeVal == "" {
-			return fmt.Errorf("--date와 --time은 필수입니다")
-		}
-
-		resp, err := svc.ClockIn(userID, date, timeVal)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
+		return runClockCmd(cmd, func(svc *api.AttendanceService, userID, date, timeVal string) (*api.Response, error) {
+			return svc.ClockIn(userID, date, timeVal)
+		})
 	},
 }
 
@@ -70,30 +50,36 @@ var attendanceClockOutCmd = &cobra.Command{
 	Use:   "clock-out",
 	Short: "퇴근 기록",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, token, name, err := loadConfigAndToken()
-		if err != nil {
-			return err
-		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
-		if err != nil {
-			return err
-		}
-		client := buildAPIClient(cfg, token, name)
-		svc := api.NewAttendanceService(client)
-
-		date, _ := cmd.Flags().GetString("date")
-		timeVal, _ := cmd.Flags().GetString("time")
-		if date == "" || timeVal == "" {
-			return fmt.Errorf("--date와 --time은 필수입니다")
-		}
-
-		resp, err := svc.ClockOut(userID, date, timeVal)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
+		return runClockCmd(cmd, func(svc *api.AttendanceService, userID, date, timeVal string) (*api.Response, error) {
+			return svc.ClockOut(userID, date, timeVal)
+		})
 	},
+}
+
+func runClockCmd(cmd *cobra.Command, fn func(*api.AttendanceService, string, string, string) (*api.Response, error)) error {
+	cfg, token, name, err := loadConfigAndToken()
+	if err != nil {
+		return err
+	}
+	userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
+	if err != nil {
+		return err
+	}
+	client := buildAPIClient(cfg, token, name)
+	svc := api.NewAttendanceService(client)
+
+	date, _ := cmd.Flags().GetString("date")
+	timeVal, _ := cmd.Flags().GetString("time")
+	if date == "" || timeVal == "" {
+		return fmt.Errorf("--date와 --time은 필수입니다")
+	}
+
+	resp, err := fn(svc, userID, date, timeVal)
+	if err != nil {
+		return err
+	}
+	printResponse(resp)
+	return nil
 }
 
 var attendanceListAbsencesCmd = &cobra.Command{

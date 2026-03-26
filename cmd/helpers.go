@@ -20,16 +20,10 @@ const (
 )
 
 func loadConfigAndToken() (*config.Config, *auth.Token, string, error) {
-	pc, err := config.LoadProfileConfig(config.DefaultPath())
+	profile, name, err := loadActiveConfig()
 	if err != nil {
 		return nil, nil, "", err
 	}
-
-	profile, name, err := pc.ActiveProfile(profileName)
-	if err != nil {
-		return nil, nil, "", err
-	}
-	profile.ApplyEnvOverrides()
 
 	store := auth.NewProfileTokenStore(auth.DefaultTokenPath(), name)
 	token, err := store.Load()

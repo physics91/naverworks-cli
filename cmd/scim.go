@@ -310,10 +310,7 @@ func init() {
 		c.Flags().String("filter", "", "SCIM 필터 표현식")
 	}
 
-	for _, c := range []*cobra.Command{scimCreateUserCmd, scimUpdateUserCmd, scimPatchUserCmd} {
-		c.Flags().String("data", "", "요청 본문 (JSON 문자열)")
-	}
-	for _, c := range []*cobra.Command{scimCreateGroupCmd, scimUpdateGroupCmd, scimPatchGroupCmd} {
+	for _, c := range []*cobra.Command{scimCreateUserCmd, scimUpdateUserCmd, scimPatchUserCmd, scimCreateGroupCmd, scimUpdateGroupCmd, scimPatchGroupCmd} {
 		c.Flags().String("data", "", "요청 본문 (JSON 문자열)")
 	}
 

@@ -20,6 +20,8 @@ type Response struct {
 	Body       []byte
 }
 
+const maxRateLimitRetries = 3
+
 type RefreshFunc func(token *auth.Token) error
 
 type Client struct {
@@ -82,8 +84,6 @@ func (c *Client) do(method, path string, body []byte) (*Response, error) {
 }
 
 func (c *Client) doWithRetry(method, path string, body []byte, retried401 bool) (*Response, error) {
-	const maxRateLimitRetries = 3
-
 	for attempt := 0; attempt <= maxRateLimitRetries; attempt++ {
 		var bodyReader io.Reader
 		if body != nil {
@@ -143,8 +143,6 @@ func (c *Client) GetDownloadURL(path string) (string, error) {
 }
 
 func (c *Client) getDownloadURLWithRetry(path string, retried401 bool) (string, error) {
-	const maxRateLimitRetries = 3
-
 	for attempt := 0; attempt <= maxRateLimitRetries; attempt++ {
 		req, err := http.NewRequest("GET", c.baseURL+path, nil)
 		if err != nil {

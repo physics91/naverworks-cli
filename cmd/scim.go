@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/physics91/naverworks-cli/internal/api"
@@ -26,13 +25,12 @@ func loadScimService() (*api.ScimService, error) {
 }
 
 func parseRequiredJSONData(cmd *cobra.Command) (map[string]interface{}, error) {
-	data, _ := cmd.Flags().GetString("data")
-	if data == "" {
-		return nil, fmt.Errorf("--data는 필수입니다 (JSON 문자열)")
+	body, err := parseOptionalJSONData(cmd)
+	if err != nil {
+		return nil, err
 	}
-	var body map[string]interface{}
-	if err := json.Unmarshal([]byte(data), &body); err != nil {
-		return nil, fmt.Errorf("JSON 파싱 실패: %w", err)
+	if body == nil {
+		return nil, fmt.Errorf("--data는 필수입니다 (JSON 문자열)")
 	}
 	return body, nil
 }

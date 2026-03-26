@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/physics91/naverworks-cli/internal/api"
 	"github.com/physics91/naverworks-cli/internal/output"
@@ -16,21 +15,40 @@ var scimCmd = &cobra.Command{
 	Short: "SCIM 사용자/그룹 관리",
 }
 
+func loadScimService() (*api.ScimService, error) {
+	cfg, _, err := loadActiveConfig()
+	if err != nil {
+		return nil, err
+	}
+	client, err := buildScimClient(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return api.NewScimService(client), nil
+}
+
+func parseRequiredJSONData(cmd *cobra.Command) (map[string]interface{}, error) {
+	data, _ := cmd.Flags().GetString("data")
+	if data == "" {
+		return nil, fmt.Errorf("--data는 필수입니다 (JSON 문자열)")
+	}
+	var body map[string]interface{}
+	if err := json.Unmarshal([]byte(data), &body); err != nil {
+		return nil, fmt.Errorf("JSON 파싱 실패: %w", err)
+	}
+	return body, nil
+}
+
 // --- Users ---
 
 var scimListUsersCmd = &cobra.Command{
 	Use:   "list-users",
 	Short: "SCIM 사용자 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, _, err := loadActiveConfig()
+		svc, err := loadScimService()
 		if err != nil {
 			return err
 		}
-		client, err := buildScimClient(cfg)
-		if err != nil {
-			return err
-		}
-		svc := api.NewScimService(client)
 
 		startIndex, _ := cmd.Flags().GetInt("start-index")
 		count, _ := cmd.Flags().GetInt("count")
@@ -50,15 +68,10 @@ var scimGetUserCmd = &cobra.Command{
 	Short: "SCIM 사용자 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, _, err := loadActiveConfig()
+		svc, err := loadScimService()
 		if err != nil {
 			return err
 		}
-		client, err := buildScimClient(cfg)
-		if err != nil {
-			return err
-		}
-		svc := api.NewScimService(client)
 
 		resp, err := svc.GetUser(args[0])
 		if err != nil {
@@ -73,23 +86,14 @@ var scimCreateUserCmd = &cobra.Command{
 	Use:   "create-user",
 	Short: "SCIM 사용자 생성",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, _, err := loadActiveConfig()
+		svc, err := loadScimService()
 		if err != nil {
 			return err
 		}
-		client, err := buildScimClient(cfg)
-		if err != nil {
-			return err
-		}
-		svc := api.NewScimService(client)
 
-		data, _ := cmd.Flags().GetString("data")
-		if data == "" {
-			return fmt.Errorf("--data는 필수입니다 (JSON 문자열)")
-		}
-		var body map[string]interface{}
-		if err := json.Unmarshal([]byte(data), &body); err != nil {
-			return fmt.Errorf("JSON 파싱 실패: %w", err)
+		body, err := parseRequiredJSONData(cmd)
+		if err != nil {
+			return err
 		}
 
 		resp, err := svc.CreateUser(body)
@@ -106,23 +110,14 @@ var scimUpdateUserCmd = &cobra.Command{
 	Short: "SCIM 사용자 전체 수정 (PUT)",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, _, err := loadActiveConfig()
+		svc, err := loadScimService()
 		if err != nil {
 			return err
 		}
-		client, err := buildScimClient(cfg)
-		if err != nil {
-			return err
-		}
-		svc := api.NewScimService(client)
 
-		data, _ := cmd.Flags().GetString("data")
-		if data == "" {
-			return fmt.Errorf("--data는 필수입니다 (JSON 문자열)")
-		}
-		var body map[string]interface{}
-		if err := json.Unmarshal([]byte(data), &body); err != nil {
-			return fmt.Errorf("JSON 파싱 실패: %w", err)
+		body, err := parseRequiredJSONData(cmd)
+		if err != nil {
+			return err
 		}
 
 		resp, err := svc.UpdateUser(args[0], body)
@@ -139,23 +134,14 @@ var scimPatchUserCmd = &cobra.Command{
 	Short: "SCIM 사용자 부분 수정 (PATCH)",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, _, err := loadActiveConfig()
+		svc, err := loadScimService()
 		if err != nil {
 			return err
 		}
-		client, err := buildScimClient(cfg)
-		if err != nil {
-			return err
-		}
-		svc := api.NewScimService(client)
 
-		data, _ := cmd.Flags().GetString("data")
-		if data == "" {
-			return fmt.Errorf("--data는 필수입니다 (JSON 문자열)")
-		}
-		var body map[string]interface{}
-		if err := json.Unmarshal([]byte(data), &body); err != nil {
-			return fmt.Errorf("JSON 파싱 실패: %w", err)
+		body, err := parseRequiredJSONData(cmd)
+		if err != nil {
+			return err
 		}
 
 		resp, err := svc.PatchUser(args[0], body)
@@ -172,25 +158,16 @@ var scimDeleteUserCmd = &cobra.Command{
 	Short: "SCIM 사용자 삭제",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, _, err := loadActiveConfig()
+		svc, err := loadScimService()
 		if err != nil {
 			return err
 		}
-		client, err := buildScimClient(cfg)
-		if err != nil {
-			return err
-		}
-		svc := api.NewScimService(client)
 
 		resp, err := svc.DeleteUser(args[0])
 		if err != nil {
 			return err
 		}
-		if len(resp.Body) == 0 || strings.TrimSpace(string(resp.Body)) == "" {
-			fmt.Println("{}")
-		} else {
-			output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
-		}
+		printResponse(resp)
 		return nil
 	},
 }
@@ -201,15 +178,10 @@ var scimListGroupsCmd = &cobra.Command{
 	Use:   "list-groups",
 	Short: "SCIM 그룹 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, _, err := loadActiveConfig()
+		svc, err := loadScimService()
 		if err != nil {
 			return err
 		}
-		client, err := buildScimClient(cfg)
-		if err != nil {
-			return err
-		}
-		svc := api.NewScimService(client)
 
 		startIndex, _ := cmd.Flags().GetInt("start-index")
 		count, _ := cmd.Flags().GetInt("count")
@@ -229,15 +201,10 @@ var scimGetGroupCmd = &cobra.Command{
 	Short: "SCIM 그룹 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, _, err := loadActiveConfig()
+		svc, err := loadScimService()
 		if err != nil {
 			return err
 		}
-		client, err := buildScimClient(cfg)
-		if err != nil {
-			return err
-		}
-		svc := api.NewScimService(client)
 
 		resp, err := svc.GetGroup(args[0])
 		if err != nil {
@@ -252,23 +219,14 @@ var scimCreateGroupCmd = &cobra.Command{
 	Use:   "create-group",
 	Short: "SCIM 그룹 생성",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, _, err := loadActiveConfig()
+		svc, err := loadScimService()
 		if err != nil {
 			return err
 		}
-		client, err := buildScimClient(cfg)
-		if err != nil {
-			return err
-		}
-		svc := api.NewScimService(client)
 
-		data, _ := cmd.Flags().GetString("data")
-		if data == "" {
-			return fmt.Errorf("--data는 필수입니다 (JSON 문자열)")
-		}
-		var body map[string]interface{}
-		if err := json.Unmarshal([]byte(data), &body); err != nil {
-			return fmt.Errorf("JSON 파싱 실패: %w", err)
+		body, err := parseRequiredJSONData(cmd)
+		if err != nil {
+			return err
 		}
 
 		resp, err := svc.CreateGroup(body)
@@ -285,23 +243,14 @@ var scimUpdateGroupCmd = &cobra.Command{
 	Short: "SCIM 그룹 전체 수정 (PUT)",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, _, err := loadActiveConfig()
+		svc, err := loadScimService()
 		if err != nil {
 			return err
 		}
-		client, err := buildScimClient(cfg)
-		if err != nil {
-			return err
-		}
-		svc := api.NewScimService(client)
 
-		data, _ := cmd.Flags().GetString("data")
-		if data == "" {
-			return fmt.Errorf("--data는 필수입니다 (JSON 문자열)")
-		}
-		var body map[string]interface{}
-		if err := json.Unmarshal([]byte(data), &body); err != nil {
-			return fmt.Errorf("JSON 파싱 실패: %w", err)
+		body, err := parseRequiredJSONData(cmd)
+		if err != nil {
+			return err
 		}
 
 		resp, err := svc.UpdateGroup(args[0], body)
@@ -318,23 +267,14 @@ var scimPatchGroupCmd = &cobra.Command{
 	Short: "SCIM 그룹 부분 수정 (PATCH)",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, _, err := loadActiveConfig()
+		svc, err := loadScimService()
 		if err != nil {
 			return err
 		}
-		client, err := buildScimClient(cfg)
-		if err != nil {
-			return err
-		}
-		svc := api.NewScimService(client)
 
-		data, _ := cmd.Flags().GetString("data")
-		if data == "" {
-			return fmt.Errorf("--data는 필수입니다 (JSON 문자열)")
-		}
-		var body map[string]interface{}
-		if err := json.Unmarshal([]byte(data), &body); err != nil {
-			return fmt.Errorf("JSON 파싱 실패: %w", err)
+		body, err := parseRequiredJSONData(cmd)
+		if err != nil {
+			return err
 		}
 
 		resp, err := svc.PatchGroup(args[0], body)
@@ -351,25 +291,16 @@ var scimDeleteGroupCmd = &cobra.Command{
 	Short: "SCIM 그룹 삭제",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, _, err := loadActiveConfig()
+		svc, err := loadScimService()
 		if err != nil {
 			return err
 		}
-		client, err := buildScimClient(cfg)
-		if err != nil {
-			return err
-		}
-		svc := api.NewScimService(client)
 
 		resp, err := svc.DeleteGroup(args[0])
 		if err != nil {
 			return err
 		}
-		if len(resp.Body) == 0 || strings.TrimSpace(string(resp.Body)) == "" {
-			fmt.Println("{}")
-		} else {
-			output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
-		}
+		printResponse(resp)
 		return nil
 	},
 }

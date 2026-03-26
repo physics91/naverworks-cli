@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/physics91/naverworks-cli/internal/api"
 	"github.com/physics91/naverworks-cli/internal/output"
@@ -202,11 +201,7 @@ var boardDeletePostCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if len(resp.Body) == 0 || strings.TrimSpace(string(resp.Body)) == "" {
-			fmt.Println("{}")
-		} else {
-			output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
-		}
+		printResponse(resp)
 		return nil
 	},
 }

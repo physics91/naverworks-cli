@@ -65,11 +65,7 @@ var botSendCmd = &cobra.Command{
 			return err
 		}
 
-		if len(resp.Body) == 0 || strings.TrimSpace(string(resp.Body)) == "" {
-			fmt.Println("{}")
-		} else {
-			output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
-		}
+		printResponse(resp)
 		return nil
 	},
 }

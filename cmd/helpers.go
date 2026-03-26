@@ -3,6 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/physics91/naverworks-cli/internal/api"
@@ -117,6 +119,14 @@ func paginateAndPrint(fetch api.FetchFunc, key string, formatter *output.Formatt
 	}
 	formatter.PrintRaw(merged)
 	return nil
+}
+
+func printResponse(resp *api.Response) {
+	if len(resp.Body) == 0 || strings.TrimSpace(string(resp.Body)) == "" {
+		fmt.Println("{}")
+	} else {
+		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+	}
 }
 
 func loadActiveConfig() (*config.Config, string, error) {

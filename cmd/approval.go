@@ -1,10 +1,7 @@
 package cmd
 
 import (
-	"os"
-
 	"github.com/physics91/naverworks-cli/internal/api"
-	"github.com/physics91/naverworks-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -27,25 +24,9 @@ var approvalListCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewApprovalService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"approvalDocumentId", "title"}, "documents")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return svc.ListUserDocuments(userID, c, count)
-			}, "documents", formatter)
-		}
-
-		resp, err := svc.ListUserDocuments(userID, cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"approvalDocumentId", "title"}, "documents", func(c string, n int) (*api.Response, error) {
+			return svc.ListUserDocuments(userID, c, n)
+		})
 	},
 }
 
@@ -59,25 +40,7 @@ var approvalListAllCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewApprovalService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"approvalDocumentId", "title"}, "documents")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return svc.ListDocuments(c, count)
-			}, "documents", formatter)
-		}
-
-		resp, err := svc.ListDocuments(cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"approvalDocumentId", "title"}, "documents", svc.ListDocuments)
 	},
 }
 
@@ -112,25 +75,7 @@ var approvalListCategoriesCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewApprovalService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"categoryId", "categoryName"}, "categories")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return svc.ListCategories(c, count)
-			}, "categories", formatter)
-		}
-
-		resp, err := svc.ListCategories(cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"categoryId", "categoryName"}, "categories", svc.ListCategories)
 	},
 }
 
@@ -165,25 +110,7 @@ var approvalListFormsCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewApprovalService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"documentFormId", "documentFormName"}, "documentForms")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return svc.ListDocumentForms(c, count)
-			}, "documentForms", formatter)
-		}
-
-		resp, err := svc.ListDocumentForms(cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"documentFormId", "documentFormName"}, "documentForms", svc.ListDocumentForms)
 	},
 }
 

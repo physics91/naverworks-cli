@@ -3,10 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/physics91/naverworks-cli/internal/api"
-	"github.com/physics91/naverworks-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -29,25 +27,9 @@ var taskListCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewTaskService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"taskId", "title"}, "tasks")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return svc.ListTasks(userID, c, count)
-			}, "tasks", formatter)
-		}
-
-		resp, err := svc.ListTasks(userID, cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"taskId", "title"}, "tasks", func(c string, n int) (*api.Response, error) {
+			return svc.ListTasks(userID, c, n)
+		})
 	},
 }
 
@@ -179,25 +161,9 @@ var taskListCategoriesCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewTaskService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"categoryId", "categoryName"}, "taskCategories")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return svc.ListCategories(userID, c, count)
-			}, "taskCategories", formatter)
-		}
-
-		resp, err := svc.ListCategories(userID, cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"categoryId", "categoryName"}, "taskCategories", func(c string, n int) (*api.Response, error) {
+			return svc.ListCategories(userID, c, n)
+		})
 	},
 }
 

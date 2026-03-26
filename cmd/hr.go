@@ -1,10 +1,7 @@
 package cmd
 
 import (
-	"os"
-
 	"github.com/physics91/naverworks-cli/internal/api"
-	"github.com/physics91/naverworks-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -23,25 +20,7 @@ var hrListExtensionPropertiesCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewHRService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"propertyId", "propertyName"}, "extensionProperties")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return svc.ListExtensionProperties(c, count)
-			}, "extensionProperties", formatter)
-		}
-
-		resp, err := svc.ListExtensionProperties(cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"propertyId", "propertyName"}, "extensionProperties", svc.ListExtensionProperties)
 	},
 }
 
@@ -76,25 +55,7 @@ var hrListLeaveTypesCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewHRService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"leaveTypeId", "leaveTypeName"}, "leaveOfAbsences")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return svc.ListLeaveOfAbsences(c, count)
-			}, "leaveOfAbsences", formatter)
-		}
-
-		resp, err := svc.ListLeaveOfAbsences(cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"leaveTypeId", "leaveTypeName"}, "leaveOfAbsences", svc.ListLeaveOfAbsences)
 	},
 }
 
@@ -108,25 +69,7 @@ var hrListOnLeaveCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewHRService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"userId", "userName"}, "onLeaveUsers")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return svc.ListOnLeaveUsers(c, count)
-			}, "onLeaveUsers", formatter)
-		}
-
-		resp, err := svc.ListOnLeaveUsers(cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"userId", "userName"}, "onLeaveUsers", svc.ListOnLeaveUsers)
 	},
 }
 

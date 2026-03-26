@@ -3,10 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/physics91/naverworks-cli/internal/api"
-	"github.com/physics91/naverworks-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -53,25 +51,7 @@ var auditListPolicyGroupsCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewAuditService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"policyGroupId", "policyGroupName"}, "policyGroups")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return svc.ListPolicyGroups(c, count)
-			}, "policyGroups", formatter)
-		}
-
-		resp, err := svc.ListPolicyGroups(cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"policyGroupId", "policyGroupName"}, "policyGroups", svc.ListPolicyGroups)
 	},
 }
 

@@ -2,10 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/physics91/naverworks-cli/internal/api"
-	"github.com/physics91/naverworks-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -116,25 +114,9 @@ var mailListFoldersCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewMailService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"folderId", "folderName"}, "mailFolders")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return svc.ListFolders(userID, c, count)
-			}, "mailFolders", formatter)
-		}
-
-		resp, err := svc.ListFolders(userID, cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"folderId", "folderName"}, "mailFolders", func(c string, n int) (*api.Response, error) {
+			return svc.ListFolders(userID, c, n)
+		})
 	},
 }
 
@@ -178,25 +160,9 @@ var mailListCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewMailService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"mailId", "subject"}, "mails")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return svc.ListMails(userID, args[0], c, count)
-			}, "mails", formatter)
-		}
-
-		resp, err := svc.ListMails(userID, args[0], cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"mailId", "subject"}, "mails", func(c string, n int) (*api.Response, error) {
+			return svc.ListMails(userID, args[0], c, n)
+		})
 	},
 }
 

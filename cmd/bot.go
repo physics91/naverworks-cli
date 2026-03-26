@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/physics91/naverworks-cli/internal/api"
-	"github.com/physics91/naverworks-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -110,25 +109,9 @@ var botChannelMembersCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		bot := api.NewBotService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"userId"}, "members")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return bot.ListChannelMembers(botID, args[0], c, count)
-			}, "members", formatter)
-		}
-
-		resp, err := bot.ListChannelMembers(botID, args[0], cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"userId"}, "members", func(c string, n int) (*api.Response, error) {
+			return bot.ListChannelMembers(botID, args[0], c, n)
+		})
 	},
 }
 

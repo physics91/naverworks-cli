@@ -133,6 +133,27 @@ func printBody(body []byte) {
 	output.NewFormatter(outputFormat, os.Stdout).PrintRaw(body)
 }
 
+func runListCmd(cmd *cobra.Command, columns []string, itemKey string, fetch func(string, int) (*api.Response, error)) error {
+	cursor, _ := cmd.Flags().GetString("cursor")
+	count, _ := cmd.Flags().GetInt("count")
+	all, _ := cmd.Flags().GetBool("all")
+
+	formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable(columns, itemKey)
+
+	if all {
+		return paginateAndPrint(func(c string) (*api.Response, error) {
+			return fetch(c, count)
+		}, itemKey, formatter)
+	}
+
+	resp, err := fetch(cursor, count)
+	if err != nil {
+		return err
+	}
+	formatter.PrintRaw(resp.Body)
+	return nil
+}
+
 func loadActiveConfig() (*config.Config, string, error) {
 	pc, err := config.LoadProfileConfig(config.DefaultPath())
 	if err != nil {

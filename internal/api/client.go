@@ -65,11 +65,18 @@ func (c *Client) Delete(path string) (*Response, error) {
 	return c.do("DELETE", path, nil)
 }
 
-func (c *Client) do(method, path string, body []byte) (*Response, error) {
+func (c *Client) refreshIfNeeded() error {
 	if c.token.NeedsRefresh() && c.refreshFn != nil {
 		if err := c.refreshFn(c.token); err != nil {
-			return nil, fmt.Errorf("토큰 갱신 실패: %w", err)
+			return fmt.Errorf("토큰 갱신 실패: %w", err)
 		}
+	}
+	return nil
+}
+
+func (c *Client) do(method, path string, body []byte) (*Response, error) {
+	if err := c.refreshIfNeeded(); err != nil {
+		return nil, err
 	}
 	return c.doWithRetry(method, path, body, false)
 }
@@ -129,10 +136,8 @@ func (c *Client) doWithRetry(method, path string, body []byte, retried401 bool) 
 // returning the Location header URL for download endpoints that return 302.
 // Includes token refresh and 401/429 retry logic (same as doWithRetry).
 func (c *Client) GetDownloadURL(path string) (string, error) {
-	if c.token.NeedsRefresh() && c.refreshFn != nil {
-		if err := c.refreshFn(c.token); err != nil {
-			return "", fmt.Errorf("토큰 갱신 실패: %w", err)
-		}
+	if err := c.refreshIfNeeded(); err != nil {
+		return "", err
 	}
 	return c.getDownloadURLWithRetry(path, false)
 }

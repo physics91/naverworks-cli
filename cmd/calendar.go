@@ -41,24 +41,9 @@ var calListCalendarsCmd = &cobra.Command{
 			return nil
 		}
 
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"calendarId", "calendarName"}, "calendarPersonals")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return cal.ListCalendars(userID, c, count)
-			}, "calendarPersonals", formatter)
-		}
-
-		resp, err := cal.ListCalendars(userID, cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"calendarId", "calendarName"}, "calendarPersonals", func(c string, n int) (*api.Response, error) {
+			return cal.ListCalendars(userID, c, n)
+		})
 	},
 }
 

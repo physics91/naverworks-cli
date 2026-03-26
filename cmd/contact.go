@@ -3,10 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/physics91/naverworks-cli/internal/api"
-	"github.com/physics91/naverworks-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -25,25 +23,7 @@ var contactListCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewContactService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"contactId", "name", "email"}, "contacts")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return svc.ListContacts(c, count)
-			}, "contacts", formatter)
-		}
-
-		resp, err := svc.ListContacts(cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"contactId", "name", "email"}, "contacts", svc.ListContacts)
 	},
 }
 
@@ -61,25 +41,9 @@ var contactListUserCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewContactService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"contactId", "name", "email"}, "contacts")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return svc.ListUserContacts(userID, c, count)
-			}, "contacts", formatter)
-		}
-
-		resp, err := svc.ListUserContacts(userID, cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"contactId", "name", "email"}, "contacts", func(c string, n int) (*api.Response, error) {
+			return svc.ListUserContacts(userID, c, n)
+		})
 	},
 }
 
@@ -210,25 +174,7 @@ var contactListTagsCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewContactService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"tagId", "tagName"}, "contactTags")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return svc.ListTags(c, count)
-			}, "contactTags", formatter)
-		}
-
-		resp, err := svc.ListTags(cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"tagId", "tagName"}, "contactTags", svc.ListTags)
 	},
 }
 
@@ -246,25 +192,9 @@ var contactListUserTagsCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		svc := api.NewContactService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"tagId", "tagName"}, "contactTags")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return svc.ListUserTags(userID, c, count)
-			}, "contactTags", formatter)
-		}
-
-		resp, err := svc.ListUserTags(userID, cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"tagId", "tagName"}, "contactTags", func(c string, n int) (*api.Response, error) {
+			return svc.ListUserTags(userID, c, n)
+		})
 	},
 }
 

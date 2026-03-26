@@ -1,10 +1,7 @@
 package cmd
 
 import (
-	"os"
-
 	"github.com/physics91/naverworks-cli/internal/api"
-	"github.com/physics91/naverworks-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -23,25 +20,7 @@ var dirListUsersCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		dir := api.NewDirectoryService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"userId", "userName", "email"}, "users")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return dir.ListUsers(c, count)
-			}, "users", formatter)
-		}
-
-		resp, err := dir.ListUsers(cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"userId", "userName", "email"}, "users", dir.ListUsers)
 	},
 }
 
@@ -76,25 +55,7 @@ var dirListGroupsCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		dir := api.NewDirectoryService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"groupId", "groupName"}, "groups")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return dir.ListGroups(c, count)
-			}, "groups", formatter)
-		}
-
-		resp, err := dir.ListGroups(cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"groupId", "groupName"}, "groups", dir.ListGroups)
 	},
 }
 
@@ -129,25 +90,7 @@ var dirListOrgUnitsCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		dir := api.NewDirectoryService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"orgUnitId", "orgUnitName"}, "orgUnits")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return dir.ListOrgUnits(c, count)
-			}, "orgUnits", formatter)
-		}
-
-		resp, err := dir.ListOrgUnits(cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"orgUnitId", "orgUnitName"}, "orgUnits", dir.ListOrgUnits)
 	},
 }
 
@@ -182,25 +125,7 @@ var dirListLevelsCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		dir := api.NewDirectoryService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"levelId", "levelName"}, "levels")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return dir.ListLevels(c, count)
-			}, "levels", formatter)
-		}
-
-		resp, err := dir.ListLevels(cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"levelId", "levelName"}, "levels", dir.ListLevels)
 	},
 }
 
@@ -214,25 +139,7 @@ var dirListPositionsCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		dir := api.NewDirectoryService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"positionId", "positionName"}, "positions")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return dir.ListPositions(c, count)
-			}, "positions", formatter)
-		}
-
-		resp, err := dir.ListPositions(cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"positionId", "positionName"}, "positions", dir.ListPositions)
 	},
 }
 
@@ -246,25 +153,7 @@ var dirListUserTypesCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		dir := api.NewDirectoryService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"userTypeId", "userTypeName"}, "userTypes")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return dir.ListUserTypes(c, count)
-			}, "userTypes", formatter)
-		}
-
-		resp, err := dir.ListUserTypes(cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"userTypeId", "userTypeName"}, "userTypes", dir.ListUserTypes)
 	},
 }
 
@@ -278,25 +167,7 @@ var dirListEmploymentTypesCmd = &cobra.Command{
 		}
 		client := buildAPIClient(cfg, token, name)
 		dir := api.NewDirectoryService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		all, _ := cmd.Flags().GetBool("all")
-
-		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"employmentTypeId", "employmentTypeName"}, "employmentTypes")
-
-		if all {
-			return paginateAndPrint(func(c string) (*api.Response, error) {
-				return dir.ListEmploymentTypes(c, count)
-			}, "employmentTypes", formatter)
-		}
-
-		resp, err := dir.ListEmploymentTypes(cursor, count)
-		if err != nil {
-			return err
-		}
-		formatter.PrintRaw(resp.Body)
-		return nil
+		return runListCmd(cmd, []string{"employmentTypeId", "employmentTypeName"}, "employmentTypes", dir.ListEmploymentTypes)
 	},
 }
 

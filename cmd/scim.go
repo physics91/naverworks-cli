@@ -3,10 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/physics91/naverworks-cli/internal/api"
-	"github.com/physics91/naverworks-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -58,7 +56,7 @@ var scimListUsersCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -77,7 +75,7 @@ var scimGetUserCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -100,7 +98,7 @@ var scimCreateUserCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -124,7 +122,7 @@ var scimUpdateUserCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -148,7 +146,7 @@ var scimPatchUserCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -191,7 +189,7 @@ var scimListGroupsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -210,7 +208,7 @@ var scimGetGroupCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -233,7 +231,7 @@ var scimCreateGroupCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -257,7 +255,7 @@ var scimUpdateGroupCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -281,7 +279,7 @@ var scimPatchGroupCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }

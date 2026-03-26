@@ -62,7 +62,7 @@ var boardGetCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -116,7 +116,7 @@ var boardGetPostCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -148,7 +148,7 @@ var boardCreatePostCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -180,7 +180,7 @@ var boardUpdatePostCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }

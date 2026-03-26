@@ -67,7 +67,7 @@ var taskGetCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -105,7 +105,7 @@ var taskCreateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -139,7 +139,7 @@ var taskUpdateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }

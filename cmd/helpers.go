@@ -129,6 +129,10 @@ func printResponse(resp *api.Response) {
 	}
 }
 
+func printBody(body []byte) {
+	output.NewFormatter(outputFormat, os.Stdout).PrintRaw(body)
+}
+
 func loadActiveConfig() (*config.Config, string, error) {
 	pc, err := config.LoadProfileConfig(config.DefaultPath())
 	if err != nil {

@@ -38,7 +38,7 @@ var auditDownloadLogsCmd = &cobra.Command{
 			return err
 		}
 		result, _ := json.Marshal(map[string]string{"download_url": downloadURL})
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(result)
+		printBody(result)
 		return nil
 	},
 }
@@ -61,18 +61,9 @@ var auditListPolicyGroupsCmd = &cobra.Command{
 		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"policyGroupId", "policyGroupName"}, "policyGroups")
 
 		if all {
-			items, err := api.PaginateAll(func(c string) (*api.Response, error) {
+			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return svc.ListPolicyGroups(c, count)
-			}, "policyGroups")
-			if err != nil {
-				return err
-			}
-			merged, err := json.Marshal(map[string]interface{}{"policyGroups": json.RawMessage(items)})
-			if err != nil {
-				return fmt.Errorf("결과 직렬화 실패: %w", err)
-			}
-			formatter.PrintRaw(merged)
-			return nil
+			}, "policyGroups", formatter)
 		}
 
 		resp, err := svc.ListPolicyGroups(cursor, count)
@@ -111,7 +102,7 @@ var monitoringDownloadMessagesCmd = &cobra.Command{
 			return err
 		}
 		result, _ := json.Marshal(map[string]string{"download_url": downloadURL})
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(result)
+		printBody(result)
 		return nil
 	},
 }

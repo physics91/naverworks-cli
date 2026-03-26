@@ -61,7 +61,7 @@ var dirGetUserCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -114,7 +114,7 @@ var dirGetGroupCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -167,7 +167,7 @@ var dirGetOrgUnitCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }

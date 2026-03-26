@@ -64,7 +64,7 @@ var formDownloadAttachmentCmd = &cobra.Command{
 			return err
 		}
 		result, _ := json.Marshal(map[string]string{"download_url": downloadURL})
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(result)
+		printBody(result)
 		return nil
 	},
 }

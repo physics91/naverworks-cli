@@ -99,7 +99,7 @@ var contactGetCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -137,7 +137,7 @@ var contactCreateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -174,7 +174,7 @@ var contactUpdateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }

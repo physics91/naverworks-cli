@@ -37,7 +37,7 @@ var calListCalendarsCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+			printBody(resp.Body)
 			return nil
 		}
 
@@ -138,7 +138,7 @@ var calGetEventCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -202,7 +202,7 @@ var calCreateEventCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }

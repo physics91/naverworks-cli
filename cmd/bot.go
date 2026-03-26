@@ -90,7 +90,7 @@ var botGetChannelCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -115,8 +115,9 @@ var botChannelMembersCmd = &cobra.Command{
 		count, _ := cmd.Flags().GetInt("count")
 		all, _ := cmd.Flags().GetBool("all")
 
+		formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"userId"}, "members")
+
 		if all {
-			formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"userId"}, "members")
 			return paginateAndPrint(func(c string) (*api.Response, error) {
 				return bot.ListChannelMembers(botID, args[0], c, count)
 			}, "members", formatter)
@@ -126,7 +127,7 @@ var botChannelMembersCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).WithTable([]string{"userId"}, "members").PrintRaw(resp.Body)
+		formatter.PrintRaw(resp.Body)
 		return nil
 	},
 }

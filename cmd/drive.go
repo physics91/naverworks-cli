@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	"github.com/physics91/naverworks-cli/internal/api"
-	"github.com/physics91/naverworks-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -37,7 +36,7 @@ var driveInfoCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -70,7 +69,7 @@ var driveListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -95,7 +94,7 @@ var driveGetCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -121,7 +120,7 @@ var driveDownloadCmd = &cobra.Command{
 			return err
 		}
 		result, _ := json.Marshal(map[string]string{"download_url": downloadURL})
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(result)
+		printBody(result)
 		return nil
 	},
 }
@@ -177,7 +176,7 @@ var driveUploadCmd = &cobra.Command{
 		if err := svc.UploadFile(result.UploadURL, localPath); err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -212,7 +211,7 @@ var driveMkdirCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -264,7 +263,7 @@ var driveTrashListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -319,7 +318,7 @@ var driveSharedListDrivesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -340,7 +339,7 @@ var driveSharedGetDriveCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -370,7 +369,7 @@ var driveSharedListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -391,7 +390,7 @@ var driveSharedGetCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -413,7 +412,7 @@ var driveSharedDownloadCmd = &cobra.Command{
 			return err
 		}
 		result, _ := json.Marshal(map[string]string{"download_url": downloadURL})
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(result)
+		printBody(result)
 		return nil
 	},
 }
@@ -459,7 +458,7 @@ var driveSharedUploadCmd = &cobra.Command{
 		if err := svc.UploadFile(result.UploadURL, localPath); err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -487,7 +486,7 @@ var driveGroupGetFolderCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -517,7 +516,7 @@ var driveGroupListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -538,7 +537,7 @@ var driveGroupGetCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -572,7 +571,7 @@ var driveSharedFolderListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }
@@ -600,7 +599,7 @@ var driveSharedFolderFilesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		printBody(resp.Body)
 		return nil
 	},
 }

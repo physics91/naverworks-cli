@@ -14,9 +14,7 @@ func NewScimService(client *Client) *ScimService {
 	return &ScimService{client: client}
 }
 
-// Users
-
-func (s *ScimService) ListUsers(startIndex, count int, filter string) (*Response, error) {
+func buildScimListQuery(startIndex, count int, filter string) string {
 	params := url.Values{}
 	if startIndex > 0 {
 		params.Set("startIndex", fmt.Sprintf("%d", startIndex))
@@ -27,11 +25,16 @@ func (s *ScimService) ListUsers(startIndex, count int, filter string) (*Response
 	if filter != "" {
 		params.Set("filter", filter)
 	}
-	query := ""
 	if len(params) > 0 {
-		query = "?" + params.Encode()
+		return "?" + params.Encode()
 	}
-	return s.client.Get("/Users" + query)
+	return ""
+}
+
+// Users
+
+func (s *ScimService) ListUsers(startIndex, count int, filter string) (*Response, error) {
+	return s.client.Get("/Users" + buildScimListQuery(startIndex, count, filter))
 }
 
 func (s *ScimService) GetUser(id string) (*Response, error) {
@@ -69,21 +72,7 @@ func (s *ScimService) DeleteUser(id string) (*Response, error) {
 // Groups
 
 func (s *ScimService) ListGroups(startIndex, count int, filter string) (*Response, error) {
-	params := url.Values{}
-	if startIndex > 0 {
-		params.Set("startIndex", fmt.Sprintf("%d", startIndex))
-	}
-	if count > 0 {
-		params.Set("count", fmt.Sprintf("%d", count))
-	}
-	if filter != "" {
-		params.Set("filter", filter)
-	}
-	query := ""
-	if len(params) > 0 {
-		query = "?" + params.Encode()
-	}
-	return s.client.Get("/Groups" + query)
+	return s.client.Get("/Groups" + buildScimListQuery(startIndex, count, filter))
 }
 
 func (s *ScimService) GetGroup(id string) (*Response, error) {

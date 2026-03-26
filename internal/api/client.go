@@ -23,10 +23,11 @@ type Response struct {
 type RefreshFunc func(token *auth.Token) error
 
 type Client struct {
-	baseURL    string
-	token      *auth.Token
-	refreshFn  RefreshFunc
-	httpClient *http.Client
+	baseURL          string
+	token            *auth.Token
+	refreshFn        RefreshFunc
+	httpClient       *http.Client
+	noRedirectClient *http.Client
 }
 
 func NewClient(baseURL string, token *auth.Token, refreshFn RefreshFunc) *Client {
@@ -35,6 +36,12 @@ func NewClient(baseURL string, token *auth.Token, refreshFn RefreshFunc) *Client
 		token:      token,
 		refreshFn:  refreshFn,
 		httpClient: &http.Client{Timeout: 30 * time.Second},
+		noRedirectClient: &http.Client{
+			Timeout: 30 * time.Second,
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		},
 	}
 }
 
@@ -133,13 +140,6 @@ func (c *Client) GetDownloadURL(path string) (string, error) {
 func (c *Client) getDownloadURLWithRetry(path string, retried401 bool) (string, error) {
 	const maxRateLimitRetries = 3
 
-	noRedirectClient := &http.Client{
-		Timeout: 30 * time.Second,
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}
-
 	for attempt := 0; attempt <= maxRateLimitRetries; attempt++ {
 		req, err := http.NewRequest("GET", c.baseURL+path, nil)
 		if err != nil {
@@ -147,7 +147,7 @@ func (c *Client) getDownloadURLWithRetry(path string, retried401 bool) (string, 
 		}
 		req.Header.Set("Authorization", "Bearer "+c.token.AccessToken)
 
-		resp, err := noRedirectClient.Do(req)
+		resp, err := c.noRedirectClient.Do(req)
 		if err != nil {
 			return "", fmt.Errorf("네트워크 에러: %w", err)
 		}
@@ -184,7 +184,6 @@ func (c *Client) getDownloadURLWithRetry(path string, retried401 bool) (string, 
 			return "", DecodeAPIError(resp.StatusCode, body)
 
 		default:
-			// JSON 응답에 downloadUrl 필드가 있을 수 있음
 			var result struct {
 				DownloadURL string `json:"downloadUrl"`
 			}

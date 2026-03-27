@@ -9,19 +9,35 @@
     "postinstall": "node install.js"
   },
   "optionalDependencies": {
-    "@naverworks-cli/linux-x64": "0.1.0",
-    "@naverworks-cli/linux-arm64": "0.1.0",
-    "@naverworks-cli/darwin-x64": "0.1.0",
-    "@naverworks-cli/darwin-arm64": "0.1.0",
-    "@naverworks-cli/win32-x64": "0.1.0"
+    "@physics91/linux-x64": "0.1.0",
+    "@physics91/linux-arm64": "0.1.0",
+    "@physics91/darwin-x64": "0.1.0",
+    "@physics91/darwin-arm64": "0.1.0",
+    "@physics91/win32-x64": "0.1.0"
   },
-  "keywords": ["naverworks", "naver-works", "line-works", "cli"],
+  "keywords": [
+    "naverworks",
+    "naver-works",
+    "line-works",
+    "cli"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/physics91/naverworks-cli"
   },
-  "files": ["bin/", "install.js", "package.json"],
-  "os": ["linux", "darwin", "win32"],
-  "cpu": ["x64", "arm64"]
+  "files": [
+    "bin/",
+    "install.js",
+    "package.json"
+  ],
+  "os": [
+    "linux",
+    "darwin",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ]
 }

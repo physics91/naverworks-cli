@@ -2,11 +2,11 @@ const fs = require("fs");
 const path = require("path");
 
 const PLATFORM_MAP = {
-  "linux-x64": "@naverworks-cli/linux-x64",
-  "linux-arm64": "@naverworks-cli/linux-arm64",
-  "darwin-x64": "@naverworks-cli/darwin-x64",
-  "darwin-arm64": "@naverworks-cli/darwin-arm64",
-  "win32-x64": "@naverworks-cli/win32-x64",
+  "linux-x64": "@physics91/linux-x64",
+  "linux-arm64": "@physics91/linux-arm64",
+  "darwin-x64": "@physics91/darwin-x64",
+  "darwin-arm64": "@physics91/darwin-arm64",
+  "win32-x64": "@physics91/win32-x64",
 };
 
 function getPlatformPackage() {

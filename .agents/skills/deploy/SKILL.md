@@ -152,7 +152,7 @@ npm publish --access public
 ```bash
 cd ../..
 ```
-→ 성공 시 PUBLISHED_PACKAGES에 `@naverworks-cli/linux-x64` 추가
+→ 성공 시 PUBLISHED_PACKAGES에 `@physics91/linux-x64` 추가
 
 linux-arm64, darwin-x64, darwin-arm64, win32-x64도 **동일하게 3개 명령으로 분리**한다.
 
@@ -176,11 +176,11 @@ cd ../..
 ```bash
 gh release view v<VERSION>
 npm view naverworks version
-npm view @naverworks-cli/linux-x64 version
-npm view @naverworks-cli/linux-arm64 version
-npm view @naverworks-cli/darwin-x64 version
-npm view @naverworks-cli/darwin-arm64 version
-npm view @naverworks-cli/win32-x64 version
+npm view @physics91/linux-x64 version
+npm view @physics91/linux-arm64 version
+npm view @physics91/darwin-x64 version
+npm view @physics91/darwin-arm64 version
+npm view @physics91/win32-x64 version
 ```
 
 ### Phase 7: 정리 (자동 실행)

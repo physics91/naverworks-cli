@@ -55,7 +55,7 @@ for entry in "${PLATFORMS[@]}"; do
   # package.json 생성
   cat > "$PKG_DIR/package.json" << EOF
 {
-  "name": "@naverworks-cli/${NPM_PLATFORM}",
+  "name": "@physics91/${NPM_PLATFORM}",
   "version": "${VERSION}",
   "description": "naverworks binary for ${NPM_PLATFORM}",
   "os": ["${GOOS/linux/linux}"],
@@ -89,7 +89,7 @@ EOF
   chmod +x "$PKG_DIR/naverworks${EXT}"
   rm -rf "$TMPDIR"
 
-  echo "준비 완료: @naverworks-cli/${NPM_PLATFORM}@${VERSION}"
+  echo "준비 완료: @physics91/${NPM_PLATFORM}@${VERSION}"
 done
 
 echo ""

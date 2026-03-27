@@ -24,19 +24,7 @@ var authSetupCmd = &cobra.Command{
 			pc.EnsureProfile("default")
 		}
 
-		_, name, err := pc.ActiveProfile(profileName)
-		if err != nil {
-			// Profile doesn't exist yet, create it
-			name = profileName
-			if name == "" {
-				name = pc.CurrentProfile
-				if name == "" {
-					name = "default"
-				}
-			}
-			pc.EnsureProfile(name)
-		}
-		cfg := pc.Profiles[name]
+		cfg, name := resolveOrCreateProfile(pc)
 
 		fmt.Println("네이버웍스 CLI 인증 설정을 시작합니다.")
 		fmt.Println()

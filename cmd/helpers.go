@@ -237,3 +237,20 @@ func addListFlags(cmds ...*cobra.Command) {
 		c.Flags().Bool("all", false, "전체 페이지 자동 순회")
 	}
 }
+
+// resolveOrCreateProfile returns the active profile config and name,
+// creating the profile if it doesn't exist yet.
+func resolveOrCreateProfile(pc *config.ProfileConfig) (*config.Config, string) {
+	_, name, err := pc.ActiveProfile(profileName)
+	if err != nil {
+		name = profileName
+		if name == "" {
+			name = pc.CurrentProfile
+			if name == "" {
+				name = "default"
+			}
+		}
+		pc.EnsureProfile(name)
+	}
+	return pc.Profiles[name], name
+}

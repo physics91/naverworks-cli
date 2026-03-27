@@ -26,19 +26,7 @@ var configSetCmd = &cobra.Command{
 			return err
 		}
 
-		_, name, err := pc.ActiveProfile(profileName)
-		if err != nil {
-			// Profile doesn't exist yet, create it
-			name = profileName
-			if name == "" {
-				name = pc.CurrentProfile
-				if name == "" {
-					name = "default"
-				}
-			}
-			pc.EnsureProfile(name)
-		}
-		cfg := pc.Profiles[name]
+		cfg, _ := resolveOrCreateProfile(pc)
 
 		key := args[0]
 		if !config.IsValidKey(key) {

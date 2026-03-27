@@ -16,11 +16,7 @@ var mailSendCmd = &cobra.Command{
 	Use:   "send",
 	Short: "메일 전송",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
@@ -54,17 +50,11 @@ var mailGetCmd = &cobra.Command{
 	Short: "메일 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
-		if err != nil {
-			return err
-		}
-		svc := api.NewMailService(client)
-
-		resp, err := svc.GetMail(userID, args[0])
+		resp, err := api.NewMailService(client).GetMail(userID, args[0])
 		if err != nil {
 			return err
 		}
@@ -78,17 +68,11 @@ var mailDeleteCmd = &cobra.Command{
 	Short: "메일 삭제",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
-		if err != nil {
-			return err
-		}
-		svc := api.NewMailService(client)
-
-		resp, err := svc.DeleteMail(userID, args[0])
+		resp, err := api.NewMailService(client).DeleteMail(userID, args[0])
 		if err != nil {
 			return err
 		}
@@ -101,11 +85,7 @@ var mailListFoldersCmd = &cobra.Command{
 	Use:   "list-folders",
 	Short: "메일 폴더 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
@@ -121,17 +101,11 @@ var mailGetFolderCmd = &cobra.Command{
 	Short: "메일 폴더 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
-		if err != nil {
-			return err
-		}
-		svc := api.NewMailService(client)
-
-		resp, err := svc.GetFolder(userID, args[0])
+		resp, err := api.NewMailService(client).GetFolder(userID, args[0])
 		if err != nil {
 			return err
 		}
@@ -145,11 +119,7 @@ var mailListCmd = &cobra.Command{
 	Short: "메일 목록 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}

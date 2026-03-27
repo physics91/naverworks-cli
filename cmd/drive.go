@@ -21,16 +21,11 @@ var driveInfoCmd = &cobra.Command{
 	Use:   "info",
 	Short: "내 드라이브 정보 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
 		svc := api.NewDriveService(client)
-
 		resp, err := svc.GetDriveInfo(userID)
 		if err != nil {
 			return err
@@ -44,11 +39,7 @@ var driveListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "내 드라이브 파일 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
@@ -61,17 +52,11 @@ var driveGetCmd = &cobra.Command{
 	Short: "파일 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
-		if err != nil {
-			return err
-		}
-		svc := api.NewDriveService(client)
-
-		resp, err := svc.GetFile(userID, args[0])
+		resp, err := api.NewDriveService(client).GetFile(userID, args[0])
 		if err != nil {
 			return err
 		}
@@ -85,17 +70,11 @@ var driveDownloadCmd = &cobra.Command{
 	Short: "파일 다운로드 URL 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
-		if err != nil {
-			return err
-		}
-		svc := api.NewDriveService(client)
-
-		downloadURL, err := svc.GetDownloadURL(userID, args[0])
+		downloadURL, err := api.NewDriveService(client).GetDownloadURL(userID, args[0])
 		if err != nil {
 			return err
 		}
@@ -109,11 +88,7 @@ var driveUploadCmd = &cobra.Command{
 	Short: "파일 업로드",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
@@ -151,11 +126,7 @@ var driveMkdirCmd = &cobra.Command{
 	Use:   "mkdir",
 	Short: "폴더 생성",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
@@ -186,17 +157,11 @@ var driveDeleteCmd = &cobra.Command{
 	Short: "파일 삭제",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
-		if err != nil {
-			return err
-		}
-		svc := api.NewDriveService(client)
-
-		resp, err := svc.DeleteFile(userID, args[0])
+		resp, err := api.NewDriveService(client).DeleteFile(userID, args[0])
 		if err != nil {
 			return err
 		}
@@ -209,20 +174,13 @@ var driveTrashListCmd = &cobra.Command{
 	Use:   "trash-list",
 	Short: "휴지통 파일 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
-		if err != nil {
-			return err
-		}
-		svc := api.NewDriveService(client)
-
 		cursor, _ := cmd.Flags().GetString("cursor")
 		count, _ := cmd.Flags().GetInt("count")
-
-		resp, err := svc.ListTrashFiles(userID, cursor, count)
+		resp, err := api.NewDriveService(client).ListTrashFiles(userID, cursor, count)
 		if err != nil {
 			return err
 		}
@@ -236,17 +194,11 @@ var driveTrashRestoreCmd = &cobra.Command{
 	Short: "휴지통 파일 복원",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
-		if err != nil {
-			return err
-		}
-		svc := api.NewDriveService(client)
-
-		resp, err := svc.RestoreTrashFile(userID, args[0])
+		resp, err := api.NewDriveService(client).RestoreTrashFile(userID, args[0])
 		if err != nil {
 			return err
 		}
@@ -425,20 +377,13 @@ var driveSharedFolderListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "공유 폴더 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
-		if err != nil {
-			return err
-		}
-		svc := api.NewDriveService(client)
-
 		cursor, _ := cmd.Flags().GetString("cursor")
 		count, _ := cmd.Flags().GetInt("count")
-
-		resp, err := svc.ListSharedFolders(userID, cursor, count)
+		resp, err := api.NewDriveService(client).ListSharedFolders(userID, cursor, count)
 		if err != nil {
 			return err
 		}
@@ -452,20 +397,13 @@ var driveSharedFolderFilesCmd = &cobra.Command{
 	Short: "공유 폴더 파일 목록 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
-		if err != nil {
-			return err
-		}
-		svc := api.NewDriveService(client)
-
 		cursor, _ := cmd.Flags().GetString("cursor")
 		count, _ := cmd.Flags().GetInt("count")
-
-		resp, err := svc.ListSharedFolderFiles(userID, args[0], cursor, count)
+		resp, err := api.NewDriveService(client).ListSharedFolderFiles(userID, args[0], cursor, count)
 		if err != nil {
 			return err
 		}

@@ -16,17 +16,11 @@ var attendanceStatusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "근태 상태 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
-		if err != nil {
-			return err
-		}
-		svc := api.NewAttendanceService(client)
-
-		resp, err := svc.GetStatus(userID)
+		resp, err := api.NewAttendanceService(client).GetStatus(userID)
 		if err != nil {
 			return err
 		}
@@ -56,11 +50,7 @@ var attendanceClockOutCmd = &cobra.Command{
 }
 
 func runClockCmd(cmd *cobra.Command, fn func(*api.AttendanceService, string, string, string) (*api.Response, error)) error {
-	client, cfg, token, err := newAPIClient()
-	if err != nil {
-		return err
-	}
-	userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
+	client, userID, err := newAPIClientWithUser(cmd)
 	if err != nil {
 		return err
 	}

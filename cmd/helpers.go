@@ -83,6 +83,18 @@ func newAPIClient() (*api.Client, *config.Config, *auth.Token, error) {
 	return buildAPIClient(cfg, token, name), cfg, token, nil
 }
 
+func newAPIClientWithUser(cmd *cobra.Command) (*api.Client, string, error) {
+	client, cfg, token, err := newAPIClient()
+	if err != nil {
+		return nil, "", err
+	}
+	userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
+	if err != nil {
+		return nil, "", err
+	}
+	return client, userID, nil
+}
+
 func buildScimClient(cfg *config.Config) (*api.Client, error) {
 	if cfg.ScimAccessToken == "" {
 		return nil, fmt.Errorf("scim_access_token이 설정되지 않았습니다. naverworks config set scim_access_token <token>")

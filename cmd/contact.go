@@ -36,11 +36,7 @@ var contactListUserCmd = &cobra.Command{
 	Use:   "list-user",
 	Short: "사용자별 연락처 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
@@ -163,11 +159,7 @@ var contactListUserTagsCmd = &cobra.Command{
 	Use:   "list-user-tags",
 	Short: "사용자별 연락처 태그 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}

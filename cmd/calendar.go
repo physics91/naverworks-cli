@@ -19,11 +19,7 @@ var calListCalendarsCmd = &cobra.Command{
 	Use:   "list-calendars",
 	Short: "캘린더 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
@@ -49,11 +45,7 @@ var calListEventsCmd = &cobra.Command{
 	Use:   "list-events",
 	Short: "일정 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
@@ -98,11 +90,7 @@ var calGetEventCmd = &cobra.Command{
 	Use:   "get-event",
 	Short: "일정 상세 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
@@ -128,11 +116,7 @@ var calCreateEventCmd = &cobra.Command{
 	Use:   "create-event",
 	Short: "일정 생성",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}

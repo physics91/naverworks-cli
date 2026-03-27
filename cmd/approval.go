@@ -22,11 +22,7 @@ var approvalListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "사용자별 결재 문서 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, token, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
+		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}

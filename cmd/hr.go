@@ -10,15 +10,22 @@ var hrCmd = &cobra.Command{
 	Short: "인사 관리",
 }
 
+func newHRService() (*api.HRService, error) {
+	client, _, _, err := newAPIClient()
+	if err != nil {
+		return nil, err
+	}
+	return api.NewHRService(client), nil
+}
+
 var hrListExtensionPropertiesCmd = &cobra.Command{
 	Use:   "list-extension-properties",
 	Short: "확장 속성 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newHRService()
 		if err != nil {
 			return err
 		}
-		svc := api.NewHRService(client)
 		return runListCmd(cmd, []string{"propertyId", "propertyName"}, "extensionProperties", svc.ListExtensionProperties)
 	},
 }
@@ -38,11 +45,10 @@ var hrListLeaveTypesCmd = &cobra.Command{
 	Use:   "list-leave-types",
 	Short: "휴직 유형 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newHRService()
 		if err != nil {
 			return err
 		}
-		svc := api.NewHRService(client)
 		return runListCmd(cmd, []string{"leaveTypeId", "leaveTypeName"}, "leaveOfAbsences", svc.ListLeaveOfAbsences)
 	},
 }
@@ -51,11 +57,10 @@ var hrListOnLeaveCmd = &cobra.Command{
 	Use:   "list-on-leave",
 	Short: "휴직 중 사용자 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newHRService()
 		if err != nil {
 			return err
 		}
-		svc := api.NewHRService(client)
 		return runListCmd(cmd, []string{"userId", "userName"}, "onLeaveUsers", svc.ListOnLeaveUsers)
 	},
 }

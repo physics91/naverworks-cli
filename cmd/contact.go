@@ -12,15 +12,22 @@ var contactCmd = &cobra.Command{
 	Short: "연락처 관리",
 }
 
+func newContactService() (*api.ContactService, error) {
+	client, _, _, err := newAPIClient()
+	if err != nil {
+		return nil, err
+	}
+	return api.NewContactService(client), nil
+}
+
 var contactListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "연락처 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newContactService()
 		if err != nil {
 			return err
 		}
-		svc := api.NewContactService(client)
 		return runListCmd(cmd, []string{"contactId", "name", "email"}, "contacts", svc.ListContacts)
 	},
 }
@@ -59,11 +66,10 @@ var contactCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "연락처 생성",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newContactService()
 		if err != nil {
 			return err
 		}
-		svc := api.NewContactService(client)
 
 		body, err := parseOptionalJSONData(cmd)
 		if err != nil {
@@ -95,11 +101,10 @@ var contactUpdateCmd = &cobra.Command{
 	Short: "연락처 수정",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newContactService()
 		if err != nil {
 			return err
 		}
-		svc := api.NewContactService(client)
 
 		body, err := parseOptionalJSONData(cmd)
 		if err != nil {
@@ -129,12 +134,10 @@ var contactDeleteCmd = &cobra.Command{
 	Short: "연락처 삭제",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newContactService()
 		if err != nil {
 			return err
 		}
-		svc := api.NewContactService(client)
-
 		resp, err := svc.DeleteContact(args[0])
 		if err != nil {
 			return err
@@ -148,11 +151,10 @@ var contactListTagsCmd = &cobra.Command{
 	Use:   "list-tags",
 	Short: "연락처 태그 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newContactService()
 		if err != nil {
 			return err
 		}
-		svc := api.NewContactService(client)
 		return runListCmd(cmd, []string{"tagId", "tagName"}, "contactTags", svc.ListTags)
 	},
 }

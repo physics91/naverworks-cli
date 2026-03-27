@@ -10,6 +10,14 @@ var approvalCmd = &cobra.Command{
 	Short: "결재 관리",
 }
 
+func newApprovalService() (*api.ApprovalService, error) {
+	client, _, _, err := newAPIClient()
+	if err != nil {
+		return nil, err
+	}
+	return api.NewApprovalService(client), nil
+}
+
 var approvalListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "사용자별 결재 문서 목록 조회",
@@ -33,11 +41,10 @@ var approvalListAllCmd = &cobra.Command{
 	Use:   "list-all",
 	Short: "전체 결재 문서 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newApprovalService()
 		if err != nil {
 			return err
 		}
-		svc := api.NewApprovalService(client)
 		return runListCmd(cmd, []string{"approvalDocumentId", "title"}, "documents", svc.ListDocuments)
 	},
 }
@@ -57,11 +64,10 @@ var approvalListCategoriesCmd = &cobra.Command{
 	Use:   "list-categories",
 	Short: "결재 카테고리 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newApprovalService()
 		if err != nil {
 			return err
 		}
-		svc := api.NewApprovalService(client)
 		return runListCmd(cmd, []string{"categoryId", "categoryName"}, "categories", svc.ListCategories)
 	},
 }
@@ -81,11 +87,10 @@ var approvalListFormsCmd = &cobra.Command{
 	Use:   "list-forms",
 	Short: "결재 양식 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newApprovalService()
 		if err != nil {
 			return err
 		}
-		svc := api.NewApprovalService(client)
 		return runListCmd(cmd, []string{"documentFormId", "documentFormName"}, "documentForms", svc.ListDocumentForms)
 	},
 }

@@ -20,6 +20,13 @@ func BuildPaginationQuery(cursor string, count int) string {
 	return ""
 }
 
+func encodeQueryFromValues(params url.Values) string {
+	if len(params) > 0 {
+		return "?" + params.Encode()
+	}
+	return ""
+}
+
 func ExtractNextCursor(body []byte) string {
 	var resp struct {
 		ResponseMetaData struct {

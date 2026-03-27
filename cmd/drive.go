@@ -52,23 +52,7 @@ var driveListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		svc := api.NewDriveService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		folder, _ := cmd.Flags().GetString("folder")
-
-		var resp *api.Response
-		if folder != "" {
-			resp, err = svc.ListFolderChildren(userID, folder, cursor, count)
-		} else {
-			resp, err = svc.ListFiles(userID, cursor, count)
-		}
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return listFilesWithFolder(cmd, userID, api.NewDriveService(client))
 	},
 }
 
@@ -329,23 +313,7 @@ var driveSharedListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		svc := api.NewSharedDriveService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		folder, _ := cmd.Flags().GetString("folder")
-
-		var resp *api.Response
-		if folder != "" {
-			resp, err = svc.ListFolderChildren(args[0], folder, cursor, count)
-		} else {
-			resp, err = svc.ListFiles(args[0], cursor, count)
-		}
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return listFilesWithFolder(cmd, args[0], api.NewSharedDriveService(client))
 	},
 }
 
@@ -458,23 +426,7 @@ var driveGroupListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		svc := api.NewGroupFolderService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		folder, _ := cmd.Flags().GetString("folder")
-
-		var resp *api.Response
-		if folder != "" {
-			resp, err = svc.ListFolderChildren(args[0], folder, cursor, count)
-		} else {
-			resp, err = svc.ListFiles(args[0], cursor, count)
-		}
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return listFilesWithFolder(cmd, args[0], api.NewGroupFolderService(client))
 	},
 }
 
@@ -560,6 +512,29 @@ var driveSharedFolderFilesCmd = &cobra.Command{
 
 type fileUploader interface {
 	UploadFile(uploadURL, filePath string) error
+}
+
+type driveLister interface {
+	ListFiles(id, cursor string, count int) (*api.Response, error)
+	ListFolderChildren(id, folder, cursor string, count int) (*api.Response, error)
+}
+
+func listFilesWithFolder(cmd *cobra.Command, id string, svc driveLister) error {
+	cursor, _ := cmd.Flags().GetString("cursor")
+	count, _ := cmd.Flags().GetInt("count")
+	folder, _ := cmd.Flags().GetString("folder")
+	var resp *api.Response
+	var err error
+	if folder != "" {
+		resp, err = svc.ListFolderChildren(id, folder, cursor, count)
+	} else {
+		resp, err = svc.ListFiles(id, cursor, count)
+	}
+	if err != nil {
+		return err
+	}
+	printBody(resp.Body)
+	return nil
 }
 
 func statFileForUpload(localPath string) (fileName string, fileSize int64, err error) {

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/url"
 )
 
@@ -24,11 +23,7 @@ func (s *AuditService) DownloadLogs(startTime, endTime, service string) (string,
 	if service != "" {
 		params.Set("service", service)
 	}
-	query := ""
-	if len(params) > 0 {
-		query = "?" + params.Encode()
-	}
-	return s.client.GetDownloadURL("/audits/logs/download" + query)
+	return s.client.GetDownloadURL("/audits/logs/download" + encodeQueryFromValues(params))
 }
 
 func (s *AuditService) ListPolicyGroups(cursor string, count int) (*Response, error) {
@@ -51,9 +46,5 @@ func (s *MonitoringService) DownloadMessages(startTime, endTime string) (string,
 	if endTime != "" {
 		params.Set("endTime", endTime)
 	}
-	query := ""
-	if len(params) > 0 {
-		query = "?" + params.Encode()
-	}
-	return s.client.GetDownloadURL(fmt.Sprintf("/monitoring/message-contents/download%s", query))
+	return s.client.GetDownloadURL("/monitoring/message-contents/download" + encodeQueryFromValues(params))
 }

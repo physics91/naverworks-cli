@@ -10,19 +10,11 @@ var directoryCmd = &cobra.Command{
 	Short: "디렉토리 관리 (사용자, 그룹)",
 }
 
-func newDirectoryService() (*api.DirectoryService, error) {
-	client, _, _, err := newAPIClient()
-	if err != nil {
-		return nil, err
-	}
-	return api.NewDirectoryService(client), nil
-}
-
 var dirListUsersCmd = &cobra.Command{
 	Use:   "list-users",
 	Short: "사용자 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dir, err := newDirectoryService()
+		dir, err := newSvc(api.NewDirectoryService)
 		if err != nil {
 			return err
 		}
@@ -45,7 +37,7 @@ var dirListGroupsCmd = &cobra.Command{
 	Use:   "list-groups",
 	Short: "그룹 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dir, err := newDirectoryService()
+		dir, err := newSvc(api.NewDirectoryService)
 		if err != nil {
 			return err
 		}
@@ -68,7 +60,7 @@ var dirListOrgUnitsCmd = &cobra.Command{
 	Use:   "list-orgunits",
 	Short: "조직 단위 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dir, err := newDirectoryService()
+		dir, err := newSvc(api.NewDirectoryService)
 		if err != nil {
 			return err
 		}
@@ -91,7 +83,7 @@ var dirListLevelsCmd = &cobra.Command{
 	Use:   "list-levels",
 	Short: "직급 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dir, err := newDirectoryService()
+		dir, err := newSvc(api.NewDirectoryService)
 		if err != nil {
 			return err
 		}
@@ -103,7 +95,7 @@ var dirListPositionsCmd = &cobra.Command{
 	Use:   "list-positions",
 	Short: "직책 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dir, err := newDirectoryService()
+		dir, err := newSvc(api.NewDirectoryService)
 		if err != nil {
 			return err
 		}
@@ -115,7 +107,7 @@ var dirListUserTypesCmd = &cobra.Command{
 	Use:   "list-user-types",
 	Short: "사용자 유형 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dir, err := newDirectoryService()
+		dir, err := newSvc(api.NewDirectoryService)
 		if err != nil {
 			return err
 		}
@@ -127,7 +119,7 @@ var dirListEmploymentTypesCmd = &cobra.Command{
 	Use:   "list-employment-types",
 	Short: "고용 유형 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dir, err := newDirectoryService()
+		dir, err := newSvc(api.NewDirectoryService)
 		if err != nil {
 			return err
 		}

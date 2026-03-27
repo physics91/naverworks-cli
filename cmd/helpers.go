@@ -95,6 +95,14 @@ func newAPIClientWithUser(cmd *cobra.Command) (*api.Client, string, error) {
 	return client, userID, nil
 }
 
+func newSvc[T any](constructor func(*api.Client) *T) (*T, error) {
+	client, _, _, err := newAPIClient()
+	if err != nil {
+		return nil, err
+	}
+	return constructor(client), nil
+}
+
 func buildScimClient(cfg *config.Config) (*api.Client, error) {
 	if cfg.ScimAccessToken == "" {
 		return nil, fmt.Errorf("scim_access_token이 설정되지 않았습니다. naverworks config set scim_access_token <token>")

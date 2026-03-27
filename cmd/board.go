@@ -10,19 +10,11 @@ var boardCmd = &cobra.Command{
 	Short: "게시판 관리",
 }
 
-func newBoardService() (*api.BoardService, error) {
-	client, _, _, err := newAPIClient()
-	if err != nil {
-		return nil, err
-	}
-	return api.NewBoardService(client), nil
-}
-
 var boardListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "게시판 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newBoardService()
+		svc, err := newSvc(api.NewBoardService)
 		if err != nil {
 			return err
 		}
@@ -46,7 +38,7 @@ var boardListPostsCmd = &cobra.Command{
 	Short: "게시글 목록 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newBoardService()
+		svc, err := newSvc(api.NewBoardService)
 		if err != nil {
 			return err
 		}
@@ -72,7 +64,7 @@ var boardCreatePostCmd = &cobra.Command{
 	Short: "게시글 생성",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newBoardService()
+		svc, err := newSvc(api.NewBoardService)
 		if err != nil {
 			return err
 		}
@@ -94,7 +86,7 @@ var boardUpdatePostCmd = &cobra.Command{
 	Short: "게시글 수정",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newBoardService()
+		svc, err := newSvc(api.NewBoardService)
 		if err != nil {
 			return err
 		}
@@ -116,7 +108,7 @@ var boardDeletePostCmd = &cobra.Command{
 	Short: "게시글 삭제",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newBoardService()
+		svc, err := newSvc(api.NewBoardService)
 		if err != nil {
 			return err
 		}
@@ -134,7 +126,7 @@ var boardListCommentsCmd = &cobra.Command{
 	Short: "댓글 목록 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newBoardService()
+		svc, err := newSvc(api.NewBoardService)
 		if err != nil {
 			return err
 		}

@@ -10,20 +10,12 @@ var noteCmd = &cobra.Command{
 	Short: "노트 관리",
 }
 
-func newNoteService() (*api.NoteService, error) {
-	client, _, _, err := newAPIClient()
-	if err != nil {
-		return nil, err
-	}
-	return api.NewNoteService(client), nil
-}
-
 var noteCreateCmd = &cobra.Command{
 	Use:   "create <groupId>",
 	Short: "노트 생성",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newNoteService()
+		svc, err := newSvc(api.NewNoteService)
 		if err != nil {
 			return err
 		}
@@ -41,7 +33,7 @@ var noteDeleteCmd = &cobra.Command{
 	Short: "노트 삭제",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newNoteService()
+		svc, err := newSvc(api.NewNoteService)
 		if err != nil {
 			return err
 		}
@@ -59,7 +51,7 @@ var noteListPostsCmd = &cobra.Command{
 	Short: "노트 게시글 목록 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newNoteService()
+		svc, err := newSvc(api.NewNoteService)
 		if err != nil {
 			return err
 		}
@@ -85,7 +77,7 @@ var noteCreatePostCmd = &cobra.Command{
 	Short: "노트 게시글 생성",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newNoteService()
+		svc, err := newSvc(api.NewNoteService)
 		if err != nil {
 			return err
 		}
@@ -107,7 +99,7 @@ var noteUpdatePostCmd = &cobra.Command{
 	Short: "노트 게시글 수정",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newNoteService()
+		svc, err := newSvc(api.NewNoteService)
 		if err != nil {
 			return err
 		}
@@ -129,7 +121,7 @@ var noteDeletePostCmd = &cobra.Command{
 	Short: "노트 게시글 삭제",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newNoteService()
+		svc, err := newSvc(api.NewNoteService)
 		if err != nil {
 			return err
 		}

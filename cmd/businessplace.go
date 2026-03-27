@@ -12,19 +12,11 @@ var businessPlaceCmd = &cobra.Command{
 	Short: "사업장 관리",
 }
 
-func newBusinessPlaceService() (*api.BusinessPlaceService, error) {
-	client, _, _, err := newAPIClient()
-	if err != nil {
-		return nil, err
-	}
-	return api.NewBusinessPlaceService(client), nil
-}
-
 var bpListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "사업장 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newBusinessPlaceService()
+		svc, err := newSvc(api.NewBusinessPlaceService)
 		if err != nil {
 			return err
 		}
@@ -47,7 +39,7 @@ var bpCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "사업장 생성",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newBusinessPlaceService()
+		svc, err := newSvc(api.NewBusinessPlaceService)
 		if err != nil {
 			return err
 		}
@@ -78,7 +70,7 @@ var bpUpdateCmd = &cobra.Command{
 	Short: "사업장 수정",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newBusinessPlaceService()
+		svc, err := newSvc(api.NewBusinessPlaceService)
 		if err != nil {
 			return err
 		}
@@ -108,7 +100,7 @@ var bpDeleteCmd = &cobra.Command{
 	Short: "사업장 삭제",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newBusinessPlaceService()
+		svc, err := newSvc(api.NewBusinessPlaceService)
 		if err != nil {
 			return err
 		}

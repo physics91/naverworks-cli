@@ -12,23 +12,28 @@ var auditCmd = &cobra.Command{
 	Short: "감사 로그 관리",
 }
 
+func requireTimeRange(cmd *cobra.Command) (startTime, endTime string, err error) {
+	startTime, _ = cmd.Flags().GetString("start-time")
+	endTime, _ = cmd.Flags().GetString("end-time")
+	if startTime == "" || endTime == "" {
+		return "", "", fmt.Errorf("--start-time과 --end-time은 필수입니다")
+	}
+	return startTime, endTime, nil
+}
+
 var auditDownloadLogsCmd = &cobra.Command{
 	Use:   "download-logs",
 	Short: "감사 로그 다운로드",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newSvc(api.NewAuditService)
 		if err != nil {
 			return err
 		}
-		svc := api.NewAuditService(client)
-
-		startTime, _ := cmd.Flags().GetString("start-time")
-		endTime, _ := cmd.Flags().GetString("end-time")
-		service, _ := cmd.Flags().GetString("service")
-		if startTime == "" || endTime == "" {
-			return fmt.Errorf("--start-time과 --end-time은 필수입니다")
+		startTime, endTime, err := requireTimeRange(cmd)
+		if err != nil {
+			return err
 		}
-
+		service, _ := cmd.Flags().GetString("service")
 		downloadURL, err := svc.DownloadLogs(startTime, endTime, service)
 		if err != nil {
 			return err
@@ -42,11 +47,10 @@ var auditListPolicyGroupsCmd = &cobra.Command{
 	Use:   "list-policy-groups",
 	Short: "감사 정책 그룹 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newSvc(api.NewAuditService)
 		if err != nil {
 			return err
 		}
-		svc := api.NewAuditService(client)
 		return runListCmd(cmd, []string{"policyGroupId", "policyGroupName"}, "policyGroups", svc.ListPolicyGroups)
 	},
 }
@@ -60,18 +64,14 @@ var monitoringDownloadMessagesCmd = &cobra.Command{
 	Use:   "download-messages",
 	Short: "메시지 콘텐츠 다운로드",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newSvc(api.NewMonitoringService)
 		if err != nil {
 			return err
 		}
-		svc := api.NewMonitoringService(client)
-
-		startTime, _ := cmd.Flags().GetString("start-time")
-		endTime, _ := cmd.Flags().GetString("end-time")
-		if startTime == "" || endTime == "" {
-			return fmt.Errorf("--start-time과 --end-time은 필수입니다")
+		startTime, endTime, err := requireTimeRange(cmd)
+		if err != nil {
+			return err
 		}
-
 		downloadURL, err := svc.DownloadMessages(startTime, endTime)
 		if err != nil {
 			return err

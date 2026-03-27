@@ -218,21 +218,11 @@ var driveSharedListDrivesCmd = &cobra.Command{
 	Use:   "list-drives",
 	Short: "공유 드라이브 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newSvc(api.NewSharedDriveService)
 		if err != nil {
 			return err
 		}
-		svc := api.NewSharedDriveService(client)
-
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-
-		resp, err := svc.ListDrives(cursor, count)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return runListCmd(cmd, nil, "sharedrives", svc.ListDrives)
 	},
 }
 
@@ -252,11 +242,11 @@ var driveSharedListCmd = &cobra.Command{
 	Short: "공유 드라이브 파일 목록 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newSvc(api.NewSharedDriveService)
 		if err != nil {
 			return err
 		}
-		return listFilesWithFolder(cmd, args[0], api.NewSharedDriveService(client))
+		return listFilesWithFolder(cmd, args[0], svc)
 	},
 }
 
@@ -347,11 +337,11 @@ var driveGroupListCmd = &cobra.Command{
 	Short: "그룹 폴더 파일 목록 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newSvc(api.NewGroupFolderService)
 		if err != nil {
 			return err
 		}
-		return listFilesWithFolder(cmd, args[0], api.NewGroupFolderService(client))
+		return listFilesWithFolder(cmd, args[0], svc)
 	},
 }
 
@@ -381,14 +371,10 @@ var driveSharedFolderListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		resp, err := api.NewDriveService(client).ListSharedFolders(userID, cursor, count)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		svc := api.NewDriveService(client)
+		return runListCmd(cmd, nil, "sharedfolders", func(c string, n int) (*api.Response, error) {
+			return svc.ListSharedFolders(userID, c, n)
+		})
 	},
 }
 
@@ -401,14 +387,10 @@ var driveSharedFolderFilesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		resp, err := api.NewDriveService(client).ListSharedFolderFiles(userID, args[0], cursor, count)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		svc := api.NewDriveService(client)
+		return runListCmd(cmd, nil, "files", func(c string, n int) (*api.Response, error) {
+			return svc.ListSharedFolderFiles(userID, args[0], c, n)
+		})
 	},
 }
 

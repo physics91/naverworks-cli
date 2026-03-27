@@ -74,11 +74,10 @@ var attendanceListAbsencesCmd = &cobra.Command{
 	Use:   "list-absences",
 	Short: "부재 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newSvc(api.NewAttendanceService)
 		if err != nil {
 			return err
 		}
-		svc := api.NewAttendanceService(client)
 		return runListCmd(cmd, []string{"absenceId", "userId"}, "absences", svc.ListAbsences)
 	},
 }
@@ -87,11 +86,10 @@ var attendanceListAnnualLeavesCmd = &cobra.Command{
 	Use:   "list-annual-leaves",
 	Short: "연차 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newSvc(api.NewAttendanceService)
 		if err != nil {
 			return err
 		}
-		svc := api.NewAttendanceService(client)
 		return runListCmd(cmd, []string{"userId", "totalDays"}, "annualLeaves", svc.ListAnnualLeaves)
 	},
 }

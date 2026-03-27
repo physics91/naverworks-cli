@@ -35,118 +35,110 @@ func parseRequiredJSONData(cmd *cobra.Command) (map[string]interface{}, error) {
 	return body, nil
 }
 
-// --- Users ---
-
-var scimListUsersCmd = &cobra.Command{
-	Use:   "list-users",
-	Short: "SCIM 사용자 목록 조회",
-	RunE: func(cmd *cobra.Command, args []string) error {
+func scimListRunE(fn func(*api.ScimService, int, int, string) (*api.Response, error)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
 		svc, err := loadScimService()
 		if err != nil {
 			return err
 		}
-
 		startIndex, _ := cmd.Flags().GetInt("start-index")
 		count, _ := cmd.Flags().GetInt("count")
 		filter, _ := cmd.Flags().GetString("filter")
-
-		resp, err := svc.ListUsers(startIndex, count, filter)
+		resp, err := fn(svc, startIndex, count, filter)
 		if err != nil {
 			return err
 		}
 		printBody(resp.Body)
 		return nil
-	},
+	}
+}
+
+func scimIDRunE(fn func(*api.ScimService, string) (*api.Response, error)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := loadScimService()
+		if err != nil {
+			return err
+		}
+		resp, err := fn(svc, args[0])
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	}
+}
+
+func scimBodyRunE(fn func(*api.ScimService, map[string]interface{}) (*api.Response, error)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := loadScimService()
+		if err != nil {
+			return err
+		}
+		body, err := parseRequiredJSONData(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := fn(svc, body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	}
+}
+
+func scimIDBodyRunE(fn func(*api.ScimService, string, map[string]interface{}) (*api.Response, error)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := loadScimService()
+		if err != nil {
+			return err
+		}
+		body, err := parseRequiredJSONData(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := fn(svc, args[0], body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	}
+}
+
+// --- Users ---
+
+var scimListUsersCmd = &cobra.Command{
+	Use:   "list-users",
+	Short: "SCIM 사용자 목록 조회",
+	RunE:  scimListRunE((*api.ScimService).ListUsers),
 }
 
 var scimGetUserCmd = &cobra.Command{
 	Use:   "get-user <id>",
 	Short: "SCIM 사용자 상세 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := loadScimService()
-		if err != nil {
-			return err
-		}
-
-		resp, err := svc.GetUser(args[0])
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  scimIDRunE((*api.ScimService).GetUser),
 }
 
 var scimCreateUserCmd = &cobra.Command{
 	Use:   "create-user",
 	Short: "SCIM 사용자 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := loadScimService()
-		if err != nil {
-			return err
-		}
-
-		body, err := parseRequiredJSONData(cmd)
-		if err != nil {
-			return err
-		}
-
-		resp, err := svc.CreateUser(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  scimBodyRunE((*api.ScimService).CreateUser),
 }
 
 var scimUpdateUserCmd = &cobra.Command{
 	Use:   "update-user <id>",
 	Short: "SCIM 사용자 전체 수정 (PUT)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := loadScimService()
-		if err != nil {
-			return err
-		}
-
-		body, err := parseRequiredJSONData(cmd)
-		if err != nil {
-			return err
-		}
-
-		resp, err := svc.UpdateUser(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  scimIDBodyRunE((*api.ScimService).UpdateUser),
 }
 
 var scimPatchUserCmd = &cobra.Command{
 	Use:   "patch-user <id>",
 	Short: "SCIM 사용자 부분 수정 (PATCH)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := loadScimService()
-		if err != nil {
-			return err
-		}
-
-		body, err := parseRequiredJSONData(cmd)
-		if err != nil {
-			return err
-		}
-
-		resp, err := svc.PatchUser(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  scimIDBodyRunE((*api.ScimService).PatchUser),
 }
 
 var scimDeleteUserCmd = &cobra.Command{
@@ -158,7 +150,6 @@ var scimDeleteUserCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		resp, err := svc.DeleteUser(args[0])
 		if err != nil {
 			return err
@@ -173,113 +164,34 @@ var scimDeleteUserCmd = &cobra.Command{
 var scimListGroupsCmd = &cobra.Command{
 	Use:   "list-groups",
 	Short: "SCIM 그룹 목록 조회",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := loadScimService()
-		if err != nil {
-			return err
-		}
-
-		startIndex, _ := cmd.Flags().GetInt("start-index")
-		count, _ := cmd.Flags().GetInt("count")
-		filter, _ := cmd.Flags().GetString("filter")
-
-		resp, err := svc.ListGroups(startIndex, count, filter)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  scimListRunE((*api.ScimService).ListGroups),
 }
 
 var scimGetGroupCmd = &cobra.Command{
 	Use:   "get-group <id>",
 	Short: "SCIM 그룹 상세 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := loadScimService()
-		if err != nil {
-			return err
-		}
-
-		resp, err := svc.GetGroup(args[0])
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  scimIDRunE((*api.ScimService).GetGroup),
 }
 
 var scimCreateGroupCmd = &cobra.Command{
 	Use:   "create-group",
 	Short: "SCIM 그룹 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := loadScimService()
-		if err != nil {
-			return err
-		}
-
-		body, err := parseRequiredJSONData(cmd)
-		if err != nil {
-			return err
-		}
-
-		resp, err := svc.CreateGroup(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  scimBodyRunE((*api.ScimService).CreateGroup),
 }
 
 var scimUpdateGroupCmd = &cobra.Command{
 	Use:   "update-group <id>",
 	Short: "SCIM 그룹 전체 수정 (PUT)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := loadScimService()
-		if err != nil {
-			return err
-		}
-
-		body, err := parseRequiredJSONData(cmd)
-		if err != nil {
-			return err
-		}
-
-		resp, err := svc.UpdateGroup(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  scimIDBodyRunE((*api.ScimService).UpdateGroup),
 }
 
 var scimPatchGroupCmd = &cobra.Command{
 	Use:   "patch-group <id>",
 	Short: "SCIM 그룹 부분 수정 (PATCH)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := loadScimService()
-		if err != nil {
-			return err
-		}
-
-		body, err := parseRequiredJSONData(cmd)
-		if err != nil {
-			return err
-		}
-
-		resp, err := svc.PatchGroup(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  scimIDBodyRunE((*api.ScimService).PatchGroup),
 }
 
 var scimDeleteGroupCmd = &cobra.Command{
@@ -291,7 +203,6 @@ var scimDeleteGroupCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		resp, err := svc.DeleteGroup(args[0])
 		if err != nil {
 			return err

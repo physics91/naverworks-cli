@@ -91,6 +91,4 @@ func (s *DriveService) ListSharedFolderFiles(userID, sharedFolderID string, curs
 	return s.client.Get(fmt.Sprintf("/users/%s/drive/sharedfolders/%s/files", url.PathEscape(userID), url.PathEscape(sharedFolderID)) + BuildPaginationQuery(cursor, count))
 }
 
-func (s *DriveService) UploadFile(uploadURL, filePath string) error {
-	return s.client.UploadFile(uploadURL, filePath)
-}
+

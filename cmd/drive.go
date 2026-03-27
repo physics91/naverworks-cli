@@ -139,7 +139,7 @@ var driveUploadCmd = &cobra.Command{
 			return err
 		}
 
-		if err := doUploadFromResponse(svc, resp.Body, localPath); err != nil {
+		if err := doUploadFromResponse(client, resp.Body, localPath); err != nil {
 			return err
 		}
 		printBody(resp.Body)
@@ -382,7 +382,7 @@ var driveSharedUploadCmd = &cobra.Command{
 			return err
 		}
 
-		if err := doUploadFromResponse(svc, resp.Body, localPath); err != nil {
+		if err := doUploadFromResponse(client, resp.Body, localPath); err != nil {
 			return err
 		}
 		printBody(resp.Body)
@@ -510,10 +510,6 @@ var driveSharedFolderFilesCmd = &cobra.Command{
 	},
 }
 
-type fileUploader interface {
-	UploadFile(uploadURL, filePath string) error
-}
-
 type driveLister interface {
 	ListFiles(id, cursor string, count int) (*api.Response, error)
 	ListFolderChildren(id, folder, cursor string, count int) (*api.Response, error)
@@ -545,7 +541,7 @@ func statFileForUpload(localPath string) (fileName string, fileSize int64, err e
 	return filepath.Base(localPath), stat.Size(), nil
 }
 
-func doUploadFromResponse(svc fileUploader, respBody []byte, localPath string) error {
+func doUploadFromResponse(client *api.Client, respBody []byte, localPath string) error {
 	var result struct {
 		UploadURL string `json:"uploadUrl"`
 	}
@@ -555,7 +551,7 @@ func doUploadFromResponse(svc fileUploader, respBody []byte, localPath string) e
 	if result.UploadURL == "" {
 		return fmt.Errorf("업로드 URL을 받지 못했습니다")
 	}
-	return svc.UploadFile(result.UploadURL, localPath)
+	return client.UploadFile(result.UploadURL, localPath)
 }
 
 func init() {

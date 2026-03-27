@@ -446,13 +446,27 @@ func init() {
 		c.Flags().String("user-id", "", "사용자 ID (OAuth: me 허용)")
 	}
 
-	// Pagination flags
-	for _, c := range []*cobra.Command{driveListCmd, driveTrashListCmd} {
+	// Pagination flags for all list commands
+	for _, c := range []*cobra.Command{
+		driveListCmd, driveTrashListCmd,
+		driveSharedListDrivesCmd, driveSharedListCmd,
+		driveGroupListCmd,
+		driveSharedFolderListCmd, driveSharedFolderFilesCmd,
+	} {
 		c.Flags().String("cursor", "", "페이지네이션 커서")
 		c.Flags().Int("count", 0, "페이지 크기")
 	}
 
-	driveListCmd.Flags().String("folder", "", "폴더 ID (하위 파일 조회)")
+	// Folder listing flag for file-browsing list commands
+	for _, c := range []*cobra.Command{driveListCmd, driveSharedListCmd, driveGroupListCmd} {
+		c.Flags().String("folder", "", "폴더 ID (하위 파일 조회)")
+	}
+
+	// SharedFolder also needs --user-id
+	for _, c := range []*cobra.Command{driveSharedFolderListCmd, driveSharedFolderFilesCmd} {
+		c.Flags().String("user-id", "", "사용자 ID (OAuth: me 허용)")
+	}
+
 	driveUploadCmd.Flags().String("folder", "", "업로드 대상 폴더 ID")
 	driveMkdirCmd.Flags().String("name", "", "폴더 이름 (필수)")
 	driveMkdirCmd.Flags().String("parent", "", "상위 폴더 ID")
@@ -460,33 +474,12 @@ func init() {
 	driveCmd.AddCommand(driveInfoCmd, driveListCmd, driveGetCmd, driveDownloadCmd,
 		driveUploadCmd, driveMkdirCmd, driveDeleteCmd, driveTrashListCmd, driveTrashRestoreCmd)
 
-	// SharedDrive
-	for _, c := range []*cobra.Command{driveSharedListDrivesCmd, driveSharedListCmd} {
-		c.Flags().String("cursor", "", "페이지네이션 커서")
-		c.Flags().Int("count", 0, "페이지 크기")
-	}
-	driveSharedListCmd.Flags().String("folder", "", "폴더 ID (하위 파일 조회)")
-
 	driveSharedCmd.AddCommand(driveSharedListDrivesCmd, driveSharedGetDriveCmd,
 		driveSharedListCmd, driveSharedGetCmd, driveSharedDownloadCmd, driveSharedUploadCmd)
 	driveCmd.AddCommand(driveSharedCmd)
 
-	// GroupFolder
-	for _, c := range []*cobra.Command{driveGroupListCmd} {
-		c.Flags().String("cursor", "", "페이지네이션 커서")
-		c.Flags().Int("count", 0, "페이지 크기")
-		c.Flags().String("folder", "", "폴더 ID (하위 파일 조회)")
-	}
-
 	driveGroupCmd.AddCommand(driveGroupGetFolderCmd, driveGroupListCmd, driveGroupGetCmd)
 	driveCmd.AddCommand(driveGroupCmd)
-
-	// SharedFolder
-	for _, c := range []*cobra.Command{driveSharedFolderListCmd, driveSharedFolderFilesCmd} {
-		c.Flags().String("user-id", "", "사용자 ID (OAuth: me 허용)")
-		c.Flags().String("cursor", "", "페이지네이션 커서")
-		c.Flags().Int("count", 0, "페이지 크기")
-	}
 
 	driveSharedFolderCmd.AddCommand(driveSharedFolderListCmd, driveSharedFolderFilesCmd)
 	driveCmd.AddCommand(driveSharedFolderCmd)

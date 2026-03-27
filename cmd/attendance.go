@@ -100,10 +100,10 @@ func init() {
 	}
 	addListFlags(attendanceListAbsencesCmd, attendanceListAnnualLeavesCmd)
 
-	attendanceClockInCmd.Flags().String("date", "", "기준 날짜 YYYY-MM-DD (필수)")
+	for _, c := range []*cobra.Command{attendanceClockInCmd, attendanceClockOutCmd} {
+		c.Flags().String("date", "", "기준 날짜 YYYY-MM-DD (필수)")
+	}
 	attendanceClockInCmd.Flags().String("time", "", "출근 시간 HH:mm (필수)")
-
-	attendanceClockOutCmd.Flags().String("date", "", "기준 날짜 YYYY-MM-DD (필수)")
 	attendanceClockOutCmd.Flags().String("time", "", "퇴근 시간 HH:mm (필수)")
 
 	attendanceCmd.AddCommand(attendanceStatusCmd, attendanceClockInCmd, attendanceClockOutCmd,

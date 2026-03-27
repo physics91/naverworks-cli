@@ -82,17 +82,16 @@ var monitoringDownloadMessagesCmd = &cobra.Command{
 }
 
 func init() {
-	auditDownloadLogsCmd.Flags().String("start-time", "", "시작 시간 (필수)")
-	auditDownloadLogsCmd.Flags().String("end-time", "", "종료 시간 (필수)")
+	for _, c := range []*cobra.Command{auditDownloadLogsCmd, monitoringDownloadMessagesCmd} {
+		c.Flags().String("start-time", "", "시작 시간 (필수)")
+		c.Flags().String("end-time", "", "종료 시간 (필수)")
+	}
 	auditDownloadLogsCmd.Flags().String("service", "", "서비스 필터")
 
 	addListFlags(auditListPolicyGroupsCmd)
 
 	auditCmd.AddCommand(auditDownloadLogsCmd, auditListPolicyGroupsCmd)
 	rootCmd.AddCommand(auditCmd)
-
-	monitoringDownloadMessagesCmd.Flags().String("start-time", "", "시작 시간 (필수)")
-	monitoringDownloadMessagesCmd.Flags().String("end-time", "", "종료 시간 (필수)")
 
 	monitoringCmd.AddCommand(monitoringDownloadMessagesCmd)
 	rootCmd.AddCommand(monitoringCmd)

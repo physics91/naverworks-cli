@@ -60,18 +60,13 @@ func buildAPIClient(cfg *config.Config, token *auth.Token, activeProfileName str
 	refreshFn := func(t *auth.Token) error {
 		store := auth.NewProfileTokenStore(auth.DefaultTokenPath(), activeProfileName)
 
-		if t.AuthMethod == "oauth" && t.RefreshToken != "" {
+		if t.RefreshToken != "" {
 			if err := auth.RefreshAccessToken(authBaseURL, cfg.ClientID, cfg.ClientSecret, t); err == nil {
 				return store.Save(t)
 			}
 		}
 
 		if t.AuthMethod == "jwt" {
-			if t.RefreshToken != "" {
-				if err := auth.RefreshAccessToken(authBaseURL, cfg.ClientID, cfg.ClientSecret, t); err == nil {
-					return store.Save(t)
-				}
-			}
 			return refreshJWTTokenFromAssertion(cfg, t, store)
 		}
 

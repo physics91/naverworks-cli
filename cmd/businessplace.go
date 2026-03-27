@@ -30,18 +30,9 @@ var bpGetCmd = &cobra.Command{
 	Short: "사업장 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		svc := api.NewBusinessPlaceService(client)
-
-		resp, err := svc.GetBusinessPlace(args[0])
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewBusinessPlaceService(client).GetBusinessPlace(args[0])
+		})
 	},
 }
 

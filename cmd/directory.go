@@ -28,18 +28,9 @@ var dirGetUserCmd = &cobra.Command{
 	Short: "사용자 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		dir := api.NewDirectoryService(client)
-
-		resp, err := dir.GetUser(args[0])
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewDirectoryService(client).GetUser(args[0])
+		})
 	},
 }
 
@@ -61,18 +52,9 @@ var dirGetGroupCmd = &cobra.Command{
 	Short: "그룹 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		dir := api.NewDirectoryService(client)
-
-		resp, err := dir.GetGroup(args[0])
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewDirectoryService(client).GetGroup(args[0])
+		})
 	},
 }
 
@@ -94,18 +76,9 @@ var dirGetOrgUnitCmd = &cobra.Command{
 	Short: "조직 단위 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		dir := api.NewDirectoryService(client)
-
-		resp, err := dir.GetOrgUnit(args[0])
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewDirectoryService(client).GetOrgUnit(args[0])
+		})
 	},
 }
 

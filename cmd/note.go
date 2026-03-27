@@ -71,18 +71,9 @@ var noteGetPostCmd = &cobra.Command{
 	Short: "노트 게시글 상세 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		svc := api.NewNoteService(client)
-
-		resp, err := svc.GetPost(args[0], args[1])
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewNoteService(client).GetPost(args[0], args[1])
+		})
 	},
 }
 

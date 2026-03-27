@@ -135,6 +135,19 @@ func printBody(body []byte) {
 	output.NewFormatter(outputFormat, os.Stdout).PrintRaw(body)
 }
 
+func getAndPrint(fn func(*api.Client) (*api.Response, error)) error {
+	client, _, _, err := newAPIClient()
+	if err != nil {
+		return err
+	}
+	resp, err := fn(client)
+	if err != nil {
+		return err
+	}
+	printBody(resp.Body)
+	return nil
+}
+
 func runListCmd(cmd *cobra.Command, columns []string, itemKey string, fetch func(string, int) (*api.Response, error)) error {
 	cursor, _ := cmd.Flags().GetString("cursor")
 	count, _ := cmd.Flags().GetInt("count")

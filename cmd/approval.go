@@ -47,18 +47,9 @@ var approvalGetCmd = &cobra.Command{
 	Short: "결재 문서 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		svc := api.NewApprovalService(client)
-
-		resp, err := svc.GetDocument(args[0])
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewApprovalService(client).GetDocument(args[0])
+		})
 	},
 }
 
@@ -80,18 +71,9 @@ var approvalGetCategoryCmd = &cobra.Command{
 	Short: "결재 카테고리 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		svc := api.NewApprovalService(client)
-
-		resp, err := svc.GetCategory(args[0])
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewApprovalService(client).GetCategory(args[0])
+		})
 	},
 }
 

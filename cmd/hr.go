@@ -28,18 +28,9 @@ var hrGetUserPropertiesCmd = &cobra.Command{
 	Short: "사용자 확장 속성 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		svc := api.NewHRService(client)
-
-		resp, err := svc.GetUserExtensionProperties(args[0])
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewHRService(client).GetUserExtensionProperties(args[0])
+		})
 	},
 }
 

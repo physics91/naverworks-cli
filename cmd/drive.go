@@ -289,18 +289,9 @@ var driveSharedGetDriveCmd = &cobra.Command{
 	Short: "공유 드라이브 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		svc := api.NewSharedDriveService(client)
-
-		resp, err := svc.GetDrive(args[0])
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewSharedDriveService(client).GetDrive(args[0])
+		})
 	},
 }
 
@@ -322,18 +313,9 @@ var driveSharedGetCmd = &cobra.Command{
 	Short: "공유 드라이브 파일 상세 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		svc := api.NewSharedDriveService(client)
-
-		resp, err := svc.GetFile(args[0], args[1])
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewSharedDriveService(client).GetFile(args[0], args[1])
+		})
 	},
 }
 
@@ -402,18 +384,9 @@ var driveGroupGetFolderCmd = &cobra.Command{
 	Short: "그룹 폴더 정보 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		svc := api.NewGroupFolderService(client)
-
-		resp, err := svc.GetFolder(args[0])
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewGroupFolderService(client).GetFolder(args[0])
+		})
 	},
 }
 
@@ -435,18 +408,9 @@ var driveGroupGetCmd = &cobra.Command{
 	Short: "그룹 폴더 파일 상세 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		svc := api.NewGroupFolderService(client)
-
-		resp, err := svc.GetFile(args[0], args[1])
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewGroupFolderService(client).GetFile(args[0], args[1])
+		})
 	},
 }
 

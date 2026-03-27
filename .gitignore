@@ -17,3 +17,7 @@ npm/win32-x64/package.json
 
 # npm 로그
 *.log
+
+# Claude Code / 리서치
+CLAUDE.md
+docs/research/

@@ -21,19 +21,11 @@ func (s *BusinessPlaceService) GetBusinessPlace(businessPlaceID string) (*Respon
 }
 
 func (s *BusinessPlaceService) CreateBusinessPlace(body map[string]interface{}) (*Response, error) {
-	data, err := marshalBody(body)
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Post("/business-support/business-places", data)
+	return s.client.PostJSON("/business-support/business-places", body)
 }
 
 func (s *BusinessPlaceService) UpdateBusinessPlace(businessPlaceID string, body map[string]interface{}) (*Response, error) {
-	data, err := marshalBody(body)
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Patch("/business-support/business-places/"+url.PathEscape(businessPlaceID), data)
+	return s.client.PatchJSON("/business-support/business-places/"+url.PathEscape(businessPlaceID), body)
 }
 
 func (s *BusinessPlaceService) DeleteBusinessPlace(businessPlaceID string) (*Response, error) {

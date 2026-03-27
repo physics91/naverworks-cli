@@ -26,19 +26,11 @@ func (s *ContactService) GetContact(contactID string) (*Response, error) {
 }
 
 func (s *ContactService) CreateContact(body map[string]interface{}) (*Response, error) {
-	data, err := marshalBody(body)
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Post("/contacts", data)
+	return s.client.PostJSON("/contacts", body)
 }
 
 func (s *ContactService) UpdateContact(contactID string, body map[string]interface{}) (*Response, error) {
-	data, err := marshalBody(body)
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Patch("/contacts/"+url.PathEscape(contactID), data)
+	return s.client.PatchJSON("/contacts/"+url.PathEscape(contactID), body)
 }
 
 func (s *ContactService) DeleteContact(contactID string) (*Response, error) {

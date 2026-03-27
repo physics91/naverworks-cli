@@ -22,19 +22,11 @@ func (s *TaskService) GetTask(taskID string) (*Response, error) {
 }
 
 func (s *TaskService) CreateTask(userID string, body map[string]interface{}) (*Response, error) {
-	data, err := marshalBody(body)
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Post(fmt.Sprintf("/users/%s/tasks", url.PathEscape(userID)), data)
+	return s.client.PostJSON(fmt.Sprintf("/users/%s/tasks", url.PathEscape(userID)), body)
 }
 
 func (s *TaskService) UpdateTask(taskID string, body map[string]interface{}) (*Response, error) {
-	data, err := marshalBody(body)
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Patch("/tasks/"+url.PathEscape(taskID), data)
+	return s.client.PatchJSON("/tasks/"+url.PathEscape(taskID), body)
 }
 
 func (s *TaskService) DeleteTask(taskID string) (*Response, error) {

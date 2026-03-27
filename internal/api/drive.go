@@ -37,36 +37,20 @@ func (s *DriveService) GetDownloadURL(userID, fileID string) (string, error) {
 
 func (s *DriveService) CreateUploadURL(userID string, body map[string]interface{}, fileSize int64) (*Response, error) {
 	body["fileSize"] = fileSize
-	data, err := marshalBody(body)
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Post(fmt.Sprintf("/users/%s/drive/files", url.PathEscape(userID)), data)
+	return s.client.PostJSON(fmt.Sprintf("/users/%s/drive/files", url.PathEscape(userID)), body)
 }
 
 func (s *DriveService) CreateUploadURLInFolder(userID, folderID string, body map[string]interface{}, fileSize int64) (*Response, error) {
 	body["fileSize"] = fileSize
-	data, err := marshalBody(body)
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Post(fmt.Sprintf("/users/%s/drive/files/%s", url.PathEscape(userID), url.PathEscape(folderID)), data)
+	return s.client.PostJSON(fmt.Sprintf("/users/%s/drive/files/%s", url.PathEscape(userID), url.PathEscape(folderID)), body)
 }
 
 func (s *DriveService) CreateFolder(userID, name string) (*Response, error) {
-	data, err := marshalBody(map[string]string{"fileName": name})
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Post(fmt.Sprintf("/users/%s/drive/files/createfolder", url.PathEscape(userID)), data)
+	return s.client.PostJSON(fmt.Sprintf("/users/%s/drive/files/createfolder", url.PathEscape(userID)), map[string]string{"fileName": name})
 }
 
 func (s *DriveService) CreateFolderInParent(userID, parentID, name string) (*Response, error) {
-	data, err := marshalBody(map[string]string{"fileName": name})
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Post(fmt.Sprintf("/users/%s/drive/files/%s/createfolder", url.PathEscape(userID), url.PathEscape(parentID)), data)
+	return s.client.PostJSON(fmt.Sprintf("/users/%s/drive/files/%s/createfolder", url.PathEscape(userID), url.PathEscape(parentID)), map[string]string{"fileName": name})
 }
 
 func (s *DriveService) DeleteFile(userID, fileID string) (*Response, error) {

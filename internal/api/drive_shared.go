@@ -39,10 +39,6 @@ func (s *SharedDriveService) GetDownloadURL(driveID, fileID string) (string, err
 
 func (s *SharedDriveService) CreateUploadURL(driveID string, body map[string]interface{}, fileSize int64) (*Response, error) {
 	body["fileSize"] = fileSize
-	data, err := marshalBody(body)
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Post(fmt.Sprintf("/sharedrives/%s/files", url.PathEscape(driveID)), data)
+	return s.client.PostJSON(fmt.Sprintf("/sharedrives/%s/files", url.PathEscape(driveID)), body)
 }
 

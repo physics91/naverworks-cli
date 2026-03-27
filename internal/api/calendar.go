@@ -34,11 +34,8 @@ func (s *CalendarService) GetEvent(userID, calendarID, eventID string) (*Respons
 }
 
 func (s *CalendarService) CreateEvent(userID, calendarID string, event map[string]interface{}) (*Response, error) {
-	data, err := marshalBody(map[string]interface{}{
-		"eventComponents": []interface{}{event},
-	})
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Post(fmt.Sprintf("/users/%s/calendars/%s/events", url.PathEscape(userID), url.PathEscape(calendarID)), data)
+	return s.client.PostJSON(
+		fmt.Sprintf("/users/%s/calendars/%s/events", url.PathEscape(userID), url.PathEscape(calendarID)),
+		map[string]interface{}{"eventComponents": []interface{}{event}},
+	)
 }

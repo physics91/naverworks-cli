@@ -18,25 +18,17 @@ func (s *AttendanceService) GetStatus(userID string) (*Response, error) {
 }
 
 func (s *AttendanceService) ClockIn(userID, baseDate, clockInTime string) (*Response, error) {
-	data, err := marshalBody(map[string]interface{}{
-		"baseDate":    baseDate,
-		"clockInTime": clockInTime,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Post(fmt.Sprintf("/business-support/attendance/users/%s/clock-in", url.PathEscape(userID)), data)
+	return s.client.PostJSON(
+		fmt.Sprintf("/business-support/attendance/users/%s/clock-in", url.PathEscape(userID)),
+		map[string]interface{}{"baseDate": baseDate, "clockInTime": clockInTime},
+	)
 }
 
 func (s *AttendanceService) ClockOut(userID, baseDate, clockOutTime string) (*Response, error) {
-	data, err := marshalBody(map[string]interface{}{
-		"baseDate":     baseDate,
-		"clockOutTime": clockOutTime,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Post(fmt.Sprintf("/business-support/attendance/users/%s/clock-out", url.PathEscape(userID)), data)
+	return s.client.PostJSON(
+		fmt.Sprintf("/business-support/attendance/users/%s/clock-out", url.PathEscape(userID)),
+		map[string]interface{}{"baseDate": baseDate, "clockOutTime": clockOutTime},
+	)
 }
 
 func (s *AttendanceService) ListAbsences(cursor string, count int) (*Response, error) {

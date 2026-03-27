@@ -14,11 +14,7 @@ func NewMailService(client *Client) *MailService {
 }
 
 func (s *MailService) SendMail(userID string, body map[string]interface{}) (*Response, error) {
-	data, err := marshalBody(body)
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Post(fmt.Sprintf("/users/%s/mail", url.PathEscape(userID)), data)
+	return s.client.PostJSON(fmt.Sprintf("/users/%s/mail", url.PathEscape(userID)), body)
 }
 
 func (s *MailService) GetMail(userID, mailID string) (*Response, error) {

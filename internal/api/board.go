@@ -30,19 +30,11 @@ func (s *BoardService) GetPost(boardID, postID string) (*Response, error) {
 }
 
 func (s *BoardService) CreatePost(boardID string, body map[string]interface{}) (*Response, error) {
-	data, err := marshalBody(body)
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Post(fmt.Sprintf("/boards/%s/posts", url.PathEscape(boardID)), data)
+	return s.client.PostJSON(fmt.Sprintf("/boards/%s/posts", url.PathEscape(boardID)), body)
 }
 
 func (s *BoardService) UpdatePost(boardID, postID string, body map[string]interface{}) (*Response, error) {
-	data, err := marshalBody(body)
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Put(fmt.Sprintf("/boards/%s/posts/%s", url.PathEscape(boardID), url.PathEscape(postID)), data)
+	return s.client.PutJSON(fmt.Sprintf("/boards/%s/posts/%s", url.PathEscape(boardID), url.PathEscape(postID)), body)
 }
 
 func (s *BoardService) DeletePost(boardID, postID string) (*Response, error) {

@@ -38,27 +38,15 @@ func (s *ScimService) GetUser(id string) (*Response, error) {
 }
 
 func (s *ScimService) CreateUser(body map[string]interface{}) (*Response, error) {
-	data, err := marshalBody(body)
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Post("/Users", data)
+	return s.client.PostJSON("/Users", body)
 }
 
 func (s *ScimService) UpdateUser(id string, body map[string]interface{}) (*Response, error) {
-	data, err := marshalBody(body)
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Put("/Users/"+url.PathEscape(id), data)
+	return s.client.PutJSON("/Users/"+url.PathEscape(id), body)
 }
 
 func (s *ScimService) PatchUser(id string, body map[string]interface{}) (*Response, error) {
-	data, err := marshalBody(body)
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Patch("/Users/"+url.PathEscape(id), data)
+	return s.client.PatchJSON("/Users/"+url.PathEscape(id), body)
 }
 
 func (s *ScimService) DeleteUser(id string) (*Response, error) {
@@ -76,27 +64,15 @@ func (s *ScimService) GetGroup(id string) (*Response, error) {
 }
 
 func (s *ScimService) CreateGroup(body map[string]interface{}) (*Response, error) {
-	data, err := marshalBody(body)
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Post("/Groups", data)
+	return s.client.PostJSON("/Groups", body)
 }
 
 func (s *ScimService) UpdateGroup(id string, body map[string]interface{}) (*Response, error) {
-	data, err := marshalBody(body)
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Put("/Groups/"+url.PathEscape(id), data)
+	return s.client.PutJSON("/Groups/"+url.PathEscape(id), body)
 }
 
 func (s *ScimService) PatchGroup(id string, body map[string]interface{}) (*Response, error) {
-	data, err := marshalBody(body)
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Patch("/Groups/"+url.PathEscape(id), data)
+	return s.client.PatchJSON("/Groups/"+url.PathEscape(id), body)
 }
 
 func (s *ScimService) DeleteGroup(id string) (*Response, error) {

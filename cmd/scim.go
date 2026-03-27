@@ -87,6 +87,21 @@ func scimBodyRunE(fn func(*api.ScimService, map[string]interface{}) (*api.Respon
 	}
 }
 
+func scimDeleteRunE(fn func(*api.ScimService, string) (*api.Response, error)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := loadScimService()
+		if err != nil {
+			return err
+		}
+		resp, err := fn(svc, args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	}
+}
+
 func scimIDBodyRunE(fn func(*api.ScimService, string, map[string]interface{}) (*api.Response, error)) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		svc, err := loadScimService()
@@ -145,18 +160,7 @@ var scimDeleteUserCmd = &cobra.Command{
 	Use:   "delete-user <id>",
 	Short: "SCIM 사용자 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := loadScimService()
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeleteUser(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  scimDeleteRunE((*api.ScimService).DeleteUser),
 }
 
 // --- Groups ---
@@ -198,18 +202,7 @@ var scimDeleteGroupCmd = &cobra.Command{
 	Use:   "delete-group <id>",
 	Short: "SCIM 그룹 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := loadScimService()
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeleteGroup(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  scimDeleteRunE((*api.ScimService).DeleteGroup),
 }
 
 func init() {

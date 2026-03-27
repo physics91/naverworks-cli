@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 )
@@ -55,12 +54,18 @@ func (s *DriveService) CreateUploadURLInFolder(userID, folderID string, body map
 }
 
 func (s *DriveService) CreateFolder(userID, name string) (*Response, error) {
-	data, _ := json.Marshal(map[string]string{"fileName": name})
+	data, err := marshalBody(map[string]string{"fileName": name})
+	if err != nil {
+		return nil, err
+	}
 	return s.client.Post(fmt.Sprintf("/users/%s/drive/files/createfolder", url.PathEscape(userID)), data)
 }
 
 func (s *DriveService) CreateFolderInParent(userID, parentID, name string) (*Response, error) {
-	data, _ := json.Marshal(map[string]string{"fileName": name})
+	data, err := marshalBody(map[string]string{"fileName": name})
+	if err != nil {
+		return nil, err
+	}
 	return s.client.Post(fmt.Sprintf("/users/%s/drive/files/%s/createfolder", url.PathEscape(userID), url.PathEscape(parentID)), data)
 }
 

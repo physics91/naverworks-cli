@@ -14,10 +14,7 @@ func BuildPaginationQuery(cursor string, count int) string {
 	if count > 0 {
 		params.Set("count", strconv.Itoa(count))
 	}
-	if len(params) > 0 {
-		return "?" + params.Encode()
-	}
-	return ""
+	return encodeQueryFromValues(params)
 }
 
 func encodeQueryFromValues(params url.Values) string {

@@ -99,29 +99,36 @@ func (c *Config) Save(path string) error {
 	return saveSecureJSON(c, path)
 }
 
+func (c *Config) fieldPtr(key string) *string {
+	switch key {
+	case "client_id":
+		return &c.ClientID
+	case "client_secret":
+		return &c.ClientSecret
+	case "service_account_id":
+		return &c.ServiceAccountID
+	case "private_key_path":
+		return &c.PrivateKeyPath
+	case "domain_id":
+		return &c.DomainID
+	case "bot_id":
+		return &c.BotID
+	case "scope":
+		return &c.Scope
+	case "default_calendar_user_id":
+		return &c.DefaultCalendarUserID
+	case "scim_access_token":
+		return &c.ScimAccessToken
+	}
+	return nil
+}
+
 func (c *Config) Set(key, value string) error {
 	if !validKeys[key] {
 		return fmt.Errorf("유효하지 않은 설정 키: %s", key)
 	}
-	switch key {
-	case "client_id":
-		c.ClientID = value
-	case "client_secret":
-		c.ClientSecret = value
-	case "service_account_id":
-		c.ServiceAccountID = value
-	case "private_key_path":
-		c.PrivateKeyPath = value
-	case "domain_id":
-		c.DomainID = value
-	case "bot_id":
-		c.BotID = value
-	case "scope":
-		c.Scope = value
-	case "default_calendar_user_id":
-		c.DefaultCalendarUserID = value
-	case "scim_access_token":
-		c.ScimAccessToken = value
+	if ptr := c.fieldPtr(key); ptr != nil {
+		*ptr = value
 	}
 	return nil
 }
@@ -130,25 +137,8 @@ func (c *Config) Get(key string) (string, error) {
 	if !validKeys[key] {
 		return "", fmt.Errorf("유효하지 않은 설정 키: %s", key)
 	}
-	switch key {
-	case "client_id":
-		return c.ClientID, nil
-	case "client_secret":
-		return c.ClientSecret, nil
-	case "service_account_id":
-		return c.ServiceAccountID, nil
-	case "private_key_path":
-		return c.PrivateKeyPath, nil
-	case "domain_id":
-		return c.DomainID, nil
-	case "bot_id":
-		return c.BotID, nil
-	case "scope":
-		return c.Scope, nil
-	case "default_calendar_user_id":
-		return c.DefaultCalendarUserID, nil
-	case "scim_access_token":
-		return c.ScimAccessToken, nil
+	if ptr := c.fieldPtr(key); ptr != nil {
+		return *ptr, nil
 	}
 	return "", nil
 }

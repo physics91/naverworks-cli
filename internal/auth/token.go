@@ -61,28 +61,7 @@ func (s *TokenStore) Load() (*Token, error) {
 }
 
 func (s *TokenStore) Save(token *Token) error {
-	dir := filepath.Dir(s.path)
-	if err := os.MkdirAll(dir, 0700); err != nil {
-		return fmt.Errorf("디렉토리 생성 실패: %w", err)
-	}
-	if runtime.GOOS != "windows" {
-		if err := os.Chmod(dir, 0700); err != nil {
-			return fmt.Errorf("디렉토리 권한 설정 실패: %w", err)
-		}
-	}
-	data, err := json.MarshalIndent(token, "", "  ")
-	if err != nil {
-		return fmt.Errorf("토큰 직렬화 실패: %w", err)
-	}
-	if err := os.WriteFile(s.path, data, 0600); err != nil {
-		return err
-	}
-	if runtime.GOOS != "windows" {
-		if err := os.Chmod(s.path, 0600); err != nil {
-			return fmt.Errorf("파일 권한 설정 실패: %w", err)
-		}
-	}
-	return nil
+	return writeSecureJSON(s.path, token)
 }
 
 func (s *TokenStore) Delete() error {
@@ -151,23 +130,32 @@ func (s *ProfileTokenStore) Save(token *Token) error {
 	}
 
 	pf.Tokens[s.profile] = token
+	return writeSecureJSON(s.path, pf)
+}
 
-	dir := filepath.Dir(s.path)
+// writeSecureJSON serializes v as indented JSON and writes it to path with
+// secure permissions (0700 directory, 0600 file).
+func writeSecureJSON(path string, v interface{}) error {
+	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return fmt.Errorf("디렉토리 생성 실패: %w", err)
 	}
 	if runtime.GOOS != "windows" {
-		os.Chmod(dir, 0700)
+		if err := os.Chmod(dir, 0700); err != nil {
+			return fmt.Errorf("디렉토리 권한 설정 실패: %w", err)
+		}
 	}
-	data, err := json.MarshalIndent(pf, "", "  ")
+	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return fmt.Errorf("토큰 직렬화 실패: %w", err)
 	}
-	if err := os.WriteFile(s.path, data, 0600); err != nil {
+	if err := os.WriteFile(path, data, 0600); err != nil {
 		return err
 	}
 	if runtime.GOOS != "windows" {
-		os.Chmod(s.path, 0600)
+		if err := os.Chmod(path, 0600); err != nil {
+			return fmt.Errorf("파일 권한 설정 실패: %w", err)
+		}
 	}
 	return nil
 }

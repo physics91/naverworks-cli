@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 )
@@ -15,17 +14,12 @@ func NewBotService(client *Client) *BotService {
 }
 
 func buildTextMessageBody(text string) ([]byte, error) {
-	body := map[string]interface{}{
+	return marshalBody(map[string]interface{}{
 		"content": map[string]interface{}{
 			"type": "text",
 			"text": text,
 		},
-	}
-	data, err := json.Marshal(body)
-	if err != nil {
-		return nil, fmt.Errorf("메시지 직렬화 실패: %w", err)
-	}
-	return data, nil
+	})
 }
 
 func (s *BotService) SendTextToUser(botID, userID, text string) (*Response, error) {

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 )
@@ -40,9 +39,9 @@ func (s *SharedDriveService) GetDownloadURL(driveID, fileID string) (string, err
 
 func (s *SharedDriveService) CreateUploadURL(driveID string, body map[string]interface{}, fileSize int64) (*Response, error) {
 	body["fileSize"] = fileSize
-	data, err := json.Marshal(body)
+	data, err := marshalBody(body)
 	if err != nil {
-		return nil, fmt.Errorf("업로드 요청 직렬화 실패: %w", err)
+		return nil, err
 	}
 	return s.client.Post(fmt.Sprintf("/sharedrives/%s/files", url.PathEscape(driveID)), data)
 }

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 )
@@ -31,17 +30,17 @@ func (s *BoardService) GetPost(boardID, postID string) (*Response, error) {
 }
 
 func (s *BoardService) CreatePost(boardID string, body map[string]interface{}) (*Response, error) {
-	data, err := json.Marshal(body)
+	data, err := marshalBody(body)
 	if err != nil {
-		return nil, fmt.Errorf("게시글 직렬화 실패: %w", err)
+		return nil, err
 	}
 	return s.client.Post(fmt.Sprintf("/boards/%s/posts", url.PathEscape(boardID)), data)
 }
 
 func (s *BoardService) UpdatePost(boardID, postID string, body map[string]interface{}) (*Response, error) {
-	data, err := json.Marshal(body)
+	data, err := marshalBody(body)
 	if err != nil {
-		return nil, fmt.Errorf("게시글 직렬화 실패: %w", err)
+		return nil, err
 	}
 	return s.client.Put(fmt.Sprintf("/boards/%s/posts/%s", url.PathEscape(boardID), url.PathEscape(postID)), data)
 }

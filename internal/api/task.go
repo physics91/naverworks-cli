@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 )
@@ -23,17 +22,17 @@ func (s *TaskService) GetTask(taskID string) (*Response, error) {
 }
 
 func (s *TaskService) CreateTask(userID string, body map[string]interface{}) (*Response, error) {
-	data, err := json.Marshal(body)
+	data, err := marshalBody(body)
 	if err != nil {
-		return nil, fmt.Errorf("태스크 직렬화 실패: %w", err)
+		return nil, err
 	}
 	return s.client.Post(fmt.Sprintf("/users/%s/tasks", url.PathEscape(userID)), data)
 }
 
 func (s *TaskService) UpdateTask(taskID string, body map[string]interface{}) (*Response, error) {
-	data, err := json.Marshal(body)
+	data, err := marshalBody(body)
 	if err != nil {
-		return nil, fmt.Errorf("태스크 직렬화 실패: %w", err)
+		return nil, err
 	}
 	return s.client.Patch("/tasks/"+url.PathEscape(taskID), data)
 }

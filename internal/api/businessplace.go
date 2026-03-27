@@ -1,8 +1,6 @@
 package api
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/url"
 )
 
@@ -23,17 +21,17 @@ func (s *BusinessPlaceService) GetBusinessPlace(businessPlaceID string) (*Respon
 }
 
 func (s *BusinessPlaceService) CreateBusinessPlace(body map[string]interface{}) (*Response, error) {
-	data, err := json.Marshal(body)
+	data, err := marshalBody(body)
 	if err != nil {
-		return nil, fmt.Errorf("사업장 직렬화 실패: %w", err)
+		return nil, err
 	}
 	return s.client.Post("/business-support/business-places", data)
 }
 
 func (s *BusinessPlaceService) UpdateBusinessPlace(businessPlaceID string, body map[string]interface{}) (*Response, error) {
-	data, err := json.Marshal(body)
+	data, err := marshalBody(body)
 	if err != nil {
-		return nil, fmt.Errorf("사업장 직렬화 실패: %w", err)
+		return nil, err
 	}
 	return s.client.Patch("/business-support/business-places/"+url.PathEscape(businessPlaceID), data)
 }

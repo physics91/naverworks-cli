@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 )
@@ -35,12 +34,11 @@ func (s *CalendarService) GetEvent(userID, calendarID, eventID string) (*Respons
 }
 
 func (s *CalendarService) CreateEvent(userID, calendarID string, event map[string]interface{}) (*Response, error) {
-	body := map[string]interface{}{
+	data, err := marshalBody(map[string]interface{}{
 		"eventComponents": []interface{}{event},
-	}
-	data, err := json.Marshal(body)
+	})
 	if err != nil {
-		return nil, fmt.Errorf("이벤트 직렬화 실패: %w", err)
+		return nil, err
 	}
 	return s.client.Post(fmt.Sprintf("/users/%s/calendars/%s/events", url.PathEscape(userID), url.PathEscape(calendarID)), data)
 }

@@ -243,6 +243,14 @@ func (c *Client) UploadFile(uploadURL string, filePath string) error {
 	return nil
 }
 
+func marshalBody(body interface{}) ([]byte, error) {
+	data, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("요청 데이터 직렬화 실패: %w", err)
+	}
+	return data, nil
+}
+
 func parseRateLimitReset(header http.Header, attempt int) time.Duration {
 	for _, key := range []string{"RateLimit-Reset", "X-RateLimit-Reset"} {
 		if val := header.Get(key); val != "" {

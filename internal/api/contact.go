@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 )
@@ -27,17 +26,17 @@ func (s *ContactService) GetContact(contactID string) (*Response, error) {
 }
 
 func (s *ContactService) CreateContact(body map[string]interface{}) (*Response, error) {
-	data, err := json.Marshal(body)
+	data, err := marshalBody(body)
 	if err != nil {
-		return nil, fmt.Errorf("연락처 직렬화 실패: %w", err)
+		return nil, err
 	}
 	return s.client.Post("/contacts", data)
 }
 
 func (s *ContactService) UpdateContact(contactID string, body map[string]interface{}) (*Response, error) {
-	data, err := json.Marshal(body)
+	data, err := marshalBody(body)
 	if err != nil {
-		return nil, fmt.Errorf("연락처 직렬화 실패: %w", err)
+		return nil, err
 	}
 	return s.client.Patch("/contacts/"+url.PathEscape(contactID), data)
 }

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 )
@@ -15,9 +14,9 @@ func NewMailService(client *Client) *MailService {
 }
 
 func (s *MailService) SendMail(userID string, body map[string]interface{}) (*Response, error) {
-	data, err := json.Marshal(body)
+	data, err := marshalBody(body)
 	if err != nil {
-		return nil, fmt.Errorf("메일 직렬화 실패: %w", err)
+		return nil, err
 	}
 	return s.client.Post(fmt.Sprintf("/users/%s/mail", url.PathEscape(userID)), data)
 }

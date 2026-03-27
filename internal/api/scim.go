@@ -1,8 +1,6 @@
 package api
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/url"
 	"strconv"
 )
@@ -43,25 +41,25 @@ func (s *ScimService) GetUser(id string) (*Response, error) {
 }
 
 func (s *ScimService) CreateUser(body map[string]interface{}) (*Response, error) {
-	data, err := json.Marshal(body)
+	data, err := marshalBody(body)
 	if err != nil {
-		return nil, fmt.Errorf("SCIM 사용자 직렬화 실패: %w", err)
+		return nil, err
 	}
 	return s.client.Post("/Users", data)
 }
 
 func (s *ScimService) UpdateUser(id string, body map[string]interface{}) (*Response, error) {
-	data, err := json.Marshal(body)
+	data, err := marshalBody(body)
 	if err != nil {
-		return nil, fmt.Errorf("SCIM 사용자 직렬화 실패: %w", err)
+		return nil, err
 	}
 	return s.client.Put("/Users/"+url.PathEscape(id), data)
 }
 
 func (s *ScimService) PatchUser(id string, body map[string]interface{}) (*Response, error) {
-	data, err := json.Marshal(body)
+	data, err := marshalBody(body)
 	if err != nil {
-		return nil, fmt.Errorf("SCIM 사용자 직렬화 실패: %w", err)
+		return nil, err
 	}
 	return s.client.Patch("/Users/"+url.PathEscape(id), data)
 }
@@ -81,25 +79,25 @@ func (s *ScimService) GetGroup(id string) (*Response, error) {
 }
 
 func (s *ScimService) CreateGroup(body map[string]interface{}) (*Response, error) {
-	data, err := json.Marshal(body)
+	data, err := marshalBody(body)
 	if err != nil {
-		return nil, fmt.Errorf("SCIM 그룹 직렬화 실패: %w", err)
+		return nil, err
 	}
 	return s.client.Post("/Groups", data)
 }
 
 func (s *ScimService) UpdateGroup(id string, body map[string]interface{}) (*Response, error) {
-	data, err := json.Marshal(body)
+	data, err := marshalBody(body)
 	if err != nil {
-		return nil, fmt.Errorf("SCIM 그룹 직렬화 실패: %w", err)
+		return nil, err
 	}
 	return s.client.Put("/Groups/"+url.PathEscape(id), data)
 }
 
 func (s *ScimService) PatchGroup(id string, body map[string]interface{}) (*Response, error) {
-	data, err := json.Marshal(body)
+	data, err := marshalBody(body)
 	if err != nil {
-		return nil, fmt.Errorf("SCIM 그룹 직렬화 실패: %w", err)
+		return nil, err
 	}
 	return s.client.Patch("/Groups/"+url.PathEscape(id), data)
 }

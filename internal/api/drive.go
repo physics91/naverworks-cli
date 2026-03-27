@@ -38,18 +38,18 @@ func (s *DriveService) GetDownloadURL(userID, fileID string) (string, error) {
 
 func (s *DriveService) CreateUploadURL(userID string, body map[string]interface{}, fileSize int64) (*Response, error) {
 	body["fileSize"] = fileSize
-	data, err := json.Marshal(body)
+	data, err := marshalBody(body)
 	if err != nil {
-		return nil, fmt.Errorf("업로드 요청 직렬화 실패: %w", err)
+		return nil, err
 	}
 	return s.client.Post(fmt.Sprintf("/users/%s/drive/files", url.PathEscape(userID)), data)
 }
 
 func (s *DriveService) CreateUploadURLInFolder(userID, folderID string, body map[string]interface{}, fileSize int64) (*Response, error) {
 	body["fileSize"] = fileSize
-	data, err := json.Marshal(body)
+	data, err := marshalBody(body)
 	if err != nil {
-		return nil, fmt.Errorf("업로드 요청 직렬화 실패: %w", err)
+		return nil, err
 	}
 	return s.client.Post(fmt.Sprintf("/users/%s/drive/files/%s", url.PathEscape(userID), url.PathEscape(folderID)), data)
 }

@@ -90,5 +90,3 @@ func (s *DriveService) ListSharedFolders(userID string, cursor string, count int
 func (s *DriveService) ListSharedFolderFiles(userID, sharedFolderID string, cursor string, count int) (*Response, error) {
 	return s.client.Get(fmt.Sprintf("/users/%s/drive/sharedfolders/%s/files", url.PathEscape(userID), url.PathEscape(sharedFolderID)) + BuildPaginationQuery(cursor, count))
 }
-
-

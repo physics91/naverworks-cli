@@ -46,4 +46,3 @@ func (s *SharedDriveService) CreateUploadURL(driveID string, body map[string]int
 	return s.client.Post(fmt.Sprintf("/sharedrives/%s/files", url.PathEscape(driveID)), data)
 }
 
-

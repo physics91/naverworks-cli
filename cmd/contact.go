@@ -49,18 +49,9 @@ var contactGetCmd = &cobra.Command{
 	Short: "연락처 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		svc := api.NewContactService(client)
-
-		resp, err := svc.GetContact(args[0])
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewContactService(client).GetContact(args[0])
+		})
 	},
 }
 

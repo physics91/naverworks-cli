@@ -24,10 +24,7 @@ func buildScimListQuery(startIndex, count int, filter string) string {
 	if filter != "" {
 		params.Set("filter", filter)
 	}
-	if len(params) > 0 {
-		return "?" + params.Encode()
-	}
-	return ""
+	return encodeQueryFromValues(params)
 }
 
 // Users

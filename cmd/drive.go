@@ -266,12 +266,10 @@ var driveSharedDownloadCmd = &cobra.Command{
 	Short: "공유 드라이브 파일 다운로드 URL 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newSvc(api.NewSharedDriveService)
 		if err != nil {
 			return err
 		}
-		svc := api.NewSharedDriveService(client)
-
 		downloadURL, err := svc.GetDownloadURL(args[0], args[1])
 		if err != nil {
 			return err

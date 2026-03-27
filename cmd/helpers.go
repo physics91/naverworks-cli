@@ -36,7 +36,6 @@ func loadConfigAndToken() (*config.Config, *auth.Token, string, error) {
 	return profile, token, name, nil
 }
 
-// refreshJWTTokenFromAssertion obtains a new JWT token via assertion and updates t in place.
 func refreshJWTTokenFromAssertion(cfg *config.Config, t *auth.Token, store *auth.ProfileTokenStore) error {
 	assertion, err := auth.BuildJWTAssertion(cfg.ClientID, cfg.ServiceAccountID, cfg.PrivateKeyPath)
 	if err != nil {

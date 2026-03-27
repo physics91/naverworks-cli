@@ -19,15 +19,10 @@ var botSendCmd = &cobra.Command{
 	Use:   "send",
 	Short: "메시지 전송",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, _, err := newAPIClient()
+		bot, botID, err := newBotSvc(cmd)
 		if err != nil {
 			return err
 		}
-		botID, err := resolveBotID(cmd, cfg.BotID)
-		if err != nil {
-			return err
-		}
-		bot := api.NewBotService(client)
 
 		to, _ := cmd.Flags().GetString("to")
 		channel, _ := cmd.Flags().GetString("channel")
@@ -72,15 +67,10 @@ var botGetChannelCmd = &cobra.Command{
 	Short: "채널 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, _, err := newAPIClient()
+		bot, botID, err := newBotSvc(cmd)
 		if err != nil {
 			return err
 		}
-		botID, err := resolveBotID(cmd, cfg.BotID)
-		if err != nil {
-			return err
-		}
-		bot := api.NewBotService(client)
 
 		resp, err := bot.GetChannel(botID, args[0])
 		if err != nil {
@@ -96,19 +86,26 @@ var botChannelMembersCmd = &cobra.Command{
 	Short: "채널 멤버 목록",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, cfg, _, err := newAPIClient()
+		bot, botID, err := newBotSvc(cmd)
 		if err != nil {
 			return err
 		}
-		botID, err := resolveBotID(cmd, cfg.BotID)
-		if err != nil {
-			return err
-		}
-		bot := api.NewBotService(client)
 		return runListCmd(cmd, []string{"userId"}, "members", func(c string, n int) (*api.Response, error) {
 			return bot.ListChannelMembers(botID, args[0], c, n)
 		})
 	},
+}
+
+func newBotSvc(cmd *cobra.Command) (*api.BotService, string, error) {
+	client, cfg, _, err := newAPIClient()
+	if err != nil {
+		return nil, "", err
+	}
+	botID, err := resolveBotID(cmd, cfg.BotID)
+	if err != nil {
+		return nil, "", err
+	}
+	return api.NewBotService(client), botID, nil
 }
 
 func resolveBotID(cmd *cobra.Command, cfgBotID string) (string, error) {

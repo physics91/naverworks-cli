@@ -74,11 +74,10 @@ var taskUpdateCmd = &cobra.Command{
 	Short: "태스크 수정",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newSvc(api.NewTaskService)
 		if err != nil {
 			return err
 		}
-		svc := api.NewTaskService(client)
 
 		body, err := parseOptionalJSONData(cmd)
 		if err != nil {
@@ -105,11 +104,10 @@ var taskDeleteCmd = &cobra.Command{
 	Short: "태스크 삭제",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
+		svc, err := newSvc(api.NewTaskService)
 		if err != nil {
 			return err
 		}
-		svc := api.NewTaskService(client)
 
 		resp, err := svc.DeleteTask(args[0])
 		if err != nil {

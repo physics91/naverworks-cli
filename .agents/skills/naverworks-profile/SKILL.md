@@ -1,7 +1,6 @@
 ---
 name: naverworks-profile
 description: Use when setting up or troubleshooting naverworks CLI multi-profile authentication. Covers profile creation, OAuth/JWT login, and auth configuration for CI/CD environments. Triggers on "naverworks 프로필", "naverworks 인증", "NW_PROFILE". If the task is build or release automation, use the build or deploy skill. If only running API commands, refer to naverworks --help instead.
-disable-model-invocation: true
 ---
 
 # 네이버웍스 CLI 멀티 프로필
@@ -43,7 +42,8 @@ disable-model-invocation: true
 ### 성공 기준
 
 `naverworks --profile <name> auth status` 실행 시:
-- `authenticated: true` 반환
+- 종료 코드 0 반환
+- `auth_method`가 의도한 인증 방식(`oauth` 또는 `jwt`)과 일치
 - `expires_at`이 현재 시각 이후
 
 ### 출력 형식
@@ -55,7 +55,7 @@ disable-model-invocation: true
 | `profile` | `prod` |
 | `auth_mode` | `jwt` |
 | `config_source` | `interactive` 또는 `manual` 또는 `env` |
-| `verification` | `authenticated: true, expires_at: 2026-03-25T12:00:00Z` |
+| `verification` | `auth_method: jwt, expires_at: 2026-03-25T12:00:00Z` |
 | `next_action` | 없음 (성공) 또는 트러블슈팅 항목 |
 
 ### 실패 시 대응
@@ -73,10 +73,10 @@ disable-model-invocation: true
      naverworks --profile <name> config set client_id YOUR_ID
      naverworks --profile <name> config set client_secret --stdin <<< "SECRET"
      ```
-3. `naverworks --profile <name> auth login` 실행
+3. `auth setup` 마지막 단계에서 즉시 로그인하지 않았다면 `naverworks --profile <name> auth login` 실행
 4. 브라우저에서 네이버웍스 로그인 완료
 5. `naverworks --profile <name> auth status`로 검증
-   - `authenticated: true` 확인 → 완료
+   - `auth_method: oauth`와 미래 시각의 `expires_at` 확인 → 완료
    - 실패 → 트러블슈팅 참조
 
 ### JWT 설정
@@ -90,9 +90,9 @@ disable-model-invocation: true
      naverworks --profile <name> config set service_account_id YOUR_SA_ID
      naverworks --profile <name> config set private_key_path /path/to/key.pem
      ```
-3. `naverworks --profile <name> auth login --jwt` 실행
+3. `auth setup` 마지막 단계에서 즉시 로그인하지 않았다면 `naverworks --profile <name> auth login --jwt` 실행
 4. `naverworks --profile <name> auth status`로 검증
-   - `authenticated: true` 확인 → 완료
+   - `auth_method: jwt`와 미래 시각의 `expires_at` 확인 → 완료
    - 실패 → private_key_path 경로/권한(600) 확인
 
 ### CI/CD (환경변수 방식)
@@ -105,10 +105,11 @@ disable-model-invocation: true
    export NW_SERVICE_ACCOUNT_ID="$CI_SA_ID"
    export NW_PRIVATE_KEY_PATH="/secrets/private.pem"
    export NW_BOT_ID="$CI_BOT_ID"
+   export NW_SCOPE="bot directory calendar"
    ```
 2. `naverworks auth login --jwt` (NW_PROFILE로 프로필 결정)
 3. `naverworks auth status`로 검증
-   - `authenticated: true` 확인 → 완료
+   - `auth_method: jwt`와 미래 시각의 `expires_at` 확인 → 완료
    - 실패 → 트러블슈팅 참조
 
 ## 검증 & 트러블슈팅
@@ -129,6 +130,7 @@ naverworks --profile <name> auth logout      # 로그아웃 (확인 필요)
 naverworks --profile <name> config list      # 전체 설정 (민감값 마스킹)
 naverworks --profile <name> config get <key> # 개별 조회
 ```
+→ `auth status` 출력에는 `authenticated` 필드가 없고, 성공 시 `auth_method`, `expires_at`, `scopes`가 출력된다.
 
 ### 트러블슈팅
 
@@ -169,7 +171,6 @@ naverworks --profile <name> config get <key> # 개별 조회
 | 토큰 | `~/.config/naverworks/token.json` | `%APPDATA%\naverworks\token.json` |
 
 레거시 형식(profiles 키 없는 단일 설정)은 자동으로 `"default"` 프로필로 마이그레이션된다.
+토큰은 `token.json` 내 `tokens.<profile>` 구조로 프로필별 저장된다.
 
 </details>
-
-<!-- codex-review: APPROVED | round: 5 | date: 2026-03-24 -->

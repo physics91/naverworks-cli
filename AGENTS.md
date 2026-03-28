@@ -8,10 +8,10 @@ When a trigger condition below is matched, the corresponding skill **must** be i
 
 | Skill | Triggers | Description |
 |-------|----------|-------------|
-| `test` | "테스트", "test", `/test` | Run go test, go vet and report results |
-| `build` | "빌드", "build", `/build` | Build local or cross-platform binaries |
-| `version` | "버전", "version", `/version`, "bump" | Check, bump, or manage version tags |
-| `deploy` | "배포", "릴리스", "deploy", "release", `/deploy` | Cross-build → GitHub Release → npm publish |
+| `test` | "테스트", "test", `/test` | Run go test, go vet, and a local build smoke check |
+| `build` | "빌드", "build", `/build` | Build local or cross-platform binaries with ldflags version metadata |
+| `version` | "버전", "version", `/version`, "bump" | Inspect version state or create/push release tags directly |
+| `deploy` | "배포", "릴리스", "deploy", "release", `/deploy` | Run preflight checks, push a release tag, and verify the GitHub Actions release workflow |
 | `naverworks-profile` | "프로필", "인증", "NW_PROFILE", "auth setup" | Multi-profile setup, auth, and troubleshooting |
 
 ## Skill Invocation Order

@@ -1,6 +1,6 @@
 ---
 name: build
-description: Use when building naverworks binaries — single platform or cross-platform builds with version injection. Triggers on "빌드", "build", "/build".
+description: Use when building naverworks binaries — single-platform or cross-platform artifacts with ldflags version metadata. Triggers on "빌드", "build", "/build". If you need test results only, use the test skill. If you need to publish a release tag, use deploy or version.
 ---
 
 # naverworks 빌드

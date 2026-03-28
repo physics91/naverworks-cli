@@ -1,6 +1,6 @@
 ---
 name: test
-description: Use when running tests for naverworks — runs go test, go vet, and reports results. Triggers on "테스트", "test", "/test".
+description: Use when verifying the naverworks codebase — runs go test, go vet, and a local build smoke check, then reports results. Triggers on "테스트", "test", "/test". If you need release artifacts, use build. If you need to publish a version, use deploy.
 ---
 
 # naverworks 테스트 실행

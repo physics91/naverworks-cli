@@ -20,11 +20,19 @@ type Config struct {
 	ScimAccessToken       string `json:"scim_access_token,omitempty"`
 }
 
-var validKeys = map[string]bool{
-	"client_id": true, "client_secret": true, "service_account_id": true,
-	"private_key_path": true, "domain_id": true, "bot_id": true,
-	"scope": true, "default_calendar_user_id": true, "scim_access_token": true,
+// AllKeys is the ordered list of all valid config keys.
+var AllKeys = []string{
+	"client_id", "client_secret", "service_account_id", "private_key_path",
+	"domain_id", "bot_id", "scope", "default_calendar_user_id", "scim_access_token",
 }
+
+var validKeys = func() map[string]bool {
+	m := make(map[string]bool, len(AllKeys))
+	for _, k := range AllKeys {
+		m[k] = true
+	}
+	return m
+}()
 
 var sensitiveKeys = map[string]bool{
 	"client_secret":    true,

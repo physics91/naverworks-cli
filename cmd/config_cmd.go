@@ -79,16 +79,9 @@ var configListCmd = &cobra.Command{
 			return err
 		}
 
-		masked := map[string]string{
-			"client_id":                cfg.GetMasked("client_id"),
-			"client_secret":            cfg.GetMasked("client_secret"),
-			"service_account_id":       cfg.GetMasked("service_account_id"),
-			"private_key_path":         cfg.GetMasked("private_key_path"),
-			"domain_id":               cfg.GetMasked("domain_id"),
-			"bot_id":                  cfg.GetMasked("bot_id"),
-			"scope":                   cfg.GetMasked("scope"),
-			"default_calendar_user_id": cfg.GetMasked("default_calendar_user_id"),
-			"scim_access_token":        cfg.GetMasked("scim_access_token"),
+		masked := make(map[string]string, len(config.AllKeys))
+		for _, key := range config.AllKeys {
+			masked[key] = cfg.GetMasked(key)
 		}
 		data, _ := json.MarshalIndent(masked, "", "  ")
 		fmt.Println(string(data))

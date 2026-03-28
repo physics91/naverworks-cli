@@ -251,28 +251,24 @@ func marshalBody(body interface{}) ([]byte, error) {
 	return data, nil
 }
 
-func (c *Client) PostJSON(path string, body interface{}) (*Response, error) {
+func (c *Client) doJSON(method, path string, body interface{}) (*Response, error) {
 	data, err := marshalBody(body)
 	if err != nil {
 		return nil, err
 	}
-	return c.Post(path, data)
+	return c.do(method, path, data)
+}
+
+func (c *Client) PostJSON(path string, body interface{}) (*Response, error) {
+	return c.doJSON("POST", path, body)
 }
 
 func (c *Client) PutJSON(path string, body interface{}) (*Response, error) {
-	data, err := marshalBody(body)
-	if err != nil {
-		return nil, err
-	}
-	return c.Put(path, data)
+	return c.doJSON("PUT", path, body)
 }
 
 func (c *Client) PatchJSON(path string, body interface{}) (*Response, error) {
-	data, err := marshalBody(body)
-	if err != nil {
-		return nil, err
-	}
-	return c.Patch(path, data)
+	return c.doJSON("PATCH", path, body)
 }
 
 func parseRateLimitReset(header http.Header, attempt int) time.Duration {

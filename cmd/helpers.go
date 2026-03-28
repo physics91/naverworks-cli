@@ -238,8 +238,6 @@ func addListFlags(cmds ...*cobra.Command) {
 	}
 }
 
-// resolveOrCreateProfile returns the active profile config and name,
-// creating the profile if it doesn't exist yet.
 func resolveOrCreateProfile(pc *config.ProfileConfig) (*config.Config, string) {
 	_, name, err := pc.ActiveProfile(profileName)
 	if err != nil {

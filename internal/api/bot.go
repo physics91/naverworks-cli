@@ -22,20 +22,20 @@ func buildTextMessageBody(text string) ([]byte, error) {
 	})
 }
 
-func (s *BotService) SendTextToUser(botID, userID, text string) (*Response, error) {
+func (s *BotService) sendText(path, text string) (*Response, error) {
 	data, err := buildTextMessageBody(text)
 	if err != nil {
 		return nil, err
 	}
-	return s.client.Post(fmt.Sprintf("/bots/%s/users/%s/messages", url.PathEscape(botID), url.PathEscape(userID)), data)
+	return s.client.Post(path, data)
+}
+
+func (s *BotService) SendTextToUser(botID, userID, text string) (*Response, error) {
+	return s.sendText(fmt.Sprintf("/bots/%s/users/%s/messages", url.PathEscape(botID), url.PathEscape(userID)), text)
 }
 
 func (s *BotService) SendTextToChannel(botID, channelID, text string) (*Response, error) {
-	data, err := buildTextMessageBody(text)
-	if err != nil {
-		return nil, err
-	}
-	return s.client.Post(fmt.Sprintf("/bots/%s/channels/%s/messages", url.PathEscape(botID), url.PathEscape(channelID)), data)
+	return s.sendText(fmt.Sprintf("/bots/%s/channels/%s/messages", url.PathEscape(botID), url.PathEscape(channelID)), text)
 }
 
 func (s *BotService) GetChannel(botID, channelID string) (*Response, error) {

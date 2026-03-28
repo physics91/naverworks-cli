@@ -186,9 +186,5 @@ func (s *ProfileTokenStore) Delete() error {
 		return os.Remove(s.path)
 	}
 
-	newData, err := json.MarshalIndent(pf, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(s.path, newData, 0600)
+	return writeSecureJSON(s.path, pf)
 }

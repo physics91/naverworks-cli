@@ -1,7 +1,10 @@
 package auth
 
 import (
+	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 	"time"
 )
@@ -181,5 +184,128 @@ func TestProfileTokenStore_DeleteNonDefault_PreservesLegacy(t *testing.T) {
 	loaded, _ := defaultStore.Load()
 	if loaded == nil || loaded.AccessToken != "default-tk" {
 		t.Error("default token should be preserved after deleting non-default profile")
+	}
+}
+
+func TestWriteSecureJSON_NewFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "sub", "token.json")
+
+	token := &Token{AccessToken: "new-file-test"}
+	if err := writeSecureJSON(path, token); err != nil {
+		t.Fatalf("writeSecureJSON failed: %v", err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read failed: %v", err)
+	}
+	if !strings.Contains(string(data), "new-file-test") {
+		t.Error("expected file to contain new-file-test")
+	}
+
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(path)
+		if err != nil {
+			t.Fatalf("stat failed: %v", err)
+		}
+		if perm := info.Mode().Perm(); perm != 0600 {
+			t.Errorf("expected file perm 0600, got %04o", perm)
+		}
+	}
+}
+
+func TestWriteSecureJSON_OverwriteExisting(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "token.json")
+
+	// Write initial file
+	if err := writeSecureJSON(path, &Token{AccessToken: "first"}); err != nil {
+		t.Fatalf("first write failed: %v", err)
+	}
+
+	// Overwrite
+	if err := writeSecureJSON(path, &Token{AccessToken: "second"}); err != nil {
+		t.Fatalf("overwrite failed: %v", err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read failed: %v", err)
+	}
+	if !strings.Contains(string(data), "second") {
+		t.Error("expected file to contain second")
+	}
+	if strings.Contains(string(data), "first") {
+		t.Error("expected file to not contain first")
+	}
+}
+
+func TestWriteSecureJSON_NoTempFileLeftOver(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "token.json")
+
+	if err := writeSecureJSON(path, &Token{AccessToken: "cleanup-test"}); err != nil {
+		t.Fatalf("write failed: %v", err)
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("readdir failed: %v", err)
+	}
+	for _, e := range entries {
+		if strings.HasPrefix(e.Name(), ".naverworks-") && strings.HasSuffix(e.Name(), ".tmp") {
+			t.Errorf("leftover temp file found: %s", e.Name())
+		}
+	}
+}
+
+func TestWriteSecureJSON_DirPermissionsPreserved(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("permission checks not applicable on Windows")
+	}
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "token.json")
+
+	if err := writeSecureJSON(path, &Token{AccessToken: "perm-test"}); err != nil {
+		t.Fatalf("write failed: %v", err)
+	}
+
+	dirInfo, err := os.Stat(dir)
+	if err != nil {
+		t.Fatalf("stat dir failed: %v", err)
+	}
+	if perm := dirInfo.Mode().Perm(); perm != 0700 {
+		t.Errorf("expected dir perm 0700, got %04o", perm)
+	}
+}
+
+func TestWriteSecureJSON_OriginalPreservedOnMarshalError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("atomic write not used on Windows")
+	}
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "token.json")
+
+	// Write initial file
+	if err := writeSecureJSON(path, &Token{AccessToken: "original"}); err != nil {
+		t.Fatalf("initial write failed: %v", err)
+	}
+
+	// Attempt to write something that will fail serialization (channel is not JSON-serializable)
+	err := writeSecureJSON(path, make(chan int))
+	if err == nil {
+		t.Fatal("expected serialization error")
+	}
+
+	// Original file should be untouched
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read failed: %v", err)
+	}
+	if !strings.Contains(string(data), "original") {
+		t.Error("original file content should be preserved after serialization failure")
 	}
 }

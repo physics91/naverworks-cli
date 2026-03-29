@@ -21,6 +21,7 @@ type Response struct {
 }
 
 const maxRateLimitRetries = 3
+const maxAPIResponseSize = 10 << 20 // 10MB
 
 type RefreshFunc func(token *auth.Token) error
 
@@ -103,10 +104,13 @@ func (c *Client) doWithRetry(method, path string, body []byte, retried401 bool) 
 		if err != nil {
 			return nil, fmt.Errorf("네트워크 에러: %w", err)
 		}
-		respBody, err := io.ReadAll(resp.Body)
+		respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxAPIResponseSize+1))
 		resp.Body.Close()
 		if err != nil {
 			return nil, fmt.Errorf("응답 읽기 실패: %w", err)
+		}
+		if int64(len(respBody)) > maxAPIResponseSize {
+			return nil, fmt.Errorf("API 응답 크기 초과: > %d bytes", maxAPIResponseSize)
 		}
 
 		switch {
@@ -154,10 +158,13 @@ func (c *Client) getDownloadURLWithRetry(path string, retried401 bool) (string, 
 		if err != nil {
 			return "", fmt.Errorf("네트워크 에러: %w", err)
 		}
-		body, err := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(io.LimitReader(resp.Body, maxAPIResponseSize+1))
 		resp.Body.Close()
 		if err != nil {
 			return "", fmt.Errorf("응답 읽기 실패: %w", err)
+		}
+		if int64(len(body)) > maxAPIResponseSize {
+			return "", fmt.Errorf("API 응답 크기 초과: > %d bytes", maxAPIResponseSize)
 		}
 
 		switch {

@@ -1,8 +1,10 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -286,5 +288,65 @@ func TestGetDownloadURL_MissingLocation(t *testing.T) {
 	}
 	if apiErr.Code != "MISSING_REDIRECT_LOCATION" {
 		t.Errorf("expected MISSING_REDIRECT_LOCATION, got %q", apiErr.Code)
+	}
+}
+
+func TestClient_OversizedResponse_DoWithRetry(t *testing.T) {
+	oversizedBody := strings.Repeat("x", maxAPIResponseSize+1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte(oversizedBody))
+	}))
+	defer server.Close()
+
+	token := &auth.Token{AccessToken: "t", ExpiresAt: time.Now().Add(1 * time.Hour)}
+	client := NewClient(server.URL, token, nil)
+	_, err := client.Get("/test")
+	if err == nil {
+		t.Fatal("expected error for oversized response")
+	}
+	expected := fmt.Sprintf("API 응답 크기 초과: > %d bytes", maxAPIResponseSize)
+	if err.Error() != expected {
+		t.Errorf("expected %q, got %q", expected, err.Error())
+	}
+}
+
+func TestClient_OversizedResponse_GetDownloadURL(t *testing.T) {
+	oversizedBody := strings.Repeat("x", maxAPIResponseSize+1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte(oversizedBody))
+	}))
+	defer server.Close()
+
+	token := &auth.Token{AccessToken: "t", ExpiresAt: time.Now().Add(1 * time.Hour)}
+	client := NewClient(server.URL, token, nil)
+	_, err := client.GetDownloadURL("/test")
+	if err == nil {
+		t.Fatal("expected error for oversized response")
+	}
+	expected := fmt.Sprintf("API 응답 크기 초과: > %d bytes", maxAPIResponseSize)
+	if err.Error() != expected {
+		t.Errorf("expected %q, got %q", expected, err.Error())
+	}
+}
+
+func TestClient_ExactMaxSizeResponse_Allowed(t *testing.T) {
+	// A response exactly at maxAPIResponseSize should succeed (not exceed).
+	exactBody := strings.Repeat("y", maxAPIResponseSize)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte(exactBody))
+	}))
+	defer server.Close()
+
+	token := &auth.Token{AccessToken: "t", ExpiresAt: time.Now().Add(1 * time.Hour)}
+	client := NewClient(server.URL, token, nil)
+	resp, err := client.Get("/test")
+	if err != nil {
+		t.Fatalf("unexpected error for exact-max-size response: %v", err)
+	}
+	if len(resp.Body) != maxAPIResponseSize {
+		t.Errorf("expected body length %d, got %d", maxAPIResponseSize, len(resp.Body))
 	}
 }

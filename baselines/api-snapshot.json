@@ -1,1 +1,27 @@
-{"_bootstrap": true, "created_at": "2026-03-28T03:49:06Z", "domains": {}}
+{
+  "_bootstrap": false,
+  "last_checked": "2026-03-29T00:00:00Z",
+  "known_announcements": [
+    {
+      "url": "https://naver.worksmobile.com/whats-new/workplace-user-notice/change-in-screen/sso/",
+      "title": "[개발자] API 통합: NCP API → NAVER WORKS OpenAPI",
+      "date": "2024-03-18",
+      "summary": "기존 NCP 기반 구성원/결재/근태 API가 네이버웍스 OpenAPI로 통합. 기존 인증키와 API는 최소 1년 이상 지속 지원 예정. 경영지원 API는 2024년 8월 제공 예정.",
+      "affected_domains": ["auth", "directory", "approval", "attendance", "hr"]
+    },
+    {
+      "url": "https://naver.worksmobile.com/whats-new/notice/developers-console/",
+      "title": "네이버웍스 디벨로퍼스 콘솔 통합 공지",
+      "date": "2024-03-12",
+      "summary": "기존 상품별 분리 디벨로퍼 콘솔이 통합됨. NCP Developers 콘솔 서비스 종료. 통합 콘솔에서 API, SSO 등 모든 서비스 이용 가능.",
+      "affected_domains": ["auth"]
+    },
+    {
+      "url": "https://naver.worksmobile.com/whats-new/notice/ncp-console/",
+      "title": "네이버 클라우드 플랫폼 콘솔 기능 종료 공지",
+      "date": "2024-03-01",
+      "summary": "NAVER WORKS, WORKPLACE 상품의 신청/갱신/해지 관리 기능이 NCP 콘솔에서 종료되고 네이버웍스 어드민 콘솔로 이관됨.",
+      "affected_domains": ["businessplace"]
+    }
+  ]
+}

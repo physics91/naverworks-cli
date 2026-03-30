@@ -152,6 +152,144 @@ func TestSmoke_BotSend_ConflictingFlags(t *testing.T) {
 	}
 }
 
+func TestSmoke_BotSend_TextAndJsonConflict(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "bot", "send", "--to", "u1", "--channel", "", "--text", "hi", "--json", `{"content":{"type":"text"}}`)
+	if err == nil {
+		t.Fatal("expected error for conflicting --text and --json")
+	}
+	if !strings.Contains(err.Error(), "--text와 --json은 동시에 지정할 수 없습니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_BotSend_NeitherTextNorJson(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "bot", "send", "--to", "u1", "--channel", "", "--text", "", "--json", "")
+	if err == nil {
+		t.Fatal("expected error when neither --text nor --json specified")
+	}
+	if !strings.Contains(err.Error(), "--text 또는 --json 중 하나를 지정하세요") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_BotHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "bot", "--help")
+	if err != nil {
+		t.Fatalf("bot --help failed: %v", err)
+	}
+	for _, sub := range []string{
+		"list", "get", "create", "update", "patch", "delete",
+		"regenerate-secret", "send",
+		"create-attachment", "get-attachment",
+		"get-channel", "channel-members", "create-channel", "leave-channel",
+		"domain", "persistent-menu", "richmenu",
+	} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("bot --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_BotDomainHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "bot", "domain", "--help")
+	if err != nil {
+		t.Fatalf("bot domain --help failed: %v", err)
+	}
+	for _, sub := range []string{
+		"register", "list", "update", "patch", "delete",
+		"add-members", "list-members", "remove-member",
+	} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("bot domain --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_BotPersistentMenuHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "bot", "persistent-menu", "--help")
+	if err != nil {
+		t.Fatalf("bot persistent-menu --help failed: %v", err)
+	}
+	for _, sub := range []string{"set", "get", "delete"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("bot persistent-menu --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_BotRichMenuHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "bot", "richmenu", "--help")
+	if err != nil {
+		t.Fatalf("bot richmenu --help failed: %v", err)
+	}
+	for _, sub := range []string{
+		"create", "list", "get", "delete",
+		"set-image", "get-image",
+		"set-user", "get-user", "delete-user",
+		"set-default", "get-default", "delete-default",
+	} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("bot richmenu --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_BotCreate_MissingJSON(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "bot", "create")
+	if err == nil {
+		t.Fatal("expected error when --json is missing")
+	}
+	if !strings.Contains(err.Error(), "--json 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_BotDomainRemoveMember_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "bot", "domain", "remove-member", "d1")
+	if err == nil {
+		t.Fatal("expected error when userId arg is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 2 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_BotRichMenuSetImage_MissingFile(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "bot", "richmenu", "set-image", "rm1")
+	if err == nil {
+		t.Fatal("expected error when --file is missing")
+	}
+	if !strings.Contains(err.Error(), "--file 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_BotCreateAttachment_MissingFile(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "bot", "create-attachment")
+	if err == nil {
+		t.Fatal("expected error when --file is missing")
+	}
+	if !strings.Contains(err.Error(), "--file 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
 func TestSmoke_ReadJSONFlagRaw_Missing(t *testing.T) {
 	cmd := &cobra.Command{}
 	cmd.Flags().String("json", "", "JSON body")

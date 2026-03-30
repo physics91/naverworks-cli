@@ -526,3 +526,58 @@ func TestSmoke_MailGetAttachment_MissingArgs(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
+
+// ─── Task Smoke Tests ───
+
+func TestSmoke_TaskHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "task", "--help")
+	if err != nil {
+		t.Fatalf("task --help failed: %v", err)
+	}
+	for _, sub := range []string{
+		"list", "get", "create", "update", "delete", "list-categories",
+		"create-category", "get-category", "update-category", "delete-category",
+		"move", "complete", "incomplete", "complete-assignee", "incomplete-assignee",
+	} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("task --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_TaskCreateCategory_MissingJSON(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "task", "create-category", "--user-id", "testuser")
+	if err == nil {
+		t.Fatal("expected error when --json is missing")
+	}
+	if !strings.Contains(err.Error(), "--json 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_TaskMove_MissingCategory(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "task", "move", "task1", "--user-id", "testuser")
+	if err == nil {
+		t.Fatal("expected error when --category is missing")
+	}
+	if !strings.Contains(err.Error(), "--category는 필수입니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_TaskCompleteAssignee_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "task", "complete-assignee", "task1")
+	if err == nil {
+		t.Fatal("expected error when userId arg is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 2 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}

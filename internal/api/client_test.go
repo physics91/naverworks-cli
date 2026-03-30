@@ -331,6 +331,144 @@ func TestClient_OversizedResponse_GetDownloadURL(t *testing.T) {
 	}
 }
 
+func TestClient_GetDownloadURL_Success(t *testing.T) {
+	expectedLocation := "https://cdn.example.com/file/download?token=abc123"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			t.Errorf("expected GET, got %s", r.Method)
+		}
+		if r.Header.Get("Authorization") != "Bearer test-token" {
+			t.Errorf("expected Bearer test-token, got %q", r.Header.Get("Authorization"))
+		}
+		w.Header().Set("Location", expectedLocation)
+		w.WriteHeader(302)
+	}))
+	defer server.Close()
+
+	token := &auth.Token{AccessToken: "test-token", ExpiresAt: time.Now().Add(1 * time.Hour)}
+	client := NewClient(server.URL, token, nil)
+	url, err := client.GetDownloadURL("/files/download")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if url != expectedLocation {
+		t.Errorf("expected %q, got %q", expectedLocation, url)
+	}
+}
+
+func TestClient_GetDownloadURL_301(t *testing.T) {
+	expectedLocation := "https://cdn.example.com/file/redirect"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Location", expectedLocation)
+		w.WriteHeader(301)
+	}))
+	defer server.Close()
+
+	token := &auth.Token{AccessToken: "t", ExpiresAt: time.Now().Add(1 * time.Hour)}
+	client := NewClient(server.URL, token, nil)
+	url, err := client.GetDownloadURL("/files/redirect")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if url != expectedLocation {
+		t.Errorf("expected %q, got %q", expectedLocation, url)
+	}
+}
+
+func TestClient_UploadMultipart(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			t.Errorf("expected POST, got %s", r.Method)
+		}
+		// Verify Content-Type starts with multipart/form-data
+		ct := r.Header.Get("Content-Type")
+		if !strings.HasPrefix(ct, "multipart/form-data") {
+			t.Errorf("expected Content-Type starting with multipart/form-data, got %q", ct)
+		}
+		// Verify Authorization header
+		if r.Header.Get("Authorization") != "Bearer test-token" {
+			t.Errorf("expected Bearer test-token, got %q", r.Header.Get("Authorization"))
+		}
+		// Parse multipart form
+		if err := r.ParseMultipartForm(10 << 20); err != nil {
+			t.Errorf("failed to parse multipart form: %v", err)
+			w.WriteHeader(400)
+			return
+		}
+		// Verify field name and file content
+		file, header, err := r.FormFile("fileData")
+		if err != nil {
+			t.Errorf("failed to get form file 'fileData': %v", err)
+			w.WriteHeader(400)
+			return
+		}
+		defer file.Close()
+		if header.Filename != "test.txt" {
+			t.Errorf("expected filename 'test.txt', got %q", header.Filename)
+		}
+		content := make([]byte, 1024)
+		n, _ := file.Read(content)
+		if string(content[:n]) != "hello multipart" {
+			t.Errorf("expected file content 'hello multipart', got %q", string(content[:n]))
+		}
+
+		w.WriteHeader(200)
+		w.Write([]byte(`{"fileId":"f1"}`))
+	}))
+	defer server.Close()
+
+	token := &auth.Token{AccessToken: "test-token", ExpiresAt: time.Now().Add(1 * time.Hour)}
+	client := NewClient(server.URL, token, nil)
+	resp, err := client.UploadMultipart("/upload", "fileData", "test.txt", []byte("hello multipart"))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.StatusCode != 200 {
+		t.Errorf("expected 200, got %d", resp.StatusCode)
+	}
+	if string(resp.Body) != `{"fileId":"f1"}` {
+		t.Errorf("unexpected body: %s", string(resp.Body))
+	}
+}
+
+func TestClient_DownloadFile(t *testing.T) {
+	binaryData := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A} // PNG header
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			t.Errorf("expected GET, got %s", r.Method)
+		}
+		if r.Header.Get("Authorization") != "Bearer test-token" {
+			t.Errorf("expected Bearer test-token, got %q", r.Header.Get("Authorization"))
+		}
+		w.Header().Set("Content-Type", "image/png")
+		w.Header().Set("Content-Disposition", `attachment; filename="test.png"`)
+		w.WriteHeader(200)
+		w.Write(binaryData)
+	}))
+	defer server.Close()
+
+	token := &auth.Token{AccessToken: "test-token", ExpiresAt: time.Now().Add(1 * time.Hour)}
+	client := NewClient(server.URL, token, nil)
+	data, headers, err := client.DownloadFile("/files/test.png")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(data) != len(binaryData) {
+		t.Errorf("expected %d bytes, got %d", len(binaryData), len(data))
+	}
+	for i, b := range binaryData {
+		if data[i] != b {
+			t.Errorf("byte %d: expected 0x%02X, got 0x%02X", i, b, data[i])
+		}
+	}
+	if headers.Get("Content-Type") != "image/png" {
+		t.Errorf("expected Content-Type image/png, got %q", headers.Get("Content-Type"))
+	}
+	if headers.Get("Content-Disposition") != `attachment; filename="test.png"` {
+		t.Errorf("unexpected Content-Disposition: %q", headers.Get("Content-Disposition"))
+	}
+}
+
 func TestClient_ExactMaxSizeResponse_Allowed(t *testing.T) {
 	// A response exactly at maxAPIResponseSize should succeed (not exceed).
 	exactBody := strings.Repeat("y", maxAPIResponseSize)

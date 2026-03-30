@@ -1828,6 +1828,151 @@ func TestSmoke_DriveSharedFolderUpload_MissingFile(t *testing.T) {
 	}
 }
 
+// ─── SCIM Smoke Tests ───
+
+func TestSmoke_ScimHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "scim", "--help")
+	if err != nil {
+		t.Fatalf("scim --help failed: %v", err)
+	}
+	for _, sub := range []string{
+		"list-users", "get-user", "create-user", "update-user", "patch-user", "delete-user",
+		"list-groups", "get-group", "create-group", "update-group", "patch-group", "delete-group",
+	} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("scim --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_ScimCreateUser_MissingData(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	t.Setenv("NW_SCIM_ACCESS_TOKEN", "test-scim-token")
+	_, err := runCLI(t, "scim", "create-user")
+	if err == nil {
+		t.Fatal("expected error when --data is missing")
+	}
+	if !strings.Contains(err.Error(), "--data는 필수입니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_ScimGetUser_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "scim", "get-user")
+	if err == nil {
+		t.Fatal("expected error when id arg is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 1 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_ScimDeleteGroup_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "scim", "delete-group")
+	if err == nil {
+		t.Fatal("expected error when id arg is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 1 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+// ─── Business Place Smoke Tests ───
+
+func TestSmoke_BusinessPlaceHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "business-place", "--help")
+	if err != nil {
+		t.Fatalf("business-place --help failed: %v", err)
+	}
+	for _, sub := range []string{"list", "get", "create", "update", "delete"} {
+		if !containsCommand(out, sub) {
+			t.Errorf("business-place --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_BusinessPlaceCreate_MissingName(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "business-place", "create")
+	if err == nil {
+		t.Fatal("expected error when --name is missing")
+	}
+	if !strings.Contains(err.Error(), "--name은 필수입니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_BusinessPlaceGet_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "business-place", "get")
+	if err == nil {
+		t.Fatal("expected error when businessPlaceId is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 1 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_BusinessPlaceDelete_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "business-place", "delete")
+	if err == nil {
+		t.Fatal("expected error when businessPlaceId is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 1 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+// ─── Form Smoke Tests ───
+
+func TestSmoke_FormHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "form", "--help")
+	if err != nil {
+		t.Fatalf("form --help failed: %v", err)
+	}
+	for _, sub := range []string{"list-responses", "download-attachment"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("form --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_FormListResponses_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "form", "list-responses")
+	if err == nil {
+		t.Fatal("expected error when formId is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 1 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_FormDownloadAttachment_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "form", "download-attachment", "f1", "r1")
+	if err == nil {
+		t.Fatal("expected error when attachmentId arg is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 3 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
 // ─── Flag Branch Path Tests (INFO 3) ───
 
 func TestSmoke_DriveSharedFolderMkdir_WithParent(t *testing.T) {

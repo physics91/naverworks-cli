@@ -456,3 +456,73 @@ func TestSmoke_BoardCreateAttachment_MissingFile(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
+
+// ─── Mail Smoke Tests ───
+
+func TestSmoke_MailHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "mail", "--help")
+	if err != nil {
+		t.Fatalf("mail --help failed: %v", err)
+	}
+	for _, sub := range []string{
+		"send", "get", "delete", "list-folders", "get-folder", "list",
+		"update", "unread-count", "get-attachment", "list-favorite-folders",
+		"create-folder", "update-folder", "delete-folder",
+		"filter", "migration", "forwarding",
+	} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("mail --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_MailFilterHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "mail", "filter", "--help")
+	if err != nil {
+		t.Fatalf("mail filter --help failed: %v", err)
+	}
+	for _, sub := range []string{"list", "get", "create", "delete"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("mail filter --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_MailMigrationHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "mail", "migration", "--help")
+	if err != nil {
+		t.Fatalf("mail migration --help failed: %v", err)
+	}
+	for _, sub := range []string{"create-imap", "get-imap", "delete-imap", "create-pop3"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("mail migration --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_MailUpdate_MissingJSON(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "mail", "update", "mail1", "--user-id", "testuser")
+	if err == nil {
+		t.Fatal("expected error when --json is missing")
+	}
+	if !strings.Contains(err.Error(), "--json 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_MailGetAttachment_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "mail", "get-attachment", "mail1")
+	if err == nil {
+		t.Fatal("expected error when attachmentId is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 2 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}

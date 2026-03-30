@@ -2213,6 +2213,538 @@ var driveSharedFolderFilesCmd = &cobra.Command{
 	},
 }
 
+// ─── SharedFolder Task 5-12: 관리 + 파일 ───
+
+var driveSFGetCmd = &cobra.Command{
+	Use:   "get <sharedFolderId>",
+	Short: "공유 폴더 상세 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedFolderService(client).GetFolder(userID, args[0])
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var driveSFLeaveCmd = &cobra.Command{
+	Use:   "leave <sharedFolderId>",
+	Short: "공유 폴더 나가기",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedFolderService(client).LeaveFolder(userID, args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSFListMembersCmd = &cobra.Command{
+	Use:   "list-members <sharedFolderId>",
+	Short: "공유 폴더 멤버 목록 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedFolderService(client).ListMembers(userID, args[0])
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var driveSFListFilesCmd = &cobra.Command{
+	Use:   "list-files <sharedFolderId>",
+	Short: "공유 폴더 루트 파일 목록 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		svc := api.NewSharedFolderService(client)
+		folder, _ := cmd.Flags().GetString("folder")
+		cursor, _ := cmd.Flags().GetString("cursor")
+		count, _ := cmd.Flags().GetInt("count")
+		var resp *api.Response
+		if folder != "" {
+			resp, err = svc.ListFolderChildren(userID, args[0], folder, cursor, count)
+		} else {
+			resp, err = svc.ListFiles(userID, args[0], cursor, count)
+		}
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var driveSFGetFileCmd = &cobra.Command{
+	Use:   "get-file <sharedFolderId> <fileId>",
+	Short: "공유 폴더 파일 상세 조회",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedFolderService(client).GetFile(userID, args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var driveSFMkdirCmd = &cobra.Command{
+	Use:   "mkdir <sharedFolderId>",
+	Short: "공유 폴더 내 폴더 생성",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		svc := api.NewSharedFolderService(client)
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		parent, _ := cmd.Flags().GetString("parent")
+		var resp *api.Response
+		if parent != "" {
+			resp, err = svc.CreateSubFolder(userID, args[0], parent, body)
+		} else {
+			resp, err = svc.CreateFolderInRoot(userID, args[0], body)
+		}
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSFDeleteCmd = &cobra.Command{
+	Use:   "delete <sharedFolderId> <fileId>",
+	Short: "공유 폴더 파일 삭제",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedFolderService(client).DeleteFile(userID, args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSFUploadCmd = &cobra.Command{
+	Use:   "upload <sharedFolderId>",
+	Short: "공유 폴더 파일 업로드",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		svc := api.NewSharedFolderService(client)
+
+		filePath, _ := cmd.Flags().GetString("file")
+		if filePath == "" {
+			return fmt.Errorf("--file 플래그가 필요합니다")
+		}
+
+		fileName, fileSize, err := statFileForUpload(filePath)
+		if err != nil {
+			return err
+		}
+
+		uploadBody := map[string]interface{}{"fileName": fileName}
+		folder, _ := cmd.Flags().GetString("folder")
+
+		var resp *api.Response
+		if folder != "" {
+			resp, err = svc.CreateUploadURL(userID, args[0], folder, uploadBody, fileSize)
+		} else {
+			resp, err = svc.CreateUploadURLInRoot(userID, args[0], uploadBody, fileSize)
+		}
+		if err != nil {
+			return err
+		}
+
+		if err := doUploadFromResponse(client, resp.Body, filePath); err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var driveSFDownloadCmd = &cobra.Command{
+	Use:   "download <sharedFolderId> <fileId>",
+	Short: "공유 폴더 파일 다운로드 URL 조회",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		downloadURL, err := api.NewSharedFolderService(client).GetDownloadURL(userID, args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printDownloadURL(downloadURL)
+		return nil
+	},
+}
+
+// ─── SharedFolder Task 5-13: 파일조작 + 리비전 ───
+
+var driveSFCopyCmd = &cobra.Command{
+	Use:   "copy <sharedFolderId> <fileId>",
+	Short: "공유 폴더 파일 복사",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedFolderService(client).CopyFile(userID, args[0], args[1], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSFRenameCmd = &cobra.Command{
+	Use:   "rename <sharedFolderId> <fileId>",
+	Short: "공유 폴더 파일 이름 변경",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedFolderService(client).RenameFile(userID, args[0], args[1], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSFMoveCmd = &cobra.Command{
+	Use:   "move <sharedFolderId> <fileId>",
+	Short: "공유 폴더 파일 이동",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedFolderService(client).MoveFile(userID, args[0], args[1], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSFProtectCmd = &cobra.Command{
+	Use:   "protect <sharedFolderId> <fileId>",
+	Short: "공유 폴더 파일 보호 설정",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedFolderService(client).ProtectFile(userID, args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSFUnprotectCmd = &cobra.Command{
+	Use:   "unprotect <sharedFolderId> <fileId>",
+	Short: "공유 폴더 파일 보호 해제",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedFolderService(client).UnprotectFile(userID, args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSFLockCmd = &cobra.Command{
+	Use:   "lock <sharedFolderId> <fileId>",
+	Short: "공유 폴더 파일 잠금",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedFolderService(client).LockFile(userID, args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSFUnlockCmd = &cobra.Command{
+	Use:   "unlock <sharedFolderId> <fileId>",
+	Short: "공유 폴더 파일 잠금 해제",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedFolderService(client).UnlockFile(userID, args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSFRevisionCmd = &cobra.Command{
+	Use:   "revision",
+	Short: "공유 폴더 파일 리비전 관리",
+}
+
+var driveSFRevisionListCmd = &cobra.Command{
+	Use:   "list <sharedFolderId> <fileId>",
+	Short: "공유 폴더 파일 리비전 목록 조회",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		cursor, _ := cmd.Flags().GetString("cursor")
+		count, _ := cmd.Flags().GetInt("count")
+		resp, err := api.NewSharedFolderService(client).ListRevisions(userID, args[0], args[1], cursor, count)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var driveSFRevisionGetCmd = &cobra.Command{
+	Use:   "get <sharedFolderId> <fileId> <revisionId>",
+	Short: "공유 폴더 파일 리비전 상세 조회",
+	Args:  cobra.ExactArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedFolderService(client).GetRevision(userID, args[0], args[1], args[2])
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var driveSFRevisionRestoreCmd = &cobra.Command{
+	Use:   "restore <sharedFolderId> <fileId> <revisionId>",
+	Short: "공유 폴더 파일 리비전 복원",
+	Args:  cobra.ExactArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedFolderService(client).RestoreRevision(userID, args[0], args[1], args[2])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSFRevisionDownloadCmd = &cobra.Command{
+	Use:   "download <sharedFolderId> <fileId> <revisionId>",
+	Short: "공유 폴더 파일 리비전 다운로드 URL 조회",
+	Args:  cobra.ExactArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		downloadURL, err := api.NewSharedFolderService(client).GetRevisionDownloadURL(userID, args[0], args[1], args[2])
+		if err != nil {
+			return err
+		}
+		printDownloadURL(downloadURL)
+		return nil
+	},
+}
+
+// ─── SharedFolder Task 5-14: 링크 ───
+
+var driveSFLinkSettingCmd = &cobra.Command{
+	Use:   "link-setting <sharedFolderId>",
+	Short: "공유 폴더 링크 설정 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedFolderService(client).GetLinkSetting(userID, args[0])
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var driveSFLinkCmd = &cobra.Command{
+	Use:   "link",
+	Short: "공유 폴더 파일 링크 관리",
+}
+
+var driveSFLinkGetCmd = &cobra.Command{
+	Use:   "get <sharedFolderId> <fileId>",
+	Short: "공유 폴더 파일 링크 조회",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedFolderService(client).GetLink(userID, args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var driveSFLinkCreateCmd = &cobra.Command{
+	Use:   "create <sharedFolderId> <fileId>",
+	Short: "공유 폴더 파일 링크 생성",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedFolderService(client).CreateLink(userID, args[0], args[1], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSFLinkUpdateCmd = &cobra.Command{
+	Use:   "update <sharedFolderId> <fileId>",
+	Short: "공유 폴더 파일 링크 수정",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedFolderService(client).PatchLink(userID, args[0], args[1], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSFLinkDeleteCmd = &cobra.Command{
+	Use:   "delete <sharedFolderId> <fileId>",
+	Short: "공유 폴더 파일 링크 삭제",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedFolderService(client).DeleteLink(userID, args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
 type driveLister interface {
 	ListFiles(id, cursor string, count int) (*api.Response, error)
 	ListFolderChildren(id, folder, cursor string, count int) (*api.Response, error)
@@ -2318,6 +2850,8 @@ func init() {
 		driveGroupRevisionListCmd, driveGroupTrashListCmd,
 		// Task 5-10: SharedDrive revision + trash list
 		driveSharedRevisionListCmd, driveSharedTrashListCmd,
+		// Task 5-12/13: SharedFolder list + revision list
+		driveSFListFilesCmd, driveSFRevisionListCmd,
 	} {
 		c.Flags().String("cursor", "", "페이지네이션 커서")
 		c.Flags().Int("count", 0, "페이지 크기")
@@ -2328,10 +2862,38 @@ func init() {
 		c.Flags().String("folder", "", "폴더 ID (하위 파일 조회)")
 	}
 
-	// SharedFolder also needs --user-id
-	for _, c := range []*cobra.Command{driveSharedFolderListCmd, driveSharedFolderFilesCmd} {
+	// SharedFolder also needs --user-id (existing + new)
+	for _, c := range []*cobra.Command{
+		driveSharedFolderListCmd, driveSharedFolderFilesCmd,
+		// Task 5-12
+		driveSFGetCmd, driveSFLeaveCmd, driveSFListMembersCmd, driveSFListFilesCmd,
+		driveSFGetFileCmd, driveSFMkdirCmd, driveSFDeleteCmd,
+		driveSFUploadCmd, driveSFDownloadCmd,
+		// Task 5-13
+		driveSFCopyCmd, driveSFRenameCmd, driveSFMoveCmd,
+		driveSFProtectCmd, driveSFUnprotectCmd, driveSFLockCmd, driveSFUnlockCmd,
+		driveSFRevisionListCmd, driveSFRevisionGetCmd, driveSFRevisionRestoreCmd, driveSFRevisionDownloadCmd,
+		// Task 5-14
+		driveSFLinkSettingCmd,
+		driveSFLinkGetCmd, driveSFLinkCreateCmd, driveSFLinkUpdateCmd, driveSFLinkDeleteCmd,
+	} {
 		c.Flags().String("user-id", "", "사용자 ID (OAuth: me 허용)")
 	}
+
+	// --json flag for SharedFolder commands
+	for _, c := range []*cobra.Command{
+		driveSFMkdirCmd,
+		driveSFCopyCmd, driveSFRenameCmd, driveSFMoveCmd,
+		driveSFLinkCreateCmd, driveSFLinkUpdateCmd,
+	} {
+		c.Flags().String("json", "", "JSON 요청 본문 (- 이면 stdin)")
+	}
+
+	// SharedFolder mkdir/upload flags
+	driveSFMkdirCmd.Flags().String("parent", "", "상위 폴더 ID")
+	driveSFUploadCmd.Flags().String("file", "", "업로드할 파일 경로 (필수)")
+	driveSFUploadCmd.Flags().String("folder", "", "업로드 대상 폴더 ID")
+	driveSFListFilesCmd.Flags().String("folder", "", "폴더 ID (하위 파일 조회)")
 
 	driveUploadCmd.Flags().String("folder", "", "업로드 대상 폴더 ID")
 	driveMkdirCmd.Flags().String("name", "", "폴더 이름 (필수)")
@@ -2430,6 +2992,25 @@ func init() {
 	driveCmd.AddCommand(driveGroupCmd)
 
 	driveSharedFolderCmd.AddCommand(driveSharedFolderListCmd, driveSharedFolderFilesCmd)
+
+	// Task 5-12: SharedFolder 관리 + 파일
+	driveSharedFolderCmd.AddCommand(driveSFGetCmd, driveSFLeaveCmd, driveSFListMembersCmd,
+		driveSFListFilesCmd, driveSFGetFileCmd, driveSFMkdirCmd, driveSFDeleteCmd,
+		driveSFUploadCmd, driveSFDownloadCmd)
+
+	// Task 5-13: SharedFolder 파일조작 + 리비전
+	driveSharedFolderCmd.AddCommand(driveSFCopyCmd, driveSFRenameCmd, driveSFMoveCmd,
+		driveSFProtectCmd, driveSFUnprotectCmd, driveSFLockCmd, driveSFUnlockCmd)
+	driveSFRevisionCmd.AddCommand(driveSFRevisionListCmd, driveSFRevisionGetCmd,
+		driveSFRevisionRestoreCmd, driveSFRevisionDownloadCmd)
+	driveSharedFolderCmd.AddCommand(driveSFRevisionCmd)
+
+	// Task 5-14: SharedFolder 링크
+	driveSharedFolderCmd.AddCommand(driveSFLinkSettingCmd)
+	driveSFLinkCmd.AddCommand(driveSFLinkGetCmd, driveSFLinkCreateCmd,
+		driveSFLinkUpdateCmd, driveSFLinkDeleteCmd)
+	driveSharedFolderCmd.AddCommand(driveSFLinkCmd)
+
 	driveCmd.AddCommand(driveSharedFolderCmd)
 
 	rootCmd.AddCommand(driveCmd)

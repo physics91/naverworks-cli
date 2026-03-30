@@ -328,3 +328,243 @@ func (s *DirectoryService) ListUserTypes(cursor string, count int) (*Response, e
 func (s *DirectoryService) ListEmploymentTypes(cursor string, count int) (*Response, error) {
 	return s.client.Get("/directory/employment-types" + BuildPaginationQuery(cursor, count))
 }
+
+// ─── Task 4-7: Positions CRUD + External Keys ───
+
+func (s *DirectoryService) CreatePosition(body []byte) (*Response, error) {
+	return s.client.Post("/directory/positions", body)
+}
+
+func (s *DirectoryService) GetPosition(positionID string) (*Response, error) {
+	return s.client.Get("/directory/positions/" + url.PathEscape(positionID))
+}
+
+func (s *DirectoryService) UpdatePosition(positionID string, body []byte) (*Response, error) {
+	return s.client.Put("/directory/positions/"+url.PathEscape(positionID), body)
+}
+
+func (s *DirectoryService) PatchPosition(positionID string, body []byte) (*Response, error) {
+	return s.client.Patch("/directory/positions/"+url.PathEscape(positionID), body)
+}
+
+func (s *DirectoryService) DeletePosition(positionID string) (*Response, error) {
+	return s.client.Delete("/directory/positions/" + url.PathEscape(positionID))
+}
+
+func (s *DirectoryService) EnablePositions() (*Response, error) {
+	return s.client.Post("/directory/positions/enable", nil)
+}
+
+func (s *DirectoryService) DisablePositions() (*Response, error) {
+	return s.client.Post("/directory/positions/disable", nil)
+}
+
+func (s *DirectoryService) UpsertPositionExternalKeys(body []byte) (*Response, error) {
+	return s.client.Post("/directory/positions/external-keys", body)
+}
+
+func (s *DirectoryService) ListPositionExternalKeys() (*Response, error) {
+	return s.client.Get("/directory/positions/external-keys")
+}
+
+// ─── Task 4-8: Levels CRUD + External Keys ───
+
+func (s *DirectoryService) CreateLevel(body []byte) (*Response, error) {
+	return s.client.Post("/directory/levels", body)
+}
+
+func (s *DirectoryService) GetLevel(levelID string) (*Response, error) {
+	return s.client.Get("/directory/levels/" + url.PathEscape(levelID))
+}
+
+func (s *DirectoryService) UpdateLevel(levelID string, body []byte) (*Response, error) {
+	return s.client.Put("/directory/levels/"+url.PathEscape(levelID), body)
+}
+
+func (s *DirectoryService) PatchLevel(levelID string, body []byte) (*Response, error) {
+	return s.client.Patch("/directory/levels/"+url.PathEscape(levelID), body)
+}
+
+func (s *DirectoryService) DeleteLevel(levelID string) (*Response, error) {
+	return s.client.Delete("/directory/levels/" + url.PathEscape(levelID))
+}
+
+func (s *DirectoryService) EnableLevels() (*Response, error) {
+	return s.client.Post("/directory/levels/enable", nil)
+}
+
+func (s *DirectoryService) DisableLevels() (*Response, error) {
+	return s.client.Post("/directory/levels/disable", nil)
+}
+
+func (s *DirectoryService) UpsertLevelExternalKeys(body []byte) (*Response, error) {
+	return s.client.Post("/directory/levels/external-keys", body)
+}
+
+func (s *DirectoryService) ListLevelExternalKeys() (*Response, error) {
+	return s.client.Get("/directory/levels/external-keys")
+}
+
+// ─── Task 4-9: Employment Types CRUD + External Keys + Access Restrict ───
+
+func (s *DirectoryService) CreateEmploymentType(body []byte) (*Response, error) {
+	return s.client.Post("/directory/employment-types", body)
+}
+
+func (s *DirectoryService) GetEmploymentType(id string) (*Response, error) {
+	return s.client.Get("/directory/employment-types/" + url.PathEscape(id))
+}
+
+func (s *DirectoryService) UpdateEmploymentType(id string, body []byte) (*Response, error) {
+	return s.client.Put("/directory/employment-types/"+url.PathEscape(id), body)
+}
+
+func (s *DirectoryService) PatchEmploymentType(id string, body []byte) (*Response, error) {
+	return s.client.Patch("/directory/employment-types/"+url.PathEscape(id), body)
+}
+
+func (s *DirectoryService) DeleteEmploymentType(id string) (*Response, error) {
+	return s.client.Delete("/directory/employment-types/" + url.PathEscape(id))
+}
+
+func (s *DirectoryService) EnableEmploymentTypes() (*Response, error) {
+	return s.client.Post("/directory/employment-types/enable", nil)
+}
+
+func (s *DirectoryService) DisableEmploymentTypes() (*Response, error) {
+	return s.client.Post("/directory/employment-types/disable", nil)
+}
+
+func (s *DirectoryService) UpsertEmploymentTypeExternalKeys(body []byte) (*Response, error) {
+	return s.client.Post("/directory/employment-types/external-keys", body)
+}
+
+func (s *DirectoryService) ListEmploymentTypeExternalKeys() (*Response, error) {
+	return s.client.Get("/directory/employment-types/external-keys")
+}
+
+func (s *DirectoryService) CreateEmploymentTypeAccessRestrict(id string, body []byte) (*Response, error) {
+	return s.client.Post(fmt.Sprintf("/directory/employment-types/%s/orgunit-access-restrict", url.PathEscape(id)), body)
+}
+
+func (s *DirectoryService) GetEmploymentTypeAccessRestrict(id string) (*Response, error) {
+	return s.client.Get(fmt.Sprintf("/directory/employment-types/%s/orgunit-access-restrict", url.PathEscape(id)))
+}
+
+func (s *DirectoryService) UpdateEmploymentTypeAccessRestrict(id string, body []byte) (*Response, error) {
+	return s.client.Put(fmt.Sprintf("/directory/employment-types/%s/orgunit-access-restrict", url.PathEscape(id)), body)
+}
+
+func (s *DirectoryService) DeleteEmploymentTypeAccessRestrict(id string) (*Response, error) {
+	return s.client.Delete(fmt.Sprintf("/directory/employment-types/%s/orgunit-access-restrict", url.PathEscape(id)))
+}
+
+// ─── Task 4-10: User Types CRUD + External Keys + Access Restrict ───
+
+func (s *DirectoryService) CreateUserType(body []byte) (*Response, error) {
+	return s.client.Post("/directory/user-types", body)
+}
+
+func (s *DirectoryService) GetUserType(id string) (*Response, error) {
+	return s.client.Get("/directory/user-types/" + url.PathEscape(id))
+}
+
+func (s *DirectoryService) UpdateUserType(id string, body []byte) (*Response, error) {
+	return s.client.Put("/directory/user-types/"+url.PathEscape(id), body)
+}
+
+func (s *DirectoryService) PatchUserType(id string, body []byte) (*Response, error) {
+	return s.client.Patch("/directory/user-types/"+url.PathEscape(id), body)
+}
+
+func (s *DirectoryService) DeleteUserType(id string) (*Response, error) {
+	return s.client.Delete("/directory/user-types/" + url.PathEscape(id))
+}
+
+func (s *DirectoryService) EnableUserTypes() (*Response, error) {
+	return s.client.Post("/directory/user-types/enable", nil)
+}
+
+func (s *DirectoryService) DisableUserTypes() (*Response, error) {
+	return s.client.Post("/directory/user-types/disable", nil)
+}
+
+func (s *DirectoryService) UpsertUserTypeExternalKeys(body []byte) (*Response, error) {
+	return s.client.Post("/directory/user-types/external-keys", body)
+}
+
+func (s *DirectoryService) ListUserTypeExternalKeys() (*Response, error) {
+	return s.client.Get("/directory/user-types/external-keys")
+}
+
+func (s *DirectoryService) CreateUserTypeAccessRestrict(id string, body []byte) (*Response, error) {
+	return s.client.Post(fmt.Sprintf("/directory/user-types/%s/orgunit-access-restrict", url.PathEscape(id)), body)
+}
+
+func (s *DirectoryService) GetUserTypeAccessRestrict(id string) (*Response, error) {
+	return s.client.Get(fmt.Sprintf("/directory/user-types/%s/orgunit-access-restrict", url.PathEscape(id)))
+}
+
+func (s *DirectoryService) UpdateUserTypeAccessRestrict(id string, body []byte) (*Response, error) {
+	return s.client.Put(fmt.Sprintf("/directory/user-types/%s/orgunit-access-restrict", url.PathEscape(id)), body)
+}
+
+func (s *DirectoryService) DeleteUserTypeAccessRestrict(id string) (*Response, error) {
+	return s.client.Delete(fmt.Sprintf("/directory/user-types/%s/orgunit-access-restrict", url.PathEscape(id)))
+}
+
+// ─── Task 4-11: Profile Statuses CRUD ───
+
+func (s *DirectoryService) CreateDirectoryProfileStatus(body []byte) (*Response, error) {
+	return s.client.Post("/directory/profile-statuses", body)
+}
+
+func (s *DirectoryService) ListDirectoryProfileStatuses(cursor string, count int) (*Response, error) {
+	return s.client.Get("/directory/profile-statuses" + BuildPaginationQuery(cursor, count))
+}
+
+func (s *DirectoryService) GetDirectoryProfileStatus(id string) (*Response, error) {
+	return s.client.Get("/directory/profile-statuses/" + url.PathEscape(id))
+}
+
+func (s *DirectoryService) UpdateDirectoryProfileStatus(id string, body []byte) (*Response, error) {
+	return s.client.Put("/directory/profile-statuses/"+url.PathEscape(id), body)
+}
+
+func (s *DirectoryService) PatchDirectoryProfileStatus(id string, body []byte) (*Response, error) {
+	return s.client.Patch("/directory/profile-statuses/"+url.PathEscape(id), body)
+}
+
+func (s *DirectoryService) DeleteDirectoryProfileStatus(id string) (*Response, error) {
+	return s.client.Delete("/directory/profile-statuses/" + url.PathEscape(id))
+}
+
+func (s *DirectoryService) EnableDirectoryProfileStatuses() (*Response, error) {
+	return s.client.Post("/directory/profile-statuses/enable", nil)
+}
+
+func (s *DirectoryService) DisableDirectoryProfileStatuses() (*Response, error) {
+	return s.client.Post("/directory/profile-statuses/disable", nil)
+}
+
+// ─── Task 4-12: Custom Fields CRUD ───
+
+func (s *DirectoryService) CreateCustomField(body []byte) (*Response, error) {
+	return s.client.Post("/directory/custom-fields", body)
+}
+
+func (s *DirectoryService) ListCustomFields(cursor string, count int) (*Response, error) {
+	return s.client.Get("/directory/custom-fields" + BuildPaginationQuery(cursor, count))
+}
+
+func (s *DirectoryService) GetCustomField(id string) (*Response, error) {
+	return s.client.Get("/directory/custom-fields/" + url.PathEscape(id))
+}
+
+func (s *DirectoryService) PatchCustomField(id string, body []byte) (*Response, error) {
+	return s.client.Patch("/directory/custom-fields/"+url.PathEscape(id), body)
+}
+
+func (s *DirectoryService) DeleteCustomField(id string) (*Response, error) {
+	return s.client.Delete("/directory/custom-fields/" + url.PathEscape(id))
+}

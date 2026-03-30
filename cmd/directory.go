@@ -1371,6 +1371,1048 @@ var dirListOrgUnitExternalKeysCmd = &cobra.Command{
 	},
 }
 
+// ─── Task 4-7: Positions CRUD + External Keys ───
+
+var dirGetPositionCmd = &cobra.Command{
+	Use:   "get-position <positionId>",
+	Short: "직책 상세 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewDirectoryService(client).GetPosition(args[0])
+		})
+	},
+}
+
+var dirCreatePositionCmd = &cobra.Command{
+	Use:   "create-position",
+	Short: "직책 생성",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.CreatePosition(body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirUpdatePositionCmd = &cobra.Command{
+	Use:   "update-position <positionId>",
+	Short: "직책 전체 수정 (PUT)",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.UpdatePosition(args[0], body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirPatchPositionCmd = &cobra.Command{
+	Use:   "patch-position <positionId>",
+	Short: "직책 부분 수정 (PATCH)",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.PatchPosition(args[0], body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirDeletePositionCmd = &cobra.Command{
+	Use:   "delete-position <positionId>",
+	Short: "직책 삭제",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.DeletePosition(args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var dirEnablePositionsCmd = &cobra.Command{
+	Use:   "enable-positions",
+	Short: "직책 활성화",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.EnablePositions()
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var dirDisablePositionsCmd = &cobra.Command{
+	Use:   "disable-positions",
+	Short: "직책 비활성화",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.DisablePositions()
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var dirUpsertPositionExternalKeysCmd = &cobra.Command{
+	Use:   "upsert-position-external-keys",
+	Short: "직책 외부 키 업서트",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.UpsertPositionExternalKeys(body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirListPositionExternalKeysCmd = &cobra.Command{
+	Use:   "list-position-external-keys",
+	Short: "직책 외부 키 목록 조회",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewDirectoryService(client).ListPositionExternalKeys()
+		})
+	},
+}
+
+// ─── Task 4-8: Levels CRUD + External Keys ───
+
+var dirGetLevelCmd = &cobra.Command{
+	Use:   "get-level <levelId>",
+	Short: "직급 상세 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewDirectoryService(client).GetLevel(args[0])
+		})
+	},
+}
+
+var dirCreateLevelCmd = &cobra.Command{
+	Use:   "create-level",
+	Short: "직급 생성",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.CreateLevel(body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirUpdateLevelCmd = &cobra.Command{
+	Use:   "update-level <levelId>",
+	Short: "직급 전체 수정 (PUT)",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.UpdateLevel(args[0], body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirPatchLevelCmd = &cobra.Command{
+	Use:   "patch-level <levelId>",
+	Short: "직급 부분 수정 (PATCH)",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.PatchLevel(args[0], body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirDeleteLevelCmd = &cobra.Command{
+	Use:   "delete-level <levelId>",
+	Short: "직급 삭제",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.DeleteLevel(args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var dirEnableLevelsCmd = &cobra.Command{
+	Use:   "enable-levels",
+	Short: "직급 활성화",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.EnableLevels()
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var dirDisableLevelsCmd = &cobra.Command{
+	Use:   "disable-levels",
+	Short: "직급 비활성화",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.DisableLevels()
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var dirUpsertLevelExternalKeysCmd = &cobra.Command{
+	Use:   "upsert-level-external-keys",
+	Short: "직급 외부 키 업서트",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.UpsertLevelExternalKeys(body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirListLevelExternalKeysCmd = &cobra.Command{
+	Use:   "list-level-external-keys",
+	Short: "직급 외부 키 목록 조회",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewDirectoryService(client).ListLevelExternalKeys()
+		})
+	},
+}
+
+// ─── Task 4-9: Employment Types CRUD + External Keys + Access Restrict ───
+
+var dirGetEmploymentTypeCmd = &cobra.Command{
+	Use:   "get-employment-type <id>",
+	Short: "고용 유형 상세 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewDirectoryService(client).GetEmploymentType(args[0])
+		})
+	},
+}
+
+var dirCreateEmploymentTypeCmd = &cobra.Command{
+	Use:   "create-employment-type",
+	Short: "고용 유형 생성",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.CreateEmploymentType(body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirUpdateEmploymentTypeCmd = &cobra.Command{
+	Use:   "update-employment-type <id>",
+	Short: "고용 유형 전체 수정 (PUT)",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.UpdateEmploymentType(args[0], body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirPatchEmploymentTypeCmd = &cobra.Command{
+	Use:   "patch-employment-type <id>",
+	Short: "고용 유형 부분 수정 (PATCH)",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.PatchEmploymentType(args[0], body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirDeleteEmploymentTypeCmd = &cobra.Command{
+	Use:   "delete-employment-type <id>",
+	Short: "고용 유형 삭제",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.DeleteEmploymentType(args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var dirEnableEmploymentTypesCmd = &cobra.Command{
+	Use:   "enable-employment-types",
+	Short: "고용 유형 활성화",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.EnableEmploymentTypes()
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var dirDisableEmploymentTypesCmd = &cobra.Command{
+	Use:   "disable-employment-types",
+	Short: "고용 유형 비활성화",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.DisableEmploymentTypes()
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var dirUpsertEmploymentTypeExternalKeysCmd = &cobra.Command{
+	Use:   "upsert-employment-type-external-keys",
+	Short: "고용 유형 외부 키 업서트",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.UpsertEmploymentTypeExternalKeys(body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirListEmploymentTypeExternalKeysCmd = &cobra.Command{
+	Use:   "list-employment-type-external-keys",
+	Short: "고용 유형 외부 키 목록 조회",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewDirectoryService(client).ListEmploymentTypeExternalKeys()
+		})
+	},
+}
+
+// ─── Employment Type Access Restrict Subcommand Group ───
+
+var dirEmploymentTypeAccessRestrictCmd = &cobra.Command{
+	Use:   "employment-type-access-restrict",
+	Short: "고용 유형 접근 제한 관리",
+}
+
+var dirEmploymentTypeAccessRestrictCreateCmd = &cobra.Command{
+	Use:   "create <id>",
+	Short: "고용 유형 접근 제한 생성",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.CreateEmploymentTypeAccessRestrict(args[0], body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirEmploymentTypeAccessRestrictGetCmd = &cobra.Command{
+	Use:   "get <id>",
+	Short: "고용 유형 접근 제한 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewDirectoryService(client).GetEmploymentTypeAccessRestrict(args[0])
+		})
+	},
+}
+
+var dirEmploymentTypeAccessRestrictUpdateCmd = &cobra.Command{
+	Use:   "update <id>",
+	Short: "고용 유형 접근 제한 수정 (PUT)",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.UpdateEmploymentTypeAccessRestrict(args[0], body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirEmploymentTypeAccessRestrictDeleteCmd = &cobra.Command{
+	Use:   "delete <id>",
+	Short: "고용 유형 접근 제한 삭제",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.DeleteEmploymentTypeAccessRestrict(args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+// ─── Task 4-10: User Types CRUD + External Keys + Access Restrict ───
+
+var dirGetUserTypeCmd = &cobra.Command{
+	Use:   "get-user-type <id>",
+	Short: "사용자 유형 상세 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewDirectoryService(client).GetUserType(args[0])
+		})
+	},
+}
+
+var dirCreateUserTypeCmd = &cobra.Command{
+	Use:   "create-user-type",
+	Short: "사용자 유형 생성",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.CreateUserType(body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirUpdateUserTypeCmd = &cobra.Command{
+	Use:   "update-user-type <id>",
+	Short: "사용자 유형 전체 수정 (PUT)",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.UpdateUserType(args[0], body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirPatchUserTypeCmd = &cobra.Command{
+	Use:   "patch-user-type <id>",
+	Short: "사용자 유형 부분 수정 (PATCH)",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.PatchUserType(args[0], body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirDeleteUserTypeCmd = &cobra.Command{
+	Use:   "delete-user-type <id>",
+	Short: "사용자 유형 삭제",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.DeleteUserType(args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var dirEnableUserTypesCmd = &cobra.Command{
+	Use:   "enable-user-types",
+	Short: "사용자 유형 활성화",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.EnableUserTypes()
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var dirDisableUserTypesCmd = &cobra.Command{
+	Use:   "disable-user-types",
+	Short: "사용자 유형 비활성화",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.DisableUserTypes()
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var dirUpsertUserTypeExternalKeysCmd = &cobra.Command{
+	Use:   "upsert-user-type-external-keys",
+	Short: "사용자 유형 외부 키 업서트",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.UpsertUserTypeExternalKeys(body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirListUserTypeExternalKeysCmd = &cobra.Command{
+	Use:   "list-user-type-external-keys",
+	Short: "사용자 유형 외부 키 목록 조회",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewDirectoryService(client).ListUserTypeExternalKeys()
+		})
+	},
+}
+
+// ─── User Type Access Restrict Subcommand Group ───
+
+var dirUserTypeAccessRestrictCmd = &cobra.Command{
+	Use:   "user-type-access-restrict",
+	Short: "사용자 유형 접근 제한 관리",
+}
+
+var dirUserTypeAccessRestrictCreateCmd = &cobra.Command{
+	Use:   "create <id>",
+	Short: "사용자 유형 접근 제한 생성",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.CreateUserTypeAccessRestrict(args[0], body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirUserTypeAccessRestrictGetCmd = &cobra.Command{
+	Use:   "get <id>",
+	Short: "사용자 유형 접근 제한 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewDirectoryService(client).GetUserTypeAccessRestrict(args[0])
+		})
+	},
+}
+
+var dirUserTypeAccessRestrictUpdateCmd = &cobra.Command{
+	Use:   "update <id>",
+	Short: "사용자 유형 접근 제한 수정 (PUT)",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.UpdateUserTypeAccessRestrict(args[0], body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirUserTypeAccessRestrictDeleteCmd = &cobra.Command{
+	Use:   "delete <id>",
+	Short: "사용자 유형 접근 제한 삭제",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.DeleteUserTypeAccessRestrict(args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+// ─── Task 4-11: Profile Statuses Definition CRUD ───
+
+var dirProfileStatusDefCmd = &cobra.Command{
+	Use:   "profile-status-def",
+	Short: "프로필 상태 정의 관리",
+}
+
+var dirProfileStatusDefListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "프로필 상태 정의 목록 조회",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		return runListCmd(cmd, nil, "profileStatuses", svc.ListDirectoryProfileStatuses)
+	},
+}
+
+var dirProfileStatusDefGetCmd = &cobra.Command{
+	Use:   "get <id>",
+	Short: "프로필 상태 정의 상세 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewDirectoryService(client).GetDirectoryProfileStatus(args[0])
+		})
+	},
+}
+
+var dirProfileStatusDefCreateCmd = &cobra.Command{
+	Use:   "create",
+	Short: "프로필 상태 정의 생성",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.CreateDirectoryProfileStatus(body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirProfileStatusDefUpdateCmd = &cobra.Command{
+	Use:   "update <id>",
+	Short: "프로필 상태 정의 전체 수정 (PUT)",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.UpdateDirectoryProfileStatus(args[0], body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirProfileStatusDefPatchCmd = &cobra.Command{
+	Use:   "patch <id>",
+	Short: "프로필 상태 정의 부분 수정 (PATCH)",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.PatchDirectoryProfileStatus(args[0], body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirProfileStatusDefDeleteCmd = &cobra.Command{
+	Use:   "delete <id>",
+	Short: "프로필 상태 정의 삭제",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.DeleteDirectoryProfileStatus(args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var dirProfileStatusDefEnableCmd = &cobra.Command{
+	Use:   "enable",
+	Short: "프로필 상태 정의 활성화",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.EnableDirectoryProfileStatuses()
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var dirProfileStatusDefDisableCmd = &cobra.Command{
+	Use:   "disable",
+	Short: "프로필 상태 정의 비활성화",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.DisableDirectoryProfileStatuses()
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+// ─── Task 4-12: Custom Fields CRUD ───
+
+var dirCustomFieldCmd = &cobra.Command{
+	Use:   "custom-field",
+	Short: "커스텀 필드 관리",
+}
+
+var dirCustomFieldListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "커스텀 필드 목록 조회",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		return runListCmd(cmd, nil, "customFields", svc.ListCustomFields)
+	},
+}
+
+var dirCustomFieldGetCmd = &cobra.Command{
+	Use:   "get <id>",
+	Short: "커스텀 필드 상세 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewDirectoryService(client).GetCustomField(args[0])
+		})
+	},
+}
+
+var dirCustomFieldCreateCmd = &cobra.Command{
+	Use:   "create",
+	Short: "커스텀 필드 생성",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.CreateCustomField(body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirCustomFieldUpdateCmd = &cobra.Command{
+	Use:   "update <id>",
+	Short: "커스텀 필드 수정 (PATCH)",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.PatchCustomField(args[0], body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var dirCustomFieldDeleteCmd = &cobra.Command{
+	Use:   "delete <id>",
+	Short: "커스텀 필드 삭제",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.DeleteCustomField(args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
 func init() {
 	// ── List flags ──
 	addListFlags(
@@ -1381,6 +2423,8 @@ func init() {
 		dirProfileStatusListCmd,
 		dirListGroupMembersCmd, dirListGroupAdminsCmd,
 		dirListOrgUnitMembersCmd,
+		dirProfileStatusDefListCmd,
+		dirCustomFieldListCmd,
 	)
 
 	// ── JSON flags ──
@@ -1397,6 +2441,24 @@ func init() {
 		dirMoveOrgUnitCmd,
 		dirOrgUnitAccessRestrictCreateCmd, dirOrgUnitAccessRestrictUpdateCmd,
 		dirUpsertOrgUnitExternalKeysCmd,
+		// Task 4-7: Positions
+		dirCreatePositionCmd, dirUpdatePositionCmd, dirPatchPositionCmd,
+		dirUpsertPositionExternalKeysCmd,
+		// Task 4-8: Levels
+		dirCreateLevelCmd, dirUpdateLevelCmd, dirPatchLevelCmd,
+		dirUpsertLevelExternalKeysCmd,
+		// Task 4-9: Employment Types
+		dirCreateEmploymentTypeCmd, dirUpdateEmploymentTypeCmd, dirPatchEmploymentTypeCmd,
+		dirUpsertEmploymentTypeExternalKeysCmd,
+		dirEmploymentTypeAccessRestrictCreateCmd, dirEmploymentTypeAccessRestrictUpdateCmd,
+		// Task 4-10: User Types
+		dirCreateUserTypeCmd, dirUpdateUserTypeCmd, dirPatchUserTypeCmd,
+		dirUpsertUserTypeExternalKeysCmd,
+		dirUserTypeAccessRestrictCreateCmd, dirUserTypeAccessRestrictUpdateCmd,
+		// Task 4-11: Profile Statuses Def
+		dirProfileStatusDefCreateCmd, dirProfileStatusDefUpdateCmd, dirProfileStatusDefPatchCmd,
+		// Task 4-12: Custom Fields
+		dirCustomFieldCreateCmd, dirCustomFieldUpdateCmd,
 	} {
 		c.Flags().String("json", "", "JSON 페이로드 (필수, -: stdin)")
 	}
@@ -1422,6 +2484,33 @@ func init() {
 	dirOrgUnitAccessRestrictCmd.AddCommand(
 		dirOrgUnitAccessRestrictCreateCmd, dirOrgUnitAccessRestrictGetCmd,
 		dirOrgUnitAccessRestrictUpdateCmd, dirOrgUnitAccessRestrictDeleteCmd,
+	)
+
+	// ── Employment Type Access Restrict subcommand group ──
+	dirEmploymentTypeAccessRestrictCmd.AddCommand(
+		dirEmploymentTypeAccessRestrictCreateCmd, dirEmploymentTypeAccessRestrictGetCmd,
+		dirEmploymentTypeAccessRestrictUpdateCmd, dirEmploymentTypeAccessRestrictDeleteCmd,
+	)
+
+	// ── User Type Access Restrict subcommand group ──
+	dirUserTypeAccessRestrictCmd.AddCommand(
+		dirUserTypeAccessRestrictCreateCmd, dirUserTypeAccessRestrictGetCmd,
+		dirUserTypeAccessRestrictUpdateCmd, dirUserTypeAccessRestrictDeleteCmd,
+	)
+
+	// ── Profile Status Definition subcommand group ──
+	dirProfileStatusDefCmd.AddCommand(
+		dirProfileStatusDefListCmd, dirProfileStatusDefGetCmd,
+		dirProfileStatusDefCreateCmd, dirProfileStatusDefUpdateCmd, dirProfileStatusDefPatchCmd,
+		dirProfileStatusDefDeleteCmd,
+		dirProfileStatusDefEnableCmd, dirProfileStatusDefDisableCmd,
+	)
+
+	// ── Custom Field subcommand group ──
+	dirCustomFieldCmd.AddCommand(
+		dirCustomFieldListCmd, dirCustomFieldGetCmd,
+		dirCustomFieldCreateCmd, dirCustomFieldUpdateCmd,
+		dirCustomFieldDeleteCmd,
 	)
 
 	// ── Register all subcommands ──
@@ -1458,6 +2547,28 @@ func init() {
 		dirMoveOrgUnitCmd, dirListOrgUnitMembersCmd,
 		dirOrgUnitAccessRestrictCmd,
 		dirUpsertOrgUnitExternalKeysCmd, dirListOrgUnitExternalKeysCmd,
+		// Task 4-7: Positions CRUD + External Keys
+		dirGetPositionCmd, dirCreatePositionCmd, dirUpdatePositionCmd, dirPatchPositionCmd,
+		dirDeletePositionCmd, dirEnablePositionsCmd, dirDisablePositionsCmd,
+		dirUpsertPositionExternalKeysCmd, dirListPositionExternalKeysCmd,
+		// Task 4-8: Levels CRUD + External Keys
+		dirGetLevelCmd, dirCreateLevelCmd, dirUpdateLevelCmd, dirPatchLevelCmd,
+		dirDeleteLevelCmd, dirEnableLevelsCmd, dirDisableLevelsCmd,
+		dirUpsertLevelExternalKeysCmd, dirListLevelExternalKeysCmd,
+		// Task 4-9: Employment Types CRUD + External Keys + Access Restrict
+		dirGetEmploymentTypeCmd, dirCreateEmploymentTypeCmd, dirUpdateEmploymentTypeCmd, dirPatchEmploymentTypeCmd,
+		dirDeleteEmploymentTypeCmd, dirEnableEmploymentTypesCmd, dirDisableEmploymentTypesCmd,
+		dirUpsertEmploymentTypeExternalKeysCmd, dirListEmploymentTypeExternalKeysCmd,
+		dirEmploymentTypeAccessRestrictCmd,
+		// Task 4-10: User Types CRUD + External Keys + Access Restrict
+		dirGetUserTypeCmd, dirCreateUserTypeCmd, dirUpdateUserTypeCmd, dirPatchUserTypeCmd,
+		dirDeleteUserTypeCmd, dirEnableUserTypesCmd, dirDisableUserTypesCmd,
+		dirUpsertUserTypeExternalKeysCmd, dirListUserTypeExternalKeysCmd,
+		dirUserTypeAccessRestrictCmd,
+		// Task 4-11: Profile Statuses Definition
+		dirProfileStatusDefCmd,
+		// Task 4-12: Custom Fields
+		dirCustomFieldCmd,
 	)
 
 	rootCmd.AddCommand(directoryCmd)

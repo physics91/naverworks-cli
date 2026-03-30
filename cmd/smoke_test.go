@@ -1204,3 +1204,151 @@ func TestSmoke_DirectoryRemoveGroupAdmin_MissingArgs(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
+
+func TestSmoke_DirectoryHelp_Phase4(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "directory", "--help")
+	if err != nil {
+		t.Fatalf("directory --help failed: %v", err)
+	}
+	for _, sub := range []string{
+		// Task 4-7: Positions
+		"get-position", "create-position", "update-position", "patch-position",
+		"delete-position", "enable-positions", "disable-positions",
+		"upsert-position-external-keys", "list-position-external-keys",
+		// Task 4-8: Levels
+		"get-level", "create-level", "update-level", "patch-level",
+		"delete-level", "enable-levels", "disable-levels",
+		"upsert-level-external-keys", "list-level-external-keys",
+		// Task 4-9: Employment Types
+		"get-employment-type", "create-employment-type", "update-employment-type", "patch-employment-type",
+		"delete-employment-type", "enable-employment-types", "disable-employment-types",
+		"upsert-employment-type-external-keys", "list-employment-type-external-keys",
+		"employment-type-access-restrict",
+		// Task 4-10: User Types
+		"get-user-type", "create-user-type", "update-user-type", "patch-user-type",
+		"delete-user-type", "enable-user-types", "disable-user-types",
+		"upsert-user-type-external-keys", "list-user-type-external-keys",
+		"user-type-access-restrict",
+		// Task 4-11: Profile Statuses Def
+		"profile-status-def",
+		// Task 4-12: Custom Fields
+		"custom-field",
+	} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("directory --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_DirectoryEmploymentTypeAccessRestrictHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "directory", "employment-type-access-restrict", "--help")
+	if err != nil {
+		t.Fatalf("directory employment-type-access-restrict --help failed: %v", err)
+	}
+	for _, sub := range []string{"create", "get", "update", "delete"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("directory employment-type-access-restrict --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_DirectoryUserTypeAccessRestrictHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "directory", "user-type-access-restrict", "--help")
+	if err != nil {
+		t.Fatalf("directory user-type-access-restrict --help failed: %v", err)
+	}
+	for _, sub := range []string{"create", "get", "update", "delete"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("directory user-type-access-restrict --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_DirectoryProfileStatusDefHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "directory", "profile-status-def", "--help")
+	if err != nil {
+		t.Fatalf("directory profile-status-def --help failed: %v", err)
+	}
+	for _, sub := range []string{"list", "get", "create", "update", "patch", "delete", "enable", "disable"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("directory profile-status-def --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_DirectoryCustomFieldHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "directory", "custom-field", "--help")
+	if err != nil {
+		t.Fatalf("directory custom-field --help failed: %v", err)
+	}
+	for _, sub := range []string{"list", "get", "create", "update", "delete"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("directory custom-field --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_DirectoryCreatePosition_MissingJSON(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "directory", "create-position")
+	if err == nil {
+		t.Fatal("expected error when --json is missing")
+	}
+	if !strings.Contains(err.Error(), "--json 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_DirectoryDeletePosition_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "directory", "delete-position")
+	if err == nil {
+		t.Fatal("expected error when positionId is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 1 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_DirectoryDeleteLevel_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "directory", "delete-level")
+	if err == nil {
+		t.Fatal("expected error when levelId is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 1 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_DirectoryCreateEmploymentType_MissingJSON(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "directory", "create-employment-type")
+	if err == nil {
+		t.Fatal("expected error when --json is missing")
+	}
+	if !strings.Contains(err.Error(), "--json 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_DirectoryCustomFieldCreate_MissingJSON(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "directory", "custom-field", "create")
+	if err == nil {
+		t.Fatal("expected error when --json is missing")
+	}
+	if !strings.Contains(err.Error(), "--json 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}

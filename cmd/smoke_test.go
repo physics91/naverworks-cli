@@ -1040,3 +1040,167 @@ func TestSmoke_ContactFullUpdate_MissingJSON(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
+
+// ─── Directory Smoke Tests ───
+
+func TestSmoke_DirectoryHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "directory", "--help")
+	if err != nil {
+		t.Fatalf("directory --help failed: %v", err)
+	}
+	for _, sub := range []string{
+		// Existing read
+		"list-users", "get-user", "list-groups", "get-group", "list-orgunits", "get-orgunit",
+		"list-levels", "list-positions", "list-user-types", "list-employment-types",
+		// Task 4-1: User CUD
+		"create-user", "update-user", "patch-user", "delete-user", "force-delete-user",
+		"undelete-user", "suspend-user", "unsuspend-user", "force-logout-user",
+		"move-user", "set-leave", "clear-leave",
+		// Task 4-2: User Profile
+		"upload-photo", "get-photo", "delete-photo", "profile-status",
+		// Task 4-3: Email + Invitations + Links
+		"add-alias-email", "delete-alias-email", "send-invitation", "send-invitation-all",
+		"link-to-works", "link-all-to-works", "unlink-to-works",
+		"link-to-line", "link-all-to-line", "unlink-to-line",
+		"get-link-url", "reset-link-url",
+		// Task 4-4: External Keys + Custom Properties
+		"upsert-external-keys", "list-external-keys", "user-custom-property",
+		// Task 4-5: Group CUD
+		"create-group", "update-group", "patch-group", "delete-group",
+		"list-group-members", "add-group-members", "remove-group-member",
+		"list-group-admins", "add-group-admin", "remove-group-admin",
+		"upsert-group-external-keys", "list-group-external-keys",
+		// Task 4-6: OrgUnit CUD
+		"create-orgunit", "update-orgunit", "patch-orgunit", "delete-orgunit",
+		"move-orgunit", "list-orgunit-members", "orgunit-access-restrict",
+		"upsert-orgunit-external-keys", "list-orgunit-external-keys",
+	} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("directory --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_DirectoryProfileStatusHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "directory", "profile-status", "--help")
+	if err != nil {
+		t.Fatalf("directory profile-status --help failed: %v", err)
+	}
+	for _, sub := range []string{"list", "get", "create", "update", "patch", "delete"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("directory profile-status --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_DirectoryUserCustomPropertyHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "directory", "user-custom-property", "--help")
+	if err != nil {
+		t.Fatalf("directory user-custom-property --help failed: %v", err)
+	}
+	for _, sub := range []string{"list", "get", "create", "update", "delete"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("directory user-custom-property --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_DirectoryOrgUnitAccessRestrictHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "directory", "orgunit-access-restrict", "--help")
+	if err != nil {
+		t.Fatalf("directory orgunit-access-restrict --help failed: %v", err)
+	}
+	for _, sub := range []string{"create", "get", "update", "delete"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("directory orgunit-access-restrict --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_DirectoryCreateUser_MissingJSON(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "directory", "create-user")
+	if err == nil {
+		t.Fatal("expected error when --json is missing")
+	}
+	if !strings.Contains(err.Error(), "--json 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_DirectoryDeleteUser_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "directory", "delete-user")
+	if err == nil {
+		t.Fatal("expected error when userId is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 1 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_DirectoryRemoveGroupMember_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "directory", "remove-group-member", "g1")
+	if err == nil {
+		t.Fatal("expected error when memberId arg is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 2 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_DirectoryAddAliasEmail_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "directory", "add-alias-email", "u1")
+	if err == nil {
+		t.Fatal("expected error when email arg is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 2 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_DirectoryProfileStatusGet_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "directory", "profile-status", "get", "u1")
+	if err == nil {
+		t.Fatal("expected error when second arg is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 2 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_DirectoryUploadPhoto_MissingFile(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "directory", "upload-photo", "u1")
+	if err == nil {
+		t.Fatal("expected error when --file is missing")
+	}
+	if !strings.Contains(err.Error(), "--file 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_DirectoryRemoveGroupAdmin_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "directory", "remove-group-admin", "g1")
+	if err == nil {
+		t.Fatal("expected error when userId arg is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 2 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}

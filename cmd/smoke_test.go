@@ -581,3 +581,61 @@ func TestSmoke_TaskCompleteAssignee_MissingArgs(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
+
+// ─── Contact Smoke Tests ───
+
+func TestSmoke_ContactHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "contact", "--help")
+	if err != nil {
+		t.Fatalf("contact --help failed: %v", err)
+	}
+	for _, sub := range []string{
+		"list", "list-user", "get", "create", "update", "full-update", "delete", "force-delete",
+		"upload-photo", "get-photo", "delete-photo",
+		"list-tags", "list-user-tags",
+		"custom-property", "tag",
+	} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("contact --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_ContactCustomPropertyHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "contact", "custom-property", "--help")
+	if err != nil {
+		t.Fatalf("contact custom-property --help failed: %v", err)
+	}
+	for _, sub := range []string{"list", "get", "create", "update", "delete"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("contact custom-property --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_ContactTagHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "contact", "tag", "--help")
+	if err != nil {
+		t.Fatalf("contact tag --help failed: %v", err)
+	}
+	for _, sub := range []string{"create", "get", "update", "patch", "delete", "create-user-tags"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("contact tag --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_ContactFullUpdate_MissingJSON(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "contact", "full-update", "c1")
+	if err == nil {
+		t.Fatal("expected error when --json is missing")
+	}
+	if !strings.Contains(err.Error(), "--json 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}

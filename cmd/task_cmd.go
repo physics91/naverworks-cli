@@ -133,9 +133,189 @@ var taskListCategoriesCmd = &cobra.Command{
 	},
 }
 
+var taskCreateCategoryCmd = &cobra.Command{
+	Use:   "create-category",
+	Short: "태스크 카테고리 생성",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		svc := api.NewTaskService(client)
+		body, err := readJSONFlag(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.CreateCategory(userID, body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var taskGetCategoryCmd = &cobra.Command{
+	Use:   "get-category <categoryId>",
+	Short: "태스크 카테고리 상세 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		svc := api.NewTaskService(client)
+		resp, err := svc.GetCategory(userID, args[0])
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var taskUpdateCategoryCmd = &cobra.Command{
+	Use:   "update-category <categoryId>",
+	Short: "태스크 카테고리 수정",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		svc := api.NewTaskService(client)
+		body, err := readJSONFlag(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.PatchCategory(userID, args[0], body)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var taskDeleteCategoryCmd = &cobra.Command{
+	Use:   "delete-category <categoryId>",
+	Short: "태스크 카테고리 삭제",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		svc := api.NewTaskService(client)
+		resp, err := svc.DeleteCategory(userID, args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var taskMoveCmd = &cobra.Command{
+	Use:   "move <taskId>",
+	Short: "태스크 이동",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		svc := api.NewTaskService(client)
+		categoryID, _ := cmd.Flags().GetString("category")
+		if categoryID == "" {
+			return fmt.Errorf("--category는 필수입니다")
+		}
+		body := map[string]interface{}{"taskCategoryId": categoryID}
+		resp, err := svc.MoveTask(userID, args[0], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var taskCompleteCmd = &cobra.Command{
+	Use:   "complete <taskId>",
+	Short: "태스크 완료 처리",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewTaskService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.CompleteTask(args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var taskIncompleteCmd = &cobra.Command{
+	Use:   "incomplete <taskId>",
+	Short: "태스크 미완료 처리",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewTaskService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.IncompleteTask(args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var taskCompleteAssigneeCmd = &cobra.Command{
+	Use:   "complete-assignee <taskId> <userId>",
+	Short: "태스크 담당자 완료 처리",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewTaskService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.CompleteAssigneeTask(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var taskIncompleteAssigneeCmd = &cobra.Command{
+	Use:   "incomplete-assignee <taskId> <userId>",
+	Short: "태스크 담당자 미완료 처리",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewTaskService)
+		if err != nil {
+			return err
+		}
+		resp, err := svc.IncompleteAssigneeTask(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
 func init() {
 	addListFlags(taskListCmd, taskListCategoriesCmd)
-	for _, c := range []*cobra.Command{taskListCmd, taskCreateCmd, taskListCategoriesCmd} {
+	for _, c := range []*cobra.Command{taskListCmd, taskCreateCmd, taskListCategoriesCmd,
+		taskCreateCategoryCmd, taskGetCategoryCmd, taskUpdateCategoryCmd, taskDeleteCategoryCmd, taskMoveCmd} {
 		c.Flags().String("user-id", "", "사용자 ID (OAuth: me 허용)")
 	}
 
@@ -144,6 +324,13 @@ func init() {
 	taskUpdateCmd.Flags().String("title", "", "태스크 제목")
 	taskUpdateCmd.Flags().String("data", "", "전체 JSON 페이로드")
 
-	taskCmd.AddCommand(taskListCmd, taskGetCmd, taskCreateCmd, taskUpdateCmd, taskDeleteCmd, taskListCategoriesCmd)
+	taskCreateCategoryCmd.Flags().String("json", "", "JSON 페이로드")
+	taskUpdateCategoryCmd.Flags().String("json", "", "JSON 페이로드")
+
+	taskMoveCmd.Flags().String("category", "", "이동할 카테고리 ID (필수)")
+
+	taskCmd.AddCommand(taskListCmd, taskGetCmd, taskCreateCmd, taskUpdateCmd, taskDeleteCmd, taskListCategoriesCmd,
+		taskCreateCategoryCmd, taskGetCategoryCmd, taskUpdateCategoryCmd, taskDeleteCategoryCmd,
+		taskMoveCmd, taskCompleteCmd, taskIncompleteCmd, taskCompleteAssigneeCmd, taskIncompleteAssigneeCmd)
 	rootCmd.AddCommand(taskCmd)
 }

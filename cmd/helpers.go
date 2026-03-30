@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -236,6 +239,61 @@ func addListFlags(cmds ...*cobra.Command) {
 		c.Flags().Int("count", 0, "페이지 크기")
 		c.Flags().Bool("all", false, "전체 페이지 자동 순회")
 	}
+}
+
+// readJSONFlagRaw reads the --json flag value as raw bytes.
+// If the value is "-", it reads from stdin.
+// It validates that the content is valid JSON.
+func readJSONFlagRaw(cmd *cobra.Command) ([]byte, error) {
+	val, _ := cmd.Flags().GetString("json")
+	if val == "" {
+		return nil, fmt.Errorf("--json 플래그가 필요합니다")
+	}
+
+	var data []byte
+	if val == "-" {
+		var err error
+		data, err = io.ReadAll(bufio.NewReader(os.Stdin))
+		if err != nil {
+			return nil, fmt.Errorf("stdin 읽기 실패: %w", err)
+		}
+	} else {
+		data = []byte(val)
+	}
+
+	if !json.Valid(data) {
+		return nil, fmt.Errorf("유효하지 않은 JSON입니다")
+	}
+	return data, nil
+}
+
+// readJSONFlag reads the --json flag value and parses it into a map.
+// If the value is "-", it reads from stdin.
+func readJSONFlag(cmd *cobra.Command) (map[string]interface{}, error) {
+	data, err := readJSONFlagRaw(cmd)
+	if err != nil {
+		return nil, err
+	}
+	var body map[string]interface{}
+	if err := json.Unmarshal(data, &body); err != nil {
+		return nil, fmt.Errorf("JSON 파싱 실패: %w", err)
+	}
+	return body, nil
+}
+
+// readFileFlag reads the file path from the given flag and returns the file
+// contents along with the base file name. Returns an error if the flag is
+// empty or the file cannot be read.
+func readFileFlag(cmd *cobra.Command, flagName string) ([]byte, string, error) {
+	filePath, _ := cmd.Flags().GetString(flagName)
+	if filePath == "" {
+		return nil, "", fmt.Errorf("--%s 플래그가 필요합니다", flagName)
+	}
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, "", fmt.Errorf("파일 읽기 실패 (%s): %w", filePath, err)
+	}
+	return data, filepath.Base(filePath), nil
 }
 
 func resolveOrCreateProfile(pc *config.ProfileConfig) (*config.Config, string) {

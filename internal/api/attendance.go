@@ -38,3 +38,51 @@ func (s *AttendanceService) ListAbsences(cursor string, count int) (*Response, e
 func (s *AttendanceService) ListAnnualLeaves(cursor string, count int) (*Response, error) {
 	return s.client.Get("/business-support/attendance/annual-leaves" + BuildPaginationQuery(cursor, count))
 }
+
+// ─── Timecard ───
+
+func (s *AttendanceService) CreateTimecard(body []byte) (*Response, error) {
+	return s.client.Post("/business-support/attendance/timecards", body)
+}
+
+func (s *AttendanceService) ListTimecards(cursor string, count int) (*Response, error) {
+	return s.client.Get("/business-support/attendance/timecards" + BuildPaginationQuery(cursor, count))
+}
+
+func (s *AttendanceService) GetTimecard(timecardID string) (*Response, error) {
+	return s.client.Get(fmt.Sprintf("/business-support/attendance/timecards/%s", url.PathEscape(timecardID)))
+}
+
+func (s *AttendanceService) PatchTimecard(timecardID string, body []byte) (*Response, error) {
+	return s.client.Patch(fmt.Sprintf("/business-support/attendance/timecards/%s", url.PathEscape(timecardID)), body)
+}
+
+// ─── Annual Leave ───
+
+func (s *AttendanceService) AdjustAnnualLeave(body []byte) (*Response, error) {
+	return s.client.Post("/business-support/attendance/annual-leaves/adjust", body)
+}
+
+// ─── Absence Schedule ───
+
+func (s *AttendanceService) ListAbsenceSchedules(cursor string, count int) (*Response, error) {
+	return s.client.Get("/business-support/attendance/absence-schedule" + BuildPaginationQuery(cursor, count))
+}
+
+// ─── Absence (CRUD) ───
+
+func (s *AttendanceService) CreateAbsence(body []byte) (*Response, error) {
+	return s.client.Post("/business-support/attendance/absences", body)
+}
+
+func (s *AttendanceService) GetAbsence(absenceID string) (*Response, error) {
+	return s.client.Get(fmt.Sprintf("/business-support/attendance/absences/%s", url.PathEscape(absenceID)))
+}
+
+func (s *AttendanceService) PatchAbsence(absenceID string, body []byte) (*Response, error) {
+	return s.client.Patch(fmt.Sprintf("/business-support/attendance/absences/%s", url.PathEscape(absenceID)), body)
+}
+
+func (s *AttendanceService) DeleteAbsence(absenceID string) (*Response, error) {
+	return s.client.Delete(fmt.Sprintf("/business-support/attendance/absences/%s", url.PathEscape(absenceID)))
+}

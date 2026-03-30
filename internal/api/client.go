@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
@@ -287,4 +288,127 @@ func parseRateLimitReset(header http.Header, attempt int) time.Duration {
 		}
 	}
 	return time.Duration(1<<uint(attempt)) * time.Second
+}
+
+// UploadMultipart sends a multipart/form-data POST request to the given API
+// path. fieldName is the form field name, fileName is the original file name,
+// and data is the file content. Auth header and token refresh / retry logic
+// are handled identically to other Client methods.
+func (c *Client) UploadMultipart(path, fieldName, fileName string, data []byte) (*Response, error) {
+	if err := c.refreshIfNeeded(); err != nil {
+		return nil, err
+	}
+	return c.uploadMultipartWithRetry(path, fieldName, fileName, data, false)
+}
+
+func (c *Client) uploadMultipartWithRetry(path, fieldName, fileName string, data []byte, retried401 bool) (*Response, error) {
+	for attempt := 0; attempt <= maxRateLimitRetries; attempt++ {
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		part, err := writer.CreateFormFile(fieldName, fileName)
+		if err != nil {
+			return nil, fmt.Errorf("multipart 파트 생성 실패: %w", err)
+		}
+		if _, err := part.Write(data); err != nil {
+			return nil, fmt.Errorf("multipart 파트 쓰기 실패: %w", err)
+		}
+		if err := writer.Close(); err != nil {
+			return nil, fmt.Errorf("multipart writer 닫기 실패: %w", err)
+		}
+
+		req, err := http.NewRequest("POST", c.baseURL+path, body)
+		if err != nil {
+			return nil, fmt.Errorf("요청 생성 실패: %w", err)
+		}
+		req.Header.Set("Authorization", "Bearer "+c.token.AccessToken)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("네트워크 에러: %w", err)
+		}
+		respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxAPIResponseSize+1))
+		resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("응답 읽기 실패: %w", err)
+		}
+		if int64(len(respBody)) > maxAPIResponseSize {
+			return nil, fmt.Errorf("API 응답 크기 초과: > %d bytes", maxAPIResponseSize)
+		}
+
+		switch {
+		case resp.StatusCode == 401 && !retried401 && c.refreshFn != nil:
+			if err := c.refreshFn(c.token); err != nil {
+				return nil, fmt.Errorf("토큰 갱신 실패: %w", err)
+			}
+			return c.uploadMultipartWithRetry(path, fieldName, fileName, data, true)
+
+		case resp.StatusCode == 429 && attempt < maxRateLimitRetries:
+			waitDuration := parseRateLimitReset(resp.Header, attempt)
+			time.Sleep(waitDuration)
+			continue
+
+		case resp.StatusCode >= 400:
+			return nil, DecodeAPIError(resp.StatusCode, respBody)
+
+		default:
+			return &Response{StatusCode: resp.StatusCode, Body: respBody}, nil
+		}
+	}
+
+	return nil, &APIError{StatusCode: 429, Code: "RATE_LIMIT_EXCEEDED", Description: "최대 재시도 횟수 초과"}
+}
+
+// DownloadFile performs a GET request and returns the raw response body along
+// with HTTP headers. This is useful for binary file downloads where the
+// caller needs access to Content-Type, Content-Disposition, etc.
+func (c *Client) DownloadFile(path string) ([]byte, http.Header, error) {
+	if err := c.refreshIfNeeded(); err != nil {
+		return nil, nil, err
+	}
+	return c.downloadFileWithRetry(path, false)
+}
+
+func (c *Client) downloadFileWithRetry(path string, retried401 bool) ([]byte, http.Header, error) {
+	for attempt := 0; attempt <= maxRateLimitRetries; attempt++ {
+		req, err := http.NewRequest("GET", c.baseURL+path, nil)
+		if err != nil {
+			return nil, nil, fmt.Errorf("요청 생성 실패: %w", err)
+		}
+		req.Header.Set("Authorization", "Bearer "+c.token.AccessToken)
+
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			return nil, nil, fmt.Errorf("네트워크 에러: %w", err)
+		}
+		respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxAPIResponseSize+1))
+		resp.Body.Close()
+		if err != nil {
+			return nil, nil, fmt.Errorf("응답 읽기 실패: %w", err)
+		}
+		if int64(len(respBody)) > maxAPIResponseSize {
+			return nil, nil, fmt.Errorf("API 응답 크기 초과: > %d bytes", maxAPIResponseSize)
+		}
+
+		switch {
+		case resp.StatusCode == 401 && !retried401 && c.refreshFn != nil:
+			if err := c.refreshFn(c.token); err != nil {
+				return nil, nil, fmt.Errorf("토큰 갱신 실패: %w", err)
+			}
+			return c.downloadFileWithRetry(path, true)
+
+		case resp.StatusCode == 429 && attempt < maxRateLimitRetries:
+			waitDuration := parseRateLimitReset(resp.Header, attempt)
+			time.Sleep(waitDuration)
+			continue
+
+		case resp.StatusCode >= 400:
+			return nil, nil, DecodeAPIError(resp.StatusCode, respBody)
+
+		default:
+			return respBody, resp.Header, nil
+		}
+	}
+
+	return nil, nil, &APIError{StatusCode: 429, Code: "RATE_LIMIT_EXCEEDED", Description: "최대 재시도 횟수 초과"}
 }

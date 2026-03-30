@@ -18,6 +18,7 @@ import (
 
 	"github.com/physics91/naverworks-cli/internal/api"
 	"github.com/physics91/naverworks-cli/internal/auth"
+	"github.com/physics91/naverworks-cli/internal/config"
 )
 
 // ──────────────────────────────────────────────────────────────────────
@@ -113,6 +114,8 @@ func TestE2E_ConfigSave_AtomicWrite_Concurrent(t *testing.T) {
 	tmpDir := setupTestEnv(t)
 	writeTestConfig(t, tmpDir)
 
+	cfgPath := filepath.Join(tmpDir, ".config", "naverworks", "config.json")
+
 	const iterations = 10
 	var wg sync.WaitGroup
 	errs := make([]error, iterations)
@@ -121,9 +124,16 @@ func TestE2E_ConfigSave_AtomicWrite_Concurrent(t *testing.T) {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			value := fmt.Sprintf("bot-%d", idx)
-			_, err := runCLI(t, "config", "set", "bot_id", value)
-			errs[idx] = err
+			// Use config package directly instead of runCLI to avoid
+			// Cobra FlagSet concurrent map access panic.
+			pc, err := config.LoadProfileConfig(cfgPath)
+			if err != nil {
+				errs[idx] = err
+				return
+			}
+			profile := pc.EnsureProfile("default")
+			profile.BotID = fmt.Sprintf("bot-%d", idx)
+			errs[idx] = pc.Save(cfgPath)
 		}(i)
 	}
 	wg.Wait()
@@ -136,7 +146,6 @@ func TestE2E_ConfigSave_AtomicWrite_Concurrent(t *testing.T) {
 	}
 
 	// Verify the config file is valid JSON (not corrupted)
-	cfgPath := filepath.Join(tmpDir, ".config", "naverworks", "config.json")
 	data, err := os.ReadFile(cfgPath)
 	if err != nil {
 		t.Fatalf("failed to read config after concurrent writes: %v", err)

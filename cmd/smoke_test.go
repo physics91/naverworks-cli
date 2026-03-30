@@ -9,6 +9,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
 func captureStdout(t *testing.T, fn func()) string {
@@ -147,5 +149,154 @@ func TestSmoke_BotSend_ConflictingFlags(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "동시에 지정할 수 없습니다") {
 		t.Errorf("expected conflict error, got: %v", err)
+	}
+}
+
+func TestSmoke_ReadJSONFlagRaw_Missing(t *testing.T) {
+	cmd := &cobra.Command{}
+	cmd.Flags().String("json", "", "JSON body")
+
+	_, err := readJSONFlagRaw(cmd)
+	if err == nil {
+		t.Fatal("expected error when --json is empty")
+	}
+	if !strings.Contains(err.Error(), "--json 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_ReadJSONFlagRaw_InvalidJSON(t *testing.T) {
+	cmd := &cobra.Command{}
+	cmd.Flags().String("json", "", "JSON body")
+	_ = cmd.Flags().Set("json", "{invalid")
+
+	_, err := readJSONFlagRaw(cmd)
+	if err == nil {
+		t.Fatal("expected error for invalid JSON")
+	}
+	if !strings.Contains(err.Error(), "유효하지 않은 JSON") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_ReadJSONFlagRaw_Valid(t *testing.T) {
+	cmd := &cobra.Command{}
+	cmd.Flags().String("json", "", "JSON body")
+	_ = cmd.Flags().Set("json", `{"key":"value"}`)
+
+	data, err := readJSONFlagRaw(cmd)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(data) != `{"key":"value"}` {
+		t.Errorf("unexpected data: %s", data)
+	}
+}
+
+func TestSmoke_ReadJSONFlag_Valid(t *testing.T) {
+	cmd := &cobra.Command{}
+	cmd.Flags().String("json", "", "JSON body")
+	_ = cmd.Flags().Set("json", `{"title":"hello","count":3}`)
+
+	body, err := readJSONFlag(cmd)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if body["title"] != "hello" {
+		t.Errorf("expected title=hello, got %v", body["title"])
+	}
+	if body["count"] != float64(3) {
+		t.Errorf("expected count=3, got %v", body["count"])
+	}
+}
+
+func TestSmoke_ReadJSONFlag_InvalidJSON(t *testing.T) {
+	cmd := &cobra.Command{}
+	cmd.Flags().String("json", "", "JSON body")
+	_ = cmd.Flags().Set("json", "not-json")
+
+	_, err := readJSONFlag(cmd)
+	if err == nil {
+		t.Fatal("expected error for invalid JSON")
+	}
+}
+
+func TestSmoke_ReadFileFlag_Missing(t *testing.T) {
+	cmd := &cobra.Command{}
+	cmd.Flags().String("file", "", "파일 경로")
+
+	_, _, err := readFileFlag(cmd, "file")
+	if err == nil {
+		t.Fatal("expected error when --file is empty")
+	}
+	if !strings.Contains(err.Error(), "--file 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_ReadFileFlag_NotFound(t *testing.T) {
+	cmd := &cobra.Command{}
+	cmd.Flags().String("file", "", "파일 경로")
+	_ = cmd.Flags().Set("file", "/nonexistent/path/to/file.txt")
+
+	_, _, err := readFileFlag(cmd, "file")
+	if err == nil {
+		t.Fatal("expected error for nonexistent file")
+	}
+	if !strings.Contains(err.Error(), "파일 읽기 실패") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_ReadFileFlag_Valid(t *testing.T) {
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test-upload.txt")
+	content := []byte("hello naverworks")
+	if err := os.WriteFile(testFile, content, 0600); err != nil {
+		t.Fatalf("failed to write test file: %v", err)
+	}
+
+	cmd := &cobra.Command{}
+	cmd.Flags().String("file", "", "파일 경로")
+	_ = cmd.Flags().Set("file", testFile)
+
+	data, name, err := readFileFlag(cmd, "file")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(data) != "hello naverworks" {
+		t.Errorf("expected file content 'hello naverworks', got %q", string(data))
+	}
+	if name != "test-upload.txt" {
+		t.Errorf("expected file name 'test-upload.txt', got %q", name)
+	}
+}
+
+func TestSmoke_ReadJSONFlagRaw_Stdin(t *testing.T) {
+	// Simulate stdin by replacing os.Stdin with a pipe
+	oldStdin := os.Stdin
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("pipe failed: %v", err)
+	}
+
+	input := `{"from":"stdin"}`
+	go func() {
+		w.Write([]byte(input))
+		w.Close()
+	}()
+	os.Stdin = r
+	defer func() { os.Stdin = oldStdin }()
+
+	cmd := &cobra.Command{}
+	cmd.Flags().String("json", "", "JSON body")
+	_ = cmd.Flags().Set("json", "-")
+
+	data, err := readJSONFlagRaw(cmd)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(data) != input {
+		t.Errorf("expected %q, got %q", input, string(data))
 	}
 }

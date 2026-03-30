@@ -806,6 +806,605 @@ var driveGroupGetCmd = &cobra.Command{
 	},
 }
 
+// ─── GroupFolder Task 5-4: 관리 + 파일 보완 ───
+
+var driveGroupCreateFolderCmd = &cobra.Command{
+	Use:   "create-folder <groupId>",
+	Short: "그룹 폴더 생성",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewGroupFolderService(client).CreateFolder(args[0])
+		})
+	},
+}
+
+var driveGroupDeleteFolderCmd = &cobra.Command{
+	Use:   "delete-folder <groupId>",
+	Short: "그룹 폴더 삭제",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewGroupFolderService(client).DeleteFolder(args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveGroupMkdirCmd = &cobra.Command{
+	Use:   "mkdir <groupId>",
+	Short: "그룹 폴더 내 폴더 생성",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		svc := api.NewGroupFolderService(client)
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		parent, _ := cmd.Flags().GetString("parent")
+		var resp *api.Response
+		if parent != "" {
+			resp, err = svc.CreateSubFolder(args[0], parent, body)
+		} else {
+			resp, err = svc.CreateFolderInRoot(args[0], body)
+		}
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveGroupDeleteCmd = &cobra.Command{
+	Use:   "delete <groupId> <fileId>",
+	Short: "그룹 파일 삭제",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewGroupFolderService(client).DeleteFile(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveGroupUploadCmd = &cobra.Command{
+	Use:   "upload <groupId> <fileId> --file <path>",
+	Short: "그룹 파일 업로드 URL 생성",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		svc := api.NewGroupFolderService(client)
+
+		filePath, _ := cmd.Flags().GetString("file")
+		if filePath == "" {
+			return fmt.Errorf("--file 플래그가 필요합니다")
+		}
+
+		fileName, fileSize, err := statFileForUpload(filePath)
+		if err != nil {
+			return err
+		}
+
+		uploadBody := map[string]interface{}{"fileName": fileName}
+		resp, err := svc.CreateUploadURL(args[0], args[1], uploadBody, fileSize)
+		if err != nil {
+			return err
+		}
+
+		if err := doUploadFromResponse(client, resp.Body, filePath); err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var driveGroupDownloadCmd = &cobra.Command{
+	Use:   "download <groupId> <fileId>",
+	Short: "그룹 파일 다운로드 URL 조회",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewGroupFolderService)
+		if err != nil {
+			return err
+		}
+		downloadURL, err := svc.GetDownloadURL(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printDownloadURL(downloadURL)
+		return nil
+	},
+}
+
+// ─── GroupFolder Task 5-5: 파일조작 ───
+
+var driveGroupCopyCmd = &cobra.Command{
+	Use:   "copy <groupId> <fileId>",
+	Short: "그룹 파일 복사",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewGroupFolderService(client).CopyFile(args[0], args[1], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveGroupRenameCmd = &cobra.Command{
+	Use:   "rename <groupId> <fileId>",
+	Short: "그룹 파일 이름 변경",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewGroupFolderService(client).RenameFile(args[0], args[1], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveGroupMoveCmd = &cobra.Command{
+	Use:   "move <groupId> <fileId>",
+	Short: "그룹 파일 이동",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewGroupFolderService(client).MoveFile(args[0], args[1], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveGroupProtectCmd = &cobra.Command{
+	Use:   "protect <groupId> <fileId>",
+	Short: "그룹 파일 보호 설정",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewGroupFolderService(client).ProtectFile(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveGroupUnprotectCmd = &cobra.Command{
+	Use:   "unprotect <groupId> <fileId>",
+	Short: "그룹 파일 보호 해제",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewGroupFolderService(client).UnprotectFile(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveGroupLockCmd = &cobra.Command{
+	Use:   "lock <groupId> <fileId>",
+	Short: "그룹 파일 잠금",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewGroupFolderService(client).LockFile(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveGroupUnlockCmd = &cobra.Command{
+	Use:   "unlock <groupId> <fileId>",
+	Short: "그룹 파일 잠금 해제",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewGroupFolderService(client).UnlockFile(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+// ─── GroupFolder Task 5-6: 리비전 + 휴지통 ───
+
+var driveGroupRevisionCmd = &cobra.Command{
+	Use:   "revision",
+	Short: "그룹 파일 리비전 관리",
+}
+
+var driveGroupRevisionListCmd = &cobra.Command{
+	Use:   "list <groupId> <fileId>",
+	Short: "그룹 파일 리비전 목록 조회",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewGroupFolderService)
+		if err != nil {
+			return err
+		}
+		cursor, _ := cmd.Flags().GetString("cursor")
+		count, _ := cmd.Flags().GetInt("count")
+		resp, err := svc.ListRevisions(args[0], args[1], cursor, count)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var driveGroupRevisionGetCmd = &cobra.Command{
+	Use:   "get <groupId> <fileId> <revisionId>",
+	Short: "그룹 파일 리비전 상세 조회",
+	Args:  cobra.ExactArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewGroupFolderService(client).GetRevision(args[0], args[1], args[2])
+		})
+	},
+}
+
+var driveGroupRevisionRestoreCmd = &cobra.Command{
+	Use:   "restore <groupId> <fileId> <revisionId>",
+	Short: "그룹 파일 리비전 복원",
+	Args:  cobra.ExactArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewGroupFolderService(client).RestoreRevision(args[0], args[1], args[2])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveGroupRevisionDownloadCmd = &cobra.Command{
+	Use:   "download <groupId> <fileId> <revisionId>",
+	Short: "그룹 파일 리비전 다운로드 URL 조회",
+	Args:  cobra.ExactArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewGroupFolderService)
+		if err != nil {
+			return err
+		}
+		downloadURL, err := svc.GetRevisionDownloadURL(args[0], args[1], args[2])
+		if err != nil {
+			return err
+		}
+		printDownloadURL(downloadURL)
+		return nil
+	},
+}
+
+var driveGroupTrashListCmd = &cobra.Command{
+	Use:   "trash-list <groupId>",
+	Short: "그룹 휴지통 파일 목록 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewGroupFolderService)
+		if err != nil {
+			return err
+		}
+		cursor, _ := cmd.Flags().GetString("cursor")
+		count, _ := cmd.Flags().GetInt("count")
+		resp, err := svc.ListTrashFiles(args[0], cursor, count)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var driveGroupTrashRestoreCmd = &cobra.Command{
+	Use:   "trash-restore <groupId> <fileId>",
+	Short: "그룹 휴지통 파일 복원",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewGroupFolderService(client).RestoreTrashFile(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveGroupTrashDeleteCmd = &cobra.Command{
+	Use:   "trash-delete <groupId> <fileId>",
+	Short: "그룹 휴지통 파일 영구 삭제",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewGroupFolderService(client).DeleteTrashFile(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+// ─── GroupFolder Task 5-7: 링크 + 권한 ───
+
+var driveGroupLinkSettingCmd = &cobra.Command{
+	Use:   "link-setting <groupId>",
+	Short: "그룹 폴더 링크 설정 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewGroupFolderService(client).GetLinkSetting(args[0])
+		})
+	},
+}
+
+var driveGroupLinkCmd = &cobra.Command{
+	Use:   "link",
+	Short: "그룹 파일 링크 관리",
+}
+
+var driveGroupLinkGetCmd = &cobra.Command{
+	Use:   "get <groupId> <fileId>",
+	Short: "그룹 파일 링크 조회",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewGroupFolderService(client).GetLink(args[0], args[1])
+		})
+	},
+}
+
+var driveGroupLinkCreateCmd = &cobra.Command{
+	Use:   "create <groupId> <fileId>",
+	Short: "그룹 파일 링크 생성",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewGroupFolderService(client).CreateLink(args[0], args[1], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveGroupLinkUpdateCmd = &cobra.Command{
+	Use:   "update <groupId> <fileId>",
+	Short: "그룹 파일 링크 수정",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewGroupFolderService(client).PatchLink(args[0], args[1], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveGroupLinkDeleteCmd = &cobra.Command{
+	Use:   "delete <groupId> <fileId>",
+	Short: "그룹 파일 링크 삭제",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewGroupFolderService(client).DeleteLink(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveGroupPermissionCmd = &cobra.Command{
+	Use:   "permission",
+	Short: "그룹 파일 권한 관리",
+}
+
+var driveGroupPermissionListCmd = &cobra.Command{
+	Use:   "list <groupId> <fileId>",
+	Short: "그룹 파일 권한 목록 조회",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewGroupFolderService(client).ListPermissions(args[0], args[1])
+		})
+	},
+}
+
+var driveGroupPermissionCreateCmd = &cobra.Command{
+	Use:   "create <groupId> <fileId>",
+	Short: "그룹 파일 권한 생성",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewGroupFolderService(client).CreatePermission(args[0], args[1], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveGroupPermissionGetCmd = &cobra.Command{
+	Use:   "get <groupId> <fileId> <permissionId>",
+	Short: "그룹 파일 권한 상세 조회",
+	Args:  cobra.ExactArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewGroupFolderService(client).GetPermission(args[0], args[1], args[2])
+		})
+	},
+}
+
+var driveGroupPermissionUpdateCmd = &cobra.Command{
+	Use:   "update <groupId> <fileId> <permissionId>",
+	Short: "그룹 파일 권한 수정",
+	Args:  cobra.ExactArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewGroupFolderService(client).PatchPermission(args[0], args[1], args[2], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveGroupPermissionDeleteCmd = &cobra.Command{
+	Use:   "delete <groupId> <fileId> <permissionId>",
+	Short: "그룹 파일 권한 삭제",
+	Args:  cobra.ExactArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewGroupFolderService(client).DeletePermission(args[0], args[1], args[2])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveGroupPermissionDeleteAllCmd = &cobra.Command{
+	Use:   "delete-all <groupId> <fileId>",
+	Short: "그룹 파일 권한 전체 삭제",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewGroupFolderService(client).DeleteAllPermissions(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
 // ─── SharedFolder ───
 
 var driveSharedFolderCmd = &cobra.Command{
@@ -908,11 +1507,21 @@ func init() {
 		c.Flags().String("user-id", "", "사용자 ID (OAuth: me 허용)")
 	}
 
-	// --json flag for commands that need JSON body
+	// --json flag for MyDrive commands that need JSON body
 	for _, c := range []*cobra.Command{
 		driveCopyCmd, driveRenameCmd, driveMoveCmd,
 		driveLinkCreateCmd, driveLinkUpdateCmd,
 		driveShareCreateCmd, driveShareUpdateCmd,
+	} {
+		c.Flags().String("json", "", "JSON 요청 본문 (- 이면 stdin)")
+	}
+
+	// --json flag for GroupFolder commands
+	for _, c := range []*cobra.Command{
+		driveGroupMkdirCmd,
+		driveGroupCopyCmd, driveGroupRenameCmd, driveGroupMoveCmd,
+		driveGroupLinkCreateCmd, driveGroupLinkUpdateCmd,
+		driveGroupPermissionCreateCmd, driveGroupPermissionUpdateCmd,
 	} {
 		c.Flags().String("json", "", "JSON 요청 본문 (- 이면 stdin)")
 	}
@@ -924,6 +1533,8 @@ func init() {
 		driveGroupListCmd,
 		driveSharedFolderListCmd, driveSharedFolderFilesCmd,
 		driveRevisionListCmd, driveShareListSubFoldersCmd,
+		// Task 5-6: Group revision + trash list
+		driveGroupRevisionListCmd, driveGroupTrashListCmd,
 	} {
 		c.Flags().String("cursor", "", "페이지네이션 커서")
 		c.Flags().Int("count", 0, "페이지 크기")
@@ -942,6 +1553,10 @@ func init() {
 	driveUploadCmd.Flags().String("folder", "", "업로드 대상 폴더 ID")
 	driveMkdirCmd.Flags().String("name", "", "폴더 이름 (필수)")
 	driveMkdirCmd.Flags().String("parent", "", "상위 폴더 ID")
+
+	// GroupFolder mkdir/upload flags
+	driveGroupMkdirCmd.Flags().String("parent", "", "상위 폴더 ID")
+	driveGroupUploadCmd.Flags().String("file", "", "업로드할 파일 경로 (필수)")
 
 	driveCmd.AddCommand(driveInfoCmd, driveListCmd, driveGetCmd, driveDownloadCmd,
 		driveUploadCmd, driveMkdirCmd, driveDeleteCmd, driveTrashListCmd, driveTrashRestoreCmd)
@@ -969,7 +1584,28 @@ func init() {
 		driveSharedListCmd, driveSharedGetCmd, driveSharedDownloadCmd, driveSharedUploadCmd)
 	driveCmd.AddCommand(driveSharedCmd)
 
+	// GroupFolder: existing + Task 5-4 ~ 5-7
 	driveGroupCmd.AddCommand(driveGroupGetFolderCmd, driveGroupListCmd, driveGroupGetCmd)
+	driveGroupCmd.AddCommand(driveGroupCreateFolderCmd, driveGroupDeleteFolderCmd,
+		driveGroupMkdirCmd, driveGroupDeleteCmd, driveGroupUploadCmd, driveGroupDownloadCmd)
+	driveGroupCmd.AddCommand(driveGroupCopyCmd, driveGroupRenameCmd, driveGroupMoveCmd,
+		driveGroupProtectCmd, driveGroupUnprotectCmd, driveGroupLockCmd, driveGroupUnlockCmd)
+
+	driveGroupRevisionCmd.AddCommand(driveGroupRevisionListCmd, driveGroupRevisionGetCmd,
+		driveGroupRevisionRestoreCmd, driveGroupRevisionDownloadCmd)
+	driveGroupCmd.AddCommand(driveGroupRevisionCmd)
+	driveGroupCmd.AddCommand(driveGroupTrashListCmd, driveGroupTrashRestoreCmd, driveGroupTrashDeleteCmd)
+
+	driveGroupCmd.AddCommand(driveGroupLinkSettingCmd)
+	driveGroupLinkCmd.AddCommand(driveGroupLinkGetCmd, driveGroupLinkCreateCmd,
+		driveGroupLinkUpdateCmd, driveGroupLinkDeleteCmd)
+	driveGroupCmd.AddCommand(driveGroupLinkCmd)
+
+	driveGroupPermissionCmd.AddCommand(driveGroupPermissionListCmd, driveGroupPermissionCreateCmd,
+		driveGroupPermissionGetCmd, driveGroupPermissionUpdateCmd,
+		driveGroupPermissionDeleteCmd, driveGroupPermissionDeleteAllCmd)
+	driveGroupCmd.AddCommand(driveGroupPermissionCmd)
+
 	driveCmd.AddCommand(driveGroupCmd)
 
 	driveSharedFolderCmd.AddCommand(driveSharedFolderListCmd, driveSharedFolderFilesCmd)

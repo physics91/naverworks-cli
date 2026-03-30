@@ -1442,3 +1442,92 @@ func TestSmoke_DriveRevisionGet_MissingArgs(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
+
+// ─── Drive Group (Phase 5 Tasks 5-4 ~ 5-7) Smoke Tests ───
+
+func TestSmoke_DriveGroupHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "drive", "group", "--help")
+	if err != nil {
+		t.Fatalf("drive group --help failed: %v", err)
+	}
+	for _, sub := range []string{
+		// Existing
+		"get-folder", "list", "get",
+		// Task 5-4
+		"create-folder", "delete-folder", "mkdir", "delete", "upload", "download",
+		// Task 5-5
+		"copy", "rename", "move", "protect", "unprotect", "lock", "unlock",
+		// Task 5-6
+		"revision", "trash-list", "trash-restore", "trash-delete",
+		// Task 5-7
+		"link-setting", "link", "permission",
+	} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("drive group --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_DriveGroupRevisionHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "drive", "group", "revision", "--help")
+	if err != nil {
+		t.Fatalf("drive group revision --help failed: %v", err)
+	}
+	for _, sub := range []string{"list", "get", "restore", "download"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("drive group revision --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_DriveGroupLinkHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "drive", "group", "link", "--help")
+	if err != nil {
+		t.Fatalf("drive group link --help failed: %v", err)
+	}
+	for _, sub := range []string{"get", "create", "update", "delete"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("drive group link --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_DriveGroupPermissionHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "drive", "group", "permission", "--help")
+	if err != nil {
+		t.Fatalf("drive group permission --help failed: %v", err)
+	}
+	for _, sub := range []string{"list", "create", "get", "update", "delete", "delete-all"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("drive group permission --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_DriveGroupCopy_MissingJSON(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "drive", "group", "copy", "g1", "f1")
+	if err == nil {
+		t.Fatal("expected error when --json is missing")
+	}
+	if !strings.Contains(err.Error(), "--json 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_DriveGroupRevisionGet_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "drive", "group", "revision", "get", "g1", "f1")
+	if err == nil {
+		t.Fatal("expected error when revisionId arg is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 3 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}

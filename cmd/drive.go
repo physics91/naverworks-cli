@@ -732,9 +732,9 @@ var driveSharedDownloadCmd = &cobra.Command{
 }
 
 var driveSharedUploadCmd = &cobra.Command{
-	Use:   "upload <driveId> <localPath>",
+	Use:   "upload <driveId>",
 	Short: "공유 드라이브 파일 업로드",
-	Args:  cobra.ExactArgs(2),
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, _, _, err := newAPIClient()
 		if err != nil {
@@ -742,24 +742,794 @@ var driveSharedUploadCmd = &cobra.Command{
 		}
 		svc := api.NewSharedDriveService(client)
 
-		localPath := args[1]
+		filePath, _ := cmd.Flags().GetString("file")
+		if filePath == "" {
+			return fmt.Errorf("--file 플래그가 필요합니다")
+		}
 
-		fileName, fileSize, err := statFileForUpload(localPath)
+		fileName, fileSize, err := statFileForUpload(filePath)
 		if err != nil {
 			return err
 		}
 
 		uploadBody := map[string]interface{}{"fileName": fileName}
+		folder, _ := cmd.Flags().GetString("folder")
 
-		resp, err := svc.CreateUploadURL(args[0], uploadBody, fileSize)
+		var resp *api.Response
+		if folder != "" {
+			resp, err = svc.CreateUploadURLInFolder(args[0], folder, uploadBody, fileSize)
+		} else {
+			resp, err = svc.CreateUploadURL(args[0], uploadBody, fileSize)
+		}
 		if err != nil {
 			return err
 		}
 
-		if err := doUploadFromResponse(client, resp.Body, localPath); err != nil {
+		if err := doUploadFromResponse(client, resp.Body, filePath); err != nil {
 			return err
 		}
 		printBody(resp.Body)
+		return nil
+	},
+}
+
+// ─── SharedDrive Task 5-8: 관리 + 파일 보완 ───
+
+var driveSharedCreateDriveCmd = &cobra.Command{
+	Use:   "create-drive",
+	Short: "공유 드라이브 생성",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).CreateDrive(body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedUpdateDriveCmd = &cobra.Command{
+	Use:   "update-drive <driveId>",
+	Short: "공유 드라이브 수정",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).PatchDrive(args[0], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedDeleteDriveCmd = &cobra.Command{
+	Use:   "delete-drive <driveId>",
+	Short: "공유 드라이브 삭제",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).DeleteDrive(args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedMkdirCmd = &cobra.Command{
+	Use:   "mkdir <driveId>",
+	Short: "공유 드라이브 폴더 생성",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		svc := api.NewSharedDriveService(client)
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		parent, _ := cmd.Flags().GetString("parent")
+		var resp *api.Response
+		if parent != "" {
+			resp, err = svc.CreateSubFolder(args[0], parent, body)
+		} else {
+			resp, err = svc.CreateFolderInRoot(args[0], body)
+		}
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedDeleteCmd = &cobra.Command{
+	Use:   "delete <driveId> <fileId>",
+	Short: "공유 드라이브 파일 삭제",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).DeleteFile(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+// ─── SharedDrive Task 5-9: 파일조작 ───
+
+var driveSharedCopyCmd = &cobra.Command{
+	Use:   "copy <driveId> <fileId>",
+	Short: "공유 드라이브 파일 복사",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).CopyFile(args[0], args[1], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedRenameCmd = &cobra.Command{
+	Use:   "rename <driveId> <fileId>",
+	Short: "공유 드라이브 파일 이름 변경",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).RenameFile(args[0], args[1], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedMoveCmd = &cobra.Command{
+	Use:   "move <driveId> <fileId>",
+	Short: "공유 드라이브 파일 이동",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).MoveFile(args[0], args[1], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedProtectCmd = &cobra.Command{
+	Use:   "protect <driveId> <fileId>",
+	Short: "공유 드라이브 파일 보호 설정",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).ProtectFile(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedUnprotectCmd = &cobra.Command{
+	Use:   "unprotect <driveId> <fileId>",
+	Short: "공유 드라이브 파일 보호 해제",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).UnprotectFile(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedLockCmd = &cobra.Command{
+	Use:   "lock <driveId> <fileId>",
+	Short: "공유 드라이브 파일 잠금",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).LockFile(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedUnlockCmd = &cobra.Command{
+	Use:   "unlock <driveId> <fileId>",
+	Short: "공유 드라이브 파일 잠금 해제",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).UnlockFile(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+// ─── SharedDrive Task 5-10: 리비전 + 휴지통 ───
+
+var driveSharedRevisionCmd = &cobra.Command{
+	Use:   "revision",
+	Short: "공유 드라이브 파일 리비전 관리",
+}
+
+var driveSharedRevisionListCmd = &cobra.Command{
+	Use:   "list <driveId> <fileId>",
+	Short: "공유 드라이브 파일 리비전 목록 조회",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewSharedDriveService)
+		if err != nil {
+			return err
+		}
+		cursor, _ := cmd.Flags().GetString("cursor")
+		count, _ := cmd.Flags().GetInt("count")
+		resp, err := svc.ListRevisions(args[0], args[1], cursor, count)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var driveSharedRevisionGetCmd = &cobra.Command{
+	Use:   "get <driveId> <fileId> <revisionId>",
+	Short: "공유 드라이브 파일 리비전 상세 조회",
+	Args:  cobra.ExactArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewSharedDriveService(client).GetRevision(args[0], args[1], args[2])
+		})
+	},
+}
+
+var driveSharedRevisionRestoreCmd = &cobra.Command{
+	Use:   "restore <driveId> <fileId> <revisionId>",
+	Short: "공유 드라이브 파일 리비전 복원",
+	Args:  cobra.ExactArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).RestoreRevision(args[0], args[1], args[2])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedRevisionDownloadCmd = &cobra.Command{
+	Use:   "download <driveId> <fileId> <revisionId>",
+	Short: "공유 드라이브 파일 리비전 다운로드 URL 조회",
+	Args:  cobra.ExactArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewSharedDriveService)
+		if err != nil {
+			return err
+		}
+		downloadURL, err := svc.GetRevisionDownloadURL(args[0], args[1], args[2])
+		if err != nil {
+			return err
+		}
+		printDownloadURL(downloadURL)
+		return nil
+	},
+}
+
+var driveSharedTrashListCmd = &cobra.Command{
+	Use:   "trash-list <driveId>",
+	Short: "공유 드라이브 휴지통 파일 목록 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewSharedDriveService)
+		if err != nil {
+			return err
+		}
+		cursor, _ := cmd.Flags().GetString("cursor")
+		count, _ := cmd.Flags().GetInt("count")
+		resp, err := svc.ListTrashFiles(args[0], cursor, count)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var driveSharedTrashRestoreCmd = &cobra.Command{
+	Use:   "trash-restore <driveId> <fileId>",
+	Short: "공유 드라이브 휴지통 파일 복원",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).RestoreTrashFile(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedTrashDeleteCmd = &cobra.Command{
+	Use:   "trash-delete <driveId> <fileId>",
+	Short: "공유 드라이브 휴지통 파일 영구 삭제",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).DeleteTrashFile(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+// ─── SharedDrive Task 5-11: 링크 + 권한 ───
+
+var driveSharedLinkSettingCmd = &cobra.Command{
+	Use:   "link-setting <driveId>",
+	Short: "공유 드라이브 링크 설정 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewSharedDriveService(client).GetLinkSetting(args[0])
+		})
+	},
+}
+
+var driveSharedLinkCmd = &cobra.Command{
+	Use:   "link",
+	Short: "공유 드라이브 파일 링크 관리",
+}
+
+var driveSharedLinkGetCmd = &cobra.Command{
+	Use:   "get <driveId> <fileId>",
+	Short: "공유 드라이브 파일 링크 조회",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewSharedDriveService(client).GetLink(args[0], args[1])
+		})
+	},
+}
+
+var driveSharedLinkCreateCmd = &cobra.Command{
+	Use:   "create <driveId> <fileId>",
+	Short: "공유 드라이브 파일 링크 생성",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).CreateLink(args[0], args[1], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedLinkUpdateCmd = &cobra.Command{
+	Use:   "update <driveId> <fileId>",
+	Short: "공유 드라이브 파일 링크 수정",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).PatchLink(args[0], args[1], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedLinkDeleteCmd = &cobra.Command{
+	Use:   "delete <driveId> <fileId>",
+	Short: "공유 드라이브 파일 링크 삭제",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).DeleteLink(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+// Drive-level permissions
+
+var driveSharedPermissionCmd = &cobra.Command{
+	Use:   "permission",
+	Short: "공유 드라이브 권한 관리",
+}
+
+var driveSharedPermissionListCmd = &cobra.Command{
+	Use:   "list <driveId>",
+	Short: "공유 드라이브 권한 목록 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewSharedDriveService(client).ListPermissions(args[0])
+		})
+	},
+}
+
+var driveSharedPermissionCreateCmd = &cobra.Command{
+	Use:   "create <driveId>",
+	Short: "공유 드라이브 권한 생성",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).CreatePermission(args[0], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedPermissionGetCmd = &cobra.Command{
+	Use:   "get <driveId> <permissionId>",
+	Short: "공유 드라이브 권한 상세 조회",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewSharedDriveService(client).GetPermission(args[0], args[1])
+		})
+	},
+}
+
+var driveSharedPermissionUpdateCmd = &cobra.Command{
+	Use:   "update <driveId> <permissionId>",
+	Short: "공유 드라이브 권한 수정",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).PatchPermission(args[0], args[1], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedPermissionDeleteCmd = &cobra.Command{
+	Use:   "delete <driveId> <permissionId>",
+	Short: "공유 드라이브 권한 삭제",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).DeletePermission(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedPermissionDeleteAllCmd = &cobra.Command{
+	Use:   "delete-all <driveId>",
+	Short: "공유 드라이브 권한 전체 삭제",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).DeleteAllPermissions(args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedPermissionEnableCmd = &cobra.Command{
+	Use:   "enable <driveId>",
+	Short: "공유 드라이브 권한 활성화",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).EnablePermissions(args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedPermissionDisableCmd = &cobra.Command{
+	Use:   "disable <driveId>",
+	Short: "공유 드라이브 권한 비활성화",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).DisablePermissions(args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+// File-level permissions
+
+var driveSharedFilePermissionCmd = &cobra.Command{
+	Use:   "file-permission",
+	Short: "공유 드라이브 파일 권한 관리",
+}
+
+var driveSharedFilePermissionListCmd = &cobra.Command{
+	Use:   "list <driveId> <fileId>",
+	Short: "공유 드라이브 파일 권한 목록 조회",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewSharedDriveService(client).ListFilePermissions(args[0], args[1])
+		})
+	},
+}
+
+var driveSharedFilePermissionCreateCmd = &cobra.Command{
+	Use:   "create <driveId> <fileId>",
+	Short: "공유 드라이브 파일 권한 생성",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).CreateFilePermission(args[0], args[1], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedFilePermissionGetCmd = &cobra.Command{
+	Use:   "get <driveId> <fileId> <permissionId>",
+	Short: "공유 드라이브 파일 권한 상세 조회",
+	Args:  cobra.ExactArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+			return api.NewSharedDriveService(client).GetFilePermission(args[0], args[1], args[2])
+		})
+	},
+}
+
+var driveSharedFilePermissionUpdateCmd = &cobra.Command{
+	Use:   "update <driveId> <fileId> <permissionId>",
+	Short: "공유 드라이브 파일 권한 수정",
+	Args:  cobra.ExactArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).PatchFilePermission(args[0], args[1], args[2], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedFilePermissionDeleteCmd = &cobra.Command{
+	Use:   "delete <driveId> <fileId> <permissionId>",
+	Short: "공유 드라이브 파일 권한 삭제",
+	Args:  cobra.ExactArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).DeleteFilePermission(args[0], args[1], args[2])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedFilePermissionDeleteAllCmd = &cobra.Command{
+	Use:   "delete-all <driveId> <fileId>",
+	Short: "공유 드라이브 파일 권한 전체 삭제",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).DeleteAllFilePermissions(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedFilePermissionEnableCmd = &cobra.Command{
+	Use:   "enable <driveId> <fileId>",
+	Short: "공유 드라이브 파일 권한 활성화",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).EnableFilePermissions(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveSharedFilePermissionDisableCmd = &cobra.Command{
+	Use:   "disable <driveId> <fileId>",
+	Short: "공유 드라이브 파일 권한 비활성화",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, _, _, err := newAPIClient()
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewSharedDriveService(client).DisableFilePermissions(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
 		return nil
 	},
 }
@@ -1516,6 +2286,17 @@ func init() {
 		c.Flags().String("json", "", "JSON 요청 본문 (- 이면 stdin)")
 	}
 
+	// --json flag for SharedDrive commands
+	for _, c := range []*cobra.Command{
+		driveSharedCreateDriveCmd, driveSharedUpdateDriveCmd, driveSharedMkdirCmd,
+		driveSharedCopyCmd, driveSharedRenameCmd, driveSharedMoveCmd,
+		driveSharedLinkCreateCmd, driveSharedLinkUpdateCmd,
+		driveSharedPermissionCreateCmd, driveSharedPermissionUpdateCmd,
+		driveSharedFilePermissionCreateCmd, driveSharedFilePermissionUpdateCmd,
+	} {
+		c.Flags().String("json", "", "JSON 요청 본문 (- 이면 stdin)")
+	}
+
 	// --json flag for GroupFolder commands
 	for _, c := range []*cobra.Command{
 		driveGroupMkdirCmd,
@@ -1535,6 +2316,8 @@ func init() {
 		driveRevisionListCmd, driveShareListSubFoldersCmd,
 		// Task 5-6: Group revision + trash list
 		driveGroupRevisionListCmd, driveGroupTrashListCmd,
+		// Task 5-10: SharedDrive revision + trash list
+		driveSharedRevisionListCmd, driveSharedTrashListCmd,
 	} {
 		c.Flags().String("cursor", "", "페이지네이션 커서")
 		c.Flags().Int("count", 0, "페이지 크기")
@@ -1553,6 +2336,11 @@ func init() {
 	driveUploadCmd.Flags().String("folder", "", "업로드 대상 폴더 ID")
 	driveMkdirCmd.Flags().String("name", "", "폴더 이름 (필수)")
 	driveMkdirCmd.Flags().String("parent", "", "상위 폴더 ID")
+
+	// SharedDrive mkdir/upload flags
+	driveSharedMkdirCmd.Flags().String("parent", "", "상위 폴더 ID")
+	driveSharedUploadCmd.Flags().String("file", "", "업로드할 파일 경로 (필수)")
+	driveSharedUploadCmd.Flags().String("folder", "", "업로드 대상 폴더 ID")
 
 	// GroupFolder mkdir/upload flags
 	driveGroupMkdirCmd.Flags().String("parent", "", "상위 폴더 ID")
@@ -1582,6 +2370,39 @@ func init() {
 
 	driveSharedCmd.AddCommand(driveSharedListDrivesCmd, driveSharedGetDriveCmd,
 		driveSharedListCmd, driveSharedGetCmd, driveSharedDownloadCmd, driveSharedUploadCmd)
+
+	// Task 5-8: SharedDrive 관리 + 파일 보완
+	driveSharedCmd.AddCommand(driveSharedCreateDriveCmd, driveSharedUpdateDriveCmd, driveSharedDeleteDriveCmd,
+		driveSharedMkdirCmd, driveSharedDeleteCmd)
+
+	// Task 5-9: SharedDrive 파일조작
+	driveSharedCmd.AddCommand(driveSharedCopyCmd, driveSharedRenameCmd, driveSharedMoveCmd,
+		driveSharedProtectCmd, driveSharedUnprotectCmd, driveSharedLockCmd, driveSharedUnlockCmd)
+
+	// Task 5-10: SharedDrive 리비전 + 휴지통
+	driveSharedRevisionCmd.AddCommand(driveSharedRevisionListCmd, driveSharedRevisionGetCmd,
+		driveSharedRevisionRestoreCmd, driveSharedRevisionDownloadCmd)
+	driveSharedCmd.AddCommand(driveSharedRevisionCmd)
+	driveSharedCmd.AddCommand(driveSharedTrashListCmd, driveSharedTrashRestoreCmd, driveSharedTrashDeleteCmd)
+
+	// Task 5-11: SharedDrive 링크 + 권한
+	driveSharedCmd.AddCommand(driveSharedLinkSettingCmd)
+	driveSharedLinkCmd.AddCommand(driveSharedLinkGetCmd, driveSharedLinkCreateCmd,
+		driveSharedLinkUpdateCmd, driveSharedLinkDeleteCmd)
+	driveSharedCmd.AddCommand(driveSharedLinkCmd)
+
+	driveSharedPermissionCmd.AddCommand(driveSharedPermissionListCmd, driveSharedPermissionCreateCmd,
+		driveSharedPermissionGetCmd, driveSharedPermissionUpdateCmd,
+		driveSharedPermissionDeleteCmd, driveSharedPermissionDeleteAllCmd,
+		driveSharedPermissionEnableCmd, driveSharedPermissionDisableCmd)
+	driveSharedCmd.AddCommand(driveSharedPermissionCmd)
+
+	driveSharedFilePermissionCmd.AddCommand(driveSharedFilePermissionListCmd, driveSharedFilePermissionCreateCmd,
+		driveSharedFilePermissionGetCmd, driveSharedFilePermissionUpdateCmd,
+		driveSharedFilePermissionDeleteCmd, driveSharedFilePermissionDeleteAllCmd,
+		driveSharedFilePermissionEnableCmd, driveSharedFilePermissionDisableCmd)
+	driveSharedCmd.AddCommand(driveSharedFilePermissionCmd)
+
 	driveCmd.AddCommand(driveSharedCmd)
 
 	// GroupFolder: existing + Task 5-4 ~ 5-7

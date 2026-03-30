@@ -628,6 +628,50 @@ func TestSmoke_ContactTagHelp(t *testing.T) {
 	}
 }
 
+// ─── Note Smoke Tests ───
+
+func TestSmoke_NoteHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "note", "--help")
+	if err != nil {
+		t.Fatalf("note --help failed: %v", err)
+	}
+	for _, sub := range []string{
+		"create", "delete", "list-posts", "get-post",
+		"create-post", "update-post", "delete-post",
+		"patch-post",
+		"create-attachment", "list-attachments", "get-attachment", "delete-attachment",
+	} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("note --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_NotePatchPost_MissingJSON(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "note", "patch-post", "g1", "p1")
+	if err == nil {
+		t.Fatal("expected error when --json is missing")
+	}
+	if !strings.Contains(err.Error(), "--json 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_NoteCreateAttachment_MissingFile(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "note", "create-attachment", "g1", "p1")
+	if err == nil {
+		t.Fatal("expected error when --file is missing")
+	}
+	if !strings.Contains(err.Error(), "--file 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
 func TestSmoke_ContactFullUpdate_MissingJSON(t *testing.T) {
 	tmpDir := setupTestEnv(t)
 	writeTestConfig(t, tmpDir)

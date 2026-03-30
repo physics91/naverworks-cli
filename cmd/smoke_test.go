@@ -730,6 +730,141 @@ func TestSmoke_AttendanceDeleteAbsence_MissingArgs(t *testing.T) {
 	}
 }
 
+// ─── HR Smoke Tests ───
+
+func TestSmoke_HRHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "hr", "--help")
+	if err != nil {
+		t.Fatalf("hr --help failed: %v", err)
+	}
+	for _, sub := range []string{
+		"list-extension-properties", "create-extension-property", "get-extension-property",
+		"update-extension-property", "delete-extension-property",
+		"get-user-properties", "get-user-property", "update-user-property",
+		"list-leave-types", "create-leave-of-absence", "get-leave-of-absence",
+		"update-leave-of-absence", "delete-leave-of-absence", "list-on-leave",
+	} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("hr --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_HRCreateExtensionProperty_MissingJSON(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "hr", "create-extension-property")
+	if err == nil {
+		t.Fatal("expected error when --json is missing")
+	}
+	if !strings.Contains(err.Error(), "--json 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_HRGetUserProperty_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "hr", "get-user-property", "user1")
+	if err == nil {
+		t.Fatal("expected error when second arg is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 2 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+// ─── Audit Smoke Tests ───
+
+func TestSmoke_AuditHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "audit", "--help")
+	if err != nil {
+		t.Fatalf("audit --help failed: %v", err)
+	}
+	for _, sub := range []string{
+		"download-logs", "list-policy-groups",
+		"create-policy-group", "get-policy-group", "update-policy-group", "delete-policy-group",
+		"add-policy-members", "list-policy-members", "remove-policy-member",
+	} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("audit --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_AuditRemovePolicyMember_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "audit", "remove-policy-member", "pg1")
+	if err == nil {
+		t.Fatal("expected error when userId arg is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 2 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+// ─── Approval Smoke Tests ───
+
+func TestSmoke_ApprovalHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "approval", "--help")
+	if err != nil {
+		t.Fatalf("approval --help failed: %v", err)
+	}
+	for _, sub := range []string{
+		"list", "list-all", "get", "list-categories", "get-category", "list-forms",
+		"create-category", "update-category", "delete-category",
+		"create-document", "create-imported-document", "create-document-link",
+		"get-form", "upload-attachment", "upload-imported-attachment",
+		"linkage-code", "linkage-code-item",
+	} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("approval --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_ApprovalLinkageCodeHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "approval", "linkage-code", "--help")
+	if err != nil {
+		t.Fatalf("approval linkage-code --help failed: %v", err)
+	}
+	for _, sub := range []string{"list", "get", "create", "update"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("approval linkage-code --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_ApprovalLinkageCodeItemHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "approval", "linkage-code-item", "--help")
+	if err != nil {
+		t.Fatalf("approval linkage-code-item --help failed: %v", err)
+	}
+	for _, sub := range []string{"list", "get", "create", "update", "delete"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("approval linkage-code-item --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_ApprovalUploadAttachment_MissingFile(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "approval", "upload-attachment", "--user-id", "testuser")
+	if err == nil {
+		t.Fatal("expected error when --file is missing")
+	}
+	if !strings.Contains(err.Error(), "--file 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
 func TestSmoke_ContactFullUpdate_MissingJSON(t *testing.T) {
 	tmpDir := setupTestEnv(t)
 	writeTestConfig(t, tmpDir)

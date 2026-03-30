@@ -13,6 +13,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// containsCommand checks if helpOutput contains cmdName as an actual Cobra
+// subcommand (indented with leading whitespace followed by the command name
+// and a space or newline). This avoids false positives when a short name
+// like "list" matches inside longer names like "list-members".
+func containsCommand(helpOutput, cmdName string) bool {
+	return strings.Contains(helpOutput, "  "+cmdName+" ") ||
+		strings.Contains(helpOutput, "  "+cmdName+"\n") ||
+		strings.Contains(helpOutput, "\t"+cmdName+" ") ||
+		strings.Contains(helpOutput, "\t"+cmdName+"\n")
+}
+
 func captureStdout(t *testing.T, fn func()) string {
 	t.Helper()
 	oldStdout := os.Stdout
@@ -182,9 +193,15 @@ func TestSmoke_BotHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("bot --help failed: %v", err)
 	}
+	// Short ambiguous names — use containsCommand for exact matching
+	for _, sub := range []string{"list", "get", "create", "update", "patch", "delete", "send"} {
+		if !containsCommand(out, sub) {
+			t.Errorf("bot --help missing subcommand %q", sub)
+		}
+	}
+	// Longer unique names — strings.Contains is fine
 	for _, sub := range []string{
-		"list", "get", "create", "update", "patch", "delete",
-		"regenerate-secret", "send",
+		"regenerate-secret",
 		"create-attachment", "get-attachment",
 		"get-channel", "channel-members", "create-channel", "leave-channel",
 		"domain", "persistent-menu", "richmenu",
@@ -201,10 +218,12 @@ func TestSmoke_BotDomainHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("bot domain --help failed: %v", err)
 	}
-	for _, sub := range []string{
-		"register", "list", "update", "patch", "delete",
-		"add-members", "list-members", "remove-member",
-	} {
+	for _, sub := range []string{"register", "list", "update", "patch", "delete"} {
+		if !containsCommand(out, sub) {
+			t.Errorf("bot domain --help missing subcommand %q", sub)
+		}
+	}
+	for _, sub := range []string{"add-members", "list-members", "remove-member"} {
 		if !strings.Contains(out, sub) {
 			t.Errorf("bot domain --help missing subcommand %q", sub)
 		}
@@ -218,7 +237,7 @@ func TestSmoke_BotPersistentMenuHelp(t *testing.T) {
 		t.Fatalf("bot persistent-menu --help failed: %v", err)
 	}
 	for _, sub := range []string{"set", "get", "delete"} {
-		if !strings.Contains(out, sub) {
+		if !containsCommand(out, sub) {
 			t.Errorf("bot persistent-menu --help missing subcommand %q", sub)
 		}
 	}
@@ -230,8 +249,12 @@ func TestSmoke_BotRichMenuHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("bot richmenu --help failed: %v", err)
 	}
+	for _, sub := range []string{"create", "list", "get", "delete"} {
+		if !containsCommand(out, sub) {
+			t.Errorf("bot richmenu --help missing subcommand %q", sub)
+		}
+	}
 	for _, sub := range []string{
-		"create", "list", "get", "delete",
 		"set-image", "get-image",
 		"set-user", "get-user", "delete-user",
 		"set-default", "get-default", "delete-default",
@@ -476,6 +499,7 @@ func TestSmoke_CalendarDefaultHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("calendar default --help failed: %v", err)
 	}
+	// All names here are hyphenated and unique — strings.Contains is fine
 	for _, sub := range []string{"list-events", "get-event", "create-event", "update-event", "delete-event"} {
 		if !strings.Contains(out, sub) {
 			t.Errorf("calendar default --help missing subcommand %q", sub)
@@ -489,8 +513,13 @@ func TestSmoke_CalendarHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("calendar --help failed: %v", err)
 	}
+	for _, sub := range []string{"default"} {
+		if !containsCommand(out, sub) {
+			t.Errorf("calendar --help missing subcommand %q", sub)
+		}
+	}
 	for _, sub := range []string{"create-calendar", "get-calendar", "update-calendar", "delete-calendar",
-		"get-personal", "update-personal", "remove-user", "update-event", "delete-event", "default"} {
+		"get-personal", "update-personal", "remove-user", "update-event", "delete-event"} {
 		if !strings.Contains(out, sub) {
 			t.Errorf("calendar --help missing subcommand %q", sub)
 		}
@@ -534,8 +563,12 @@ func TestSmoke_BoardHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("board --help failed: %v", err)
 	}
+	for _, sub := range []string{"create", "update", "delete"} {
+		if !containsCommand(out, sub) {
+			t.Errorf("board --help missing subcommand %q", sub)
+		}
+	}
 	for _, sub := range []string{
-		"create", "update", "delete",
 		"list-readers", "list-recent", "list-my", "list-must",
 		"create-attachment", "list-attachments", "get-attachment", "delete-attachment",
 		"create-comment", "get-comment", "update-comment", "delete-comment",
@@ -603,9 +636,14 @@ func TestSmoke_MailHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mail --help failed: %v", err)
 	}
+	for _, sub := range []string{"send", "get", "delete", "list", "update"} {
+		if !containsCommand(out, sub) {
+			t.Errorf("mail --help missing subcommand %q", sub)
+		}
+	}
 	for _, sub := range []string{
-		"send", "get", "delete", "list-folders", "get-folder", "list",
-		"update", "unread-count", "get-attachment", "list-favorite-folders",
+		"list-folders", "get-folder",
+		"unread-count", "get-attachment", "list-favorite-folders",
 		"create-folder", "update-folder", "delete-folder",
 		"filter", "migration", "forwarding",
 	} {
@@ -622,7 +660,7 @@ func TestSmoke_MailFilterHelp(t *testing.T) {
 		t.Fatalf("mail filter --help failed: %v", err)
 	}
 	for _, sub := range []string{"list", "get", "create", "delete"} {
-		if !strings.Contains(out, sub) {
+		if !containsCommand(out, sub) {
 			t.Errorf("mail filter --help missing subcommand %q", sub)
 		}
 	}
@@ -673,10 +711,14 @@ func TestSmoke_TaskHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("task --help failed: %v", err)
 	}
+	for _, sub := range []string{"list", "get", "create", "update", "delete", "move", "complete", "incomplete"} {
+		if !containsCommand(out, sub) {
+			t.Errorf("task --help missing subcommand %q", sub)
+		}
+	}
 	for _, sub := range []string{
-		"list", "get", "create", "update", "delete", "list-categories",
-		"create-category", "get-category", "update-category", "delete-category",
-		"move", "complete", "incomplete", "complete-assignee", "incomplete-assignee",
+		"list-categories", "create-category", "get-category", "update-category", "delete-category",
+		"complete-assignee", "incomplete-assignee",
 	} {
 		if !strings.Contains(out, sub) {
 			t.Errorf("task --help missing subcommand %q", sub)
@@ -728,11 +770,16 @@ func TestSmoke_ContactHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("contact --help failed: %v", err)
 	}
+	for _, sub := range []string{"list", "get", "create", "update", "delete", "tag"} {
+		if !containsCommand(out, sub) {
+			t.Errorf("contact --help missing subcommand %q", sub)
+		}
+	}
 	for _, sub := range []string{
-		"list", "list-user", "get", "create", "update", "full-update", "delete", "force-delete",
+		"list-user", "full-update", "force-delete",
 		"upload-photo", "get-photo", "delete-photo",
 		"list-tags", "list-user-tags",
-		"custom-property", "tag",
+		"custom-property",
 	} {
 		if !strings.Contains(out, sub) {
 			t.Errorf("contact --help missing subcommand %q", sub)
@@ -747,7 +794,7 @@ func TestSmoke_ContactCustomPropertyHelp(t *testing.T) {
 		t.Fatalf("contact custom-property --help failed: %v", err)
 	}
 	for _, sub := range []string{"list", "get", "create", "update", "delete"} {
-		if !strings.Contains(out, sub) {
+		if !containsCommand(out, sub) {
 			t.Errorf("contact custom-property --help missing subcommand %q", sub)
 		}
 	}
@@ -759,7 +806,12 @@ func TestSmoke_ContactTagHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("contact tag --help failed: %v", err)
 	}
-	for _, sub := range []string{"create", "get", "update", "patch", "delete", "create-user-tags"} {
+	for _, sub := range []string{"create", "get", "update", "patch", "delete"} {
+		if !containsCommand(out, sub) {
+			t.Errorf("contact tag --help missing subcommand %q", sub)
+		}
+	}
+	for _, sub := range []string{"create-user-tags"} {
 		if !strings.Contains(out, sub) {
 			t.Errorf("contact tag --help missing subcommand %q", sub)
 		}
@@ -774,8 +826,13 @@ func TestSmoke_NoteHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("note --help failed: %v", err)
 	}
+	for _, sub := range []string{"create", "delete"} {
+		if !containsCommand(out, sub) {
+			t.Errorf("note --help missing subcommand %q", sub)
+		}
+	}
 	for _, sub := range []string{
-		"create", "delete", "list-posts", "get-post",
+		"list-posts", "get-post",
 		"create-post", "update-post", "delete-post",
 		"patch-post",
 		"create-attachment", "list-attachments", "get-attachment", "delete-attachment",
@@ -818,8 +875,13 @@ func TestSmoke_AttendanceHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("attendance --help failed: %v", err)
 	}
+	for _, sub := range []string{"status"} {
+		if !containsCommand(out, sub) {
+			t.Errorf("attendance --help missing subcommand %q", sub)
+		}
+	}
 	for _, sub := range []string{
-		"status", "clock-in", "clock-out",
+		"clock-in", "clock-out",
 		"list-absences", "list-annual-leaves",
 		"create-timecard", "list-timecards", "get-timecard", "update-timecard",
 		"adjust-annual-leave",
@@ -952,8 +1014,13 @@ func TestSmoke_ApprovalHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("approval --help failed: %v", err)
 	}
+	for _, sub := range []string{"list", "get"} {
+		if !containsCommand(out, sub) {
+			t.Errorf("approval --help missing subcommand %q", sub)
+		}
+	}
 	for _, sub := range []string{
-		"list", "list-all", "get", "list-categories", "get-category", "list-forms",
+		"list-all", "list-categories", "get-category", "list-forms",
 		"create-category", "update-category", "delete-category",
 		"create-document", "create-imported-document", "create-document-link",
 		"get-form", "upload-attachment", "upload-imported-attachment",
@@ -972,7 +1039,7 @@ func TestSmoke_ApprovalLinkageCodeHelp(t *testing.T) {
 		t.Fatalf("approval linkage-code --help failed: %v", err)
 	}
 	for _, sub := range []string{"list", "get", "create", "update"} {
-		if !strings.Contains(out, sub) {
+		if !containsCommand(out, sub) {
 			t.Errorf("approval linkage-code --help missing subcommand %q", sub)
 		}
 	}
@@ -985,7 +1052,7 @@ func TestSmoke_ApprovalLinkageCodeItemHelp(t *testing.T) {
 		t.Fatalf("approval linkage-code-item --help failed: %v", err)
 	}
 	for _, sub := range []string{"list", "get", "create", "update", "delete"} {
-		if !strings.Contains(out, sub) {
+		if !containsCommand(out, sub) {
 			t.Errorf("approval linkage-code-item --help missing subcommand %q", sub)
 		}
 	}
@@ -1089,7 +1156,7 @@ func TestSmoke_DirectoryProfileStatusHelp(t *testing.T) {
 		t.Fatalf("directory profile-status --help failed: %v", err)
 	}
 	for _, sub := range []string{"list", "get", "create", "update", "patch", "delete"} {
-		if !strings.Contains(out, sub) {
+		if !containsCommand(out, sub) {
 			t.Errorf("directory profile-status --help missing subcommand %q", sub)
 		}
 	}
@@ -1102,7 +1169,7 @@ func TestSmoke_DirectoryUserCustomPropertyHelp(t *testing.T) {
 		t.Fatalf("directory user-custom-property --help failed: %v", err)
 	}
 	for _, sub := range []string{"list", "get", "create", "update", "delete"} {
-		if !strings.Contains(out, sub) {
+		if !containsCommand(out, sub) {
 			t.Errorf("directory user-custom-property --help missing subcommand %q", sub)
 		}
 	}
@@ -1115,7 +1182,7 @@ func TestSmoke_DirectoryOrgUnitAccessRestrictHelp(t *testing.T) {
 		t.Fatalf("directory orgunit-access-restrict --help failed: %v", err)
 	}
 	for _, sub := range []string{"create", "get", "update", "delete"} {
-		if !strings.Contains(out, sub) {
+		if !containsCommand(out, sub) {
 			t.Errorf("directory orgunit-access-restrict --help missing subcommand %q", sub)
 		}
 	}
@@ -1248,7 +1315,7 @@ func TestSmoke_DirectoryEmploymentTypeAccessRestrictHelp(t *testing.T) {
 		t.Fatalf("directory employment-type-access-restrict --help failed: %v", err)
 	}
 	for _, sub := range []string{"create", "get", "update", "delete"} {
-		if !strings.Contains(out, sub) {
+		if !containsCommand(out, sub) {
 			t.Errorf("directory employment-type-access-restrict --help missing subcommand %q", sub)
 		}
 	}
@@ -1261,7 +1328,7 @@ func TestSmoke_DirectoryUserTypeAccessRestrictHelp(t *testing.T) {
 		t.Fatalf("directory user-type-access-restrict --help failed: %v", err)
 	}
 	for _, sub := range []string{"create", "get", "update", "delete"} {
-		if !strings.Contains(out, sub) {
+		if !containsCommand(out, sub) {
 			t.Errorf("directory user-type-access-restrict --help missing subcommand %q", sub)
 		}
 	}
@@ -1274,7 +1341,7 @@ func TestSmoke_DirectoryProfileStatusDefHelp(t *testing.T) {
 		t.Fatalf("directory profile-status-def --help failed: %v", err)
 	}
 	for _, sub := range []string{"list", "get", "create", "update", "patch", "delete", "enable", "disable"} {
-		if !strings.Contains(out, sub) {
+		if !containsCommand(out, sub) {
 			t.Errorf("directory profile-status-def --help missing subcommand %q", sub)
 		}
 	}
@@ -1287,7 +1354,7 @@ func TestSmoke_DirectoryCustomFieldHelp(t *testing.T) {
 		t.Fatalf("directory custom-field --help failed: %v", err)
 	}
 	for _, sub := range []string{"list", "get", "create", "update", "delete"} {
-		if !strings.Contains(out, sub) {
+		if !containsCommand(out, sub) {
 			t.Errorf("directory custom-field --help missing subcommand %q", sub)
 		}
 	}
@@ -1362,17 +1429,17 @@ func TestSmoke_DriveHelp(t *testing.T) {
 		t.Fatalf("drive --help failed: %v", err)
 	}
 	for _, sub := range []string{
-		// Existing
 		"info", "list", "get", "download", "upload", "mkdir", "delete",
-		"trash-list", "trash-restore",
-		// Task 5-1: File operations
 		"copy", "rename", "move", "protect", "unprotect", "lock", "unlock",
-		// Task 5-2: Revisions
-		"revision",
-		// Task 5-3: Trash delete, link, share
-		"trash-delete", "link-setting", "link", "share",
-		// Existing groups
-		"shared", "group", "shared-folder",
+		"revision", "link", "share", "shared", "group",
+	} {
+		if !containsCommand(out, sub) {
+			t.Errorf("drive --help missing subcommand %q", sub)
+		}
+	}
+	for _, sub := range []string{
+		"trash-list", "trash-restore", "trash-delete",
+		"link-setting", "shared-folder",
 	} {
 		if !strings.Contains(out, sub) {
 			t.Errorf("drive --help missing subcommand %q", sub)
@@ -1387,7 +1454,7 @@ func TestSmoke_DriveRevisionHelp(t *testing.T) {
 		t.Fatalf("drive revision --help failed: %v", err)
 	}
 	for _, sub := range []string{"list", "get", "restore", "download"} {
-		if !strings.Contains(out, sub) {
+		if !containsCommand(out, sub) {
 			t.Errorf("drive revision --help missing subcommand %q", sub)
 		}
 	}
@@ -1400,7 +1467,7 @@ func TestSmoke_DriveLinkHelp(t *testing.T) {
 		t.Fatalf("drive link --help failed: %v", err)
 	}
 	for _, sub := range []string{"get", "create", "update", "delete"} {
-		if !strings.Contains(out, sub) {
+		if !containsCommand(out, sub) {
 			t.Errorf("drive link --help missing subcommand %q", sub)
 		}
 	}
@@ -1412,7 +1479,12 @@ func TestSmoke_DriveShareHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("drive share --help failed: %v", err)
 	}
-	for _, sub := range []string{"get", "create", "update", "delete", "list-sub-folders"} {
+	for _, sub := range []string{"get", "create", "update", "delete"} {
+		if !containsCommand(out, sub) {
+			t.Errorf("drive share --help missing subcommand %q", sub)
+		}
+	}
+	for _, sub := range []string{"list-sub-folders"} {
 		if !strings.Contains(out, sub) {
 			t.Errorf("drive share --help missing subcommand %q", sub)
 		}
@@ -1452,16 +1524,18 @@ func TestSmoke_DriveGroupHelp(t *testing.T) {
 		t.Fatalf("drive group --help failed: %v", err)
 	}
 	for _, sub := range []string{
-		// Existing
-		"get-folder", "list", "get",
-		// Task 5-4
-		"create-folder", "delete-folder", "mkdir", "delete", "upload", "download",
-		// Task 5-5
+		"list", "get", "mkdir", "delete", "upload", "download",
 		"copy", "rename", "move", "protect", "unprotect", "lock", "unlock",
-		// Task 5-6
-		"revision", "trash-list", "trash-restore", "trash-delete",
-		// Task 5-7
-		"link-setting", "link", "permission",
+		"revision", "link", "permission",
+	} {
+		if !containsCommand(out, sub) {
+			t.Errorf("drive group --help missing subcommand %q", sub)
+		}
+	}
+	for _, sub := range []string{
+		"get-folder", "create-folder", "delete-folder",
+		"trash-list", "trash-restore", "trash-delete",
+		"link-setting",
 	} {
 		if !strings.Contains(out, sub) {
 			t.Errorf("drive group --help missing subcommand %q", sub)
@@ -1476,7 +1550,7 @@ func TestSmoke_DriveGroupRevisionHelp(t *testing.T) {
 		t.Fatalf("drive group revision --help failed: %v", err)
 	}
 	for _, sub := range []string{"list", "get", "restore", "download"} {
-		if !strings.Contains(out, sub) {
+		if !containsCommand(out, sub) {
 			t.Errorf("drive group revision --help missing subcommand %q", sub)
 		}
 	}
@@ -1489,7 +1563,7 @@ func TestSmoke_DriveGroupLinkHelp(t *testing.T) {
 		t.Fatalf("drive group link --help failed: %v", err)
 	}
 	for _, sub := range []string{"get", "create", "update", "delete"} {
-		if !strings.Contains(out, sub) {
+		if !containsCommand(out, sub) {
 			t.Errorf("drive group link --help missing subcommand %q", sub)
 		}
 	}
@@ -1501,7 +1575,12 @@ func TestSmoke_DriveGroupPermissionHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("drive group permission --help failed: %v", err)
 	}
-	for _, sub := range []string{"list", "create", "get", "update", "delete", "delete-all"} {
+	for _, sub := range []string{"list", "create", "get", "update", "delete"} {
+		if !containsCommand(out, sub) {
+			t.Errorf("drive group permission --help missing subcommand %q", sub)
+		}
+	}
+	for _, sub := range []string{"delete-all"} {
 		if !strings.Contains(out, sub) {
 			t.Errorf("drive group permission --help missing subcommand %q", sub)
 		}
@@ -1541,16 +1620,19 @@ func TestSmoke_DriveSharedHelp(t *testing.T) {
 		t.Fatalf("drive shared --help failed: %v", err)
 	}
 	for _, sub := range []string{
-		// Existing
-		"list-drives", "get-drive", "list", "get", "download", "upload",
-		// Task 5-8
-		"create-drive", "update-drive", "delete-drive", "mkdir", "delete",
-		// Task 5-9
+		"list", "get", "download", "upload", "mkdir", "delete",
 		"copy", "rename", "move", "protect", "unprotect", "lock", "unlock",
-		// Task 5-10
-		"revision", "trash-list", "trash-restore", "trash-delete",
-		// Task 5-11
-		"link-setting", "link", "permission", "file-permission",
+		"revision", "link", "permission",
+	} {
+		if !containsCommand(out, sub) {
+			t.Errorf("drive shared --help missing subcommand %q", sub)
+		}
+	}
+	for _, sub := range []string{
+		"list-drives", "get-drive",
+		"create-drive", "update-drive", "delete-drive",
+		"trash-list", "trash-restore", "trash-delete",
+		"link-setting", "file-permission",
 	} {
 		if !strings.Contains(out, sub) {
 			t.Errorf("drive shared --help missing subcommand %q", sub)
@@ -1565,7 +1647,7 @@ func TestSmoke_DriveSharedRevisionHelp(t *testing.T) {
 		t.Fatalf("drive shared revision --help failed: %v", err)
 	}
 	for _, sub := range []string{"list", "get", "restore", "download"} {
-		if !strings.Contains(out, sub) {
+		if !containsCommand(out, sub) {
 			t.Errorf("drive shared revision --help missing subcommand %q", sub)
 		}
 	}
@@ -1578,7 +1660,7 @@ func TestSmoke_DriveSharedLinkHelp(t *testing.T) {
 		t.Fatalf("drive shared link --help failed: %v", err)
 	}
 	for _, sub := range []string{"get", "create", "update", "delete"} {
-		if !strings.Contains(out, sub) {
+		if !containsCommand(out, sub) {
 			t.Errorf("drive shared link --help missing subcommand %q", sub)
 		}
 	}
@@ -1590,7 +1672,12 @@ func TestSmoke_DriveSharedPermissionHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("drive shared permission --help failed: %v", err)
 	}
-	for _, sub := range []string{"list", "create", "get", "update", "delete", "delete-all", "enable", "disable"} {
+	for _, sub := range []string{"list", "create", "get", "update", "delete", "enable", "disable"} {
+		if !containsCommand(out, sub) {
+			t.Errorf("drive shared permission --help missing subcommand %q", sub)
+		}
+	}
+	for _, sub := range []string{"delete-all"} {
 		if !strings.Contains(out, sub) {
 			t.Errorf("drive shared permission --help missing subcommand %q", sub)
 		}
@@ -1603,7 +1690,12 @@ func TestSmoke_DriveSharedFilePermissionHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("drive shared file-permission --help failed: %v", err)
 	}
-	for _, sub := range []string{"list", "create", "get", "update", "delete", "delete-all", "enable", "disable"} {
+	for _, sub := range []string{"list", "create", "get", "update", "delete", "enable", "disable"} {
+		if !containsCommand(out, sub) {
+			t.Errorf("drive shared file-permission --help missing subcommand %q", sub)
+		}
+	}
+	for _, sub := range []string{"delete-all"} {
 		if !strings.Contains(out, sub) {
 			t.Errorf("drive shared file-permission --help missing subcommand %q", sub)
 		}
@@ -1655,16 +1747,18 @@ func TestSmoke_DriveSharedFolderHelp(t *testing.T) {
 		t.Fatalf("drive shared-folder --help failed: %v", err)
 	}
 	for _, sub := range []string{
-		// Existing
-		"list", "files",
-		// Task 5-12
-		"get", "leave", "list-members", "list-files", "get-file",
+		"list", "files", "get", "leave",
 		"mkdir", "delete", "upload", "download",
-		// Task 5-13
 		"copy", "rename", "move", "protect", "unprotect", "lock", "unlock",
-		"revision",
-		// Task 5-14
-		"link-setting", "link",
+		"revision", "link",
+	} {
+		if !containsCommand(out, sub) {
+			t.Errorf("drive shared-folder --help missing subcommand %q", sub)
+		}
+	}
+	for _, sub := range []string{
+		"list-members", "list-files", "get-file",
+		"link-setting",
 	} {
 		if !strings.Contains(out, sub) {
 			t.Errorf("drive shared-folder --help missing subcommand %q", sub)
@@ -1679,7 +1773,7 @@ func TestSmoke_DriveSharedFolderRevisionHelp(t *testing.T) {
 		t.Fatalf("drive shared-folder revision --help failed: %v", err)
 	}
 	for _, sub := range []string{"list", "get", "restore", "download"} {
-		if !strings.Contains(out, sub) {
+		if !containsCommand(out, sub) {
 			t.Errorf("drive shared-folder revision --help missing subcommand %q", sub)
 		}
 	}
@@ -1692,7 +1786,7 @@ func TestSmoke_DriveSharedFolderLinkHelp(t *testing.T) {
 		t.Fatalf("drive shared-folder link --help failed: %v", err)
 	}
 	for _, sub := range []string{"get", "create", "update", "delete"} {
-		if !strings.Contains(out, sub) {
+		if !containsCommand(out, sub) {
 			t.Errorf("drive shared-folder link --help missing subcommand %q", sub)
 		}
 	}
@@ -1731,5 +1825,44 @@ func TestSmoke_DriveSharedFolderUpload_MissingFile(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "--file 플래그가 필요합니다") {
 		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+// ─── Flag Branch Path Tests (INFO 3) ───
+
+func TestSmoke_DriveSharedFolderMkdir_WithParent(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "drive", "shared-folder", "mkdir", "sf1", "--parent", "file1", "--json", `{"fileName":"test"}`, "--user-id", "testuser")
+	// Should fail on API call (not logged in), NOT on flag/arg parsing
+	if err != nil && strings.Contains(err.Error(), "unknown flag") {
+		t.Errorf("unexpected flag error: %v", err)
+	}
+}
+
+func TestSmoke_DriveSharedFolderUpload_WithFolder(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "drive", "shared-folder", "upload", "sf1", "--folder", "file1", "--file", "/tmp/test", "--user-id", "testuser")
+	if err != nil && strings.Contains(err.Error(), "unknown flag") {
+		t.Errorf("unexpected flag error: %v", err)
+	}
+}
+
+func TestSmoke_DriveSharedMkdir_WithParent(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "drive", "shared", "mkdir", "driveId1", "--parent", "file1", "--json", `{"fileName":"test"}`)
+	if err != nil && strings.Contains(err.Error(), "unknown flag") {
+		t.Errorf("unexpected flag error: %v", err)
+	}
+}
+
+func TestSmoke_DriveGroupMkdir_WithParent(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "drive", "group", "mkdir", "groupId1", "--parent", "file1", "--json", `{"fileName":"test"}`)
+	if err != nil && strings.Contains(err.Error(), "unknown flag") {
+		t.Errorf("unexpected flag error: %v", err)
 	}
 }

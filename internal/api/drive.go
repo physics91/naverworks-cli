@@ -65,6 +65,104 @@ func (s *DriveService) RestoreTrashFile(userID, fileID string) (*Response, error
 	return s.client.Post(fmt.Sprintf("/users/%s/drive/trash-files/%s/restore", url.PathEscape(userID), url.PathEscape(fileID)), nil)
 }
 
+// MyDrive File Operations
+
+func (s *DriveService) CopyFile(userID, fileID string, body []byte) (*Response, error) {
+	return s.client.Post(fmt.Sprintf("/users/%s/drive/files/%s/copy", url.PathEscape(userID), url.PathEscape(fileID)), body)
+}
+
+func (s *DriveService) RenameFile(userID, fileID string, body []byte) (*Response, error) {
+	return s.client.Post(fmt.Sprintf("/users/%s/drive/files/%s/rename", url.PathEscape(userID), url.PathEscape(fileID)), body)
+}
+
+func (s *DriveService) MoveFile(userID, fileID string, body []byte) (*Response, error) {
+	return s.client.Post(fmt.Sprintf("/users/%s/drive/files/%s/move", url.PathEscape(userID), url.PathEscape(fileID)), body)
+}
+
+func (s *DriveService) ProtectFile(userID, fileID string) (*Response, error) {
+	return s.client.Post(fmt.Sprintf("/users/%s/drive/files/%s/protect", url.PathEscape(userID), url.PathEscape(fileID)), nil)
+}
+
+func (s *DriveService) UnprotectFile(userID, fileID string) (*Response, error) {
+	return s.client.Post(fmt.Sprintf("/users/%s/drive/files/%s/unprotect", url.PathEscape(userID), url.PathEscape(fileID)), nil)
+}
+
+func (s *DriveService) LockFile(userID, fileID string) (*Response, error) {
+	return s.client.Post(fmt.Sprintf("/users/%s/drive/files/%s/lock", url.PathEscape(userID), url.PathEscape(fileID)), nil)
+}
+
+func (s *DriveService) UnlockFile(userID, fileID string) (*Response, error) {
+	return s.client.Post(fmt.Sprintf("/users/%s/drive/files/%s/unlock", url.PathEscape(userID), url.PathEscape(fileID)), nil)
+}
+
+// MyDrive Revisions
+
+func (s *DriveService) ListRevisions(userID, fileID string, cursor string, count int) (*Response, error) {
+	return s.client.Get(fmt.Sprintf("/users/%s/drive/files/%s/revisions", url.PathEscape(userID), url.PathEscape(fileID)) + BuildPaginationQuery(cursor, count))
+}
+
+func (s *DriveService) GetRevision(userID, fileID, revisionID string) (*Response, error) {
+	return s.client.Get(fmt.Sprintf("/users/%s/drive/files/%s/revisions/%s", url.PathEscape(userID), url.PathEscape(fileID), url.PathEscape(revisionID)))
+}
+
+func (s *DriveService) RestoreRevision(userID, fileID, revisionID string) (*Response, error) {
+	return s.client.Post(fmt.Sprintf("/users/%s/drive/files/%s/revisions/%s/restore", url.PathEscape(userID), url.PathEscape(fileID), url.PathEscape(revisionID)), nil)
+}
+
+func (s *DriveService) GetRevisionDownloadURL(userID, fileID, revisionID string) (string, error) {
+	return s.client.GetDownloadURL(fmt.Sprintf("/users/%s/drive/files/%s/revisions/%s/download", url.PathEscape(userID), url.PathEscape(fileID), url.PathEscape(revisionID)))
+}
+
+// MyDrive Trash
+
+func (s *DriveService) DeleteTrashFile(userID, fileID string) (*Response, error) {
+	return s.client.Delete(fmt.Sprintf("/users/%s/drive/trash-files/%s", url.PathEscape(userID), url.PathEscape(fileID)))
+}
+
+// MyDrive Link
+
+func (s *DriveService) GetLinkSetting(userID string) (*Response, error) {
+	return s.client.Get(fmt.Sprintf("/users/%s/drive/link-setting", url.PathEscape(userID)))
+}
+
+func (s *DriveService) GetLink(userID, fileID string) (*Response, error) {
+	return s.client.Get(fmt.Sprintf("/users/%s/drive/files/%s/link", url.PathEscape(userID), url.PathEscape(fileID)))
+}
+
+func (s *DriveService) CreateLink(userID, fileID string, body []byte) (*Response, error) {
+	return s.client.Post(fmt.Sprintf("/users/%s/drive/files/%s/link", url.PathEscape(userID), url.PathEscape(fileID)), body)
+}
+
+func (s *DriveService) PatchLink(userID, fileID string, body []byte) (*Response, error) {
+	return s.client.Patch(fmt.Sprintf("/users/%s/drive/files/%s/link", url.PathEscape(userID), url.PathEscape(fileID)), body)
+}
+
+func (s *DriveService) DeleteLink(userID, fileID string) (*Response, error) {
+	return s.client.Delete(fmt.Sprintf("/users/%s/drive/files/%s/link", url.PathEscape(userID), url.PathEscape(fileID)))
+}
+
+// MyDrive Share
+
+func (s *DriveService) GetShare(userID, fileID string) (*Response, error) {
+	return s.client.Get(fmt.Sprintf("/users/%s/drive/files/%s/share", url.PathEscape(userID), url.PathEscape(fileID)))
+}
+
+func (s *DriveService) CreateShare(userID, fileID string, body []byte) (*Response, error) {
+	return s.client.Post(fmt.Sprintf("/users/%s/drive/files/%s/share", url.PathEscape(userID), url.PathEscape(fileID)), body)
+}
+
+func (s *DriveService) PatchShare(userID, fileID string, body []byte) (*Response, error) {
+	return s.client.Patch(fmt.Sprintf("/users/%s/drive/files/%s/share", url.PathEscape(userID), url.PathEscape(fileID)), body)
+}
+
+func (s *DriveService) DeleteShare(userID, fileID string) (*Response, error) {
+	return s.client.Delete(fmt.Sprintf("/users/%s/drive/files/%s/share", url.PathEscape(userID), url.PathEscape(fileID)))
+}
+
+func (s *DriveService) ListShareSubFolders(userID, fileID string, cursor string, count int) (*Response, error) {
+	return s.client.Get(fmt.Sprintf("/users/%s/drive/files/%s/share-sub-folders", url.PathEscape(userID), url.PathEscape(fileID)) + BuildPaginationQuery(cursor, count))
+}
+
 // SharedFolders
 
 func (s *DriveService) ListSharedFolders(userID string, cursor string, count int) (*Response, error) {

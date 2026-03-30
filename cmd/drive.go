@@ -207,6 +207,458 @@ var driveTrashRestoreCmd = &cobra.Command{
 	},
 }
 
+// ─── MyDrive File Operations ───
+
+var driveCopyCmd = &cobra.Command{
+	Use:   "copy <fileId>",
+	Short: "파일 복사",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewDriveService(client).CopyFile(userID, args[0], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveRenameCmd = &cobra.Command{
+	Use:   "rename <fileId>",
+	Short: "파일 이름 변경",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewDriveService(client).RenameFile(userID, args[0], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveMoveCmd = &cobra.Command{
+	Use:   "move <fileId>",
+	Short: "파일 이동",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewDriveService(client).MoveFile(userID, args[0], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveProtectCmd = &cobra.Command{
+	Use:   "protect <fileId>",
+	Short: "파일 보호 설정",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewDriveService(client).ProtectFile(userID, args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveUnprotectCmd = &cobra.Command{
+	Use:   "unprotect <fileId>",
+	Short: "파일 보호 해제",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewDriveService(client).UnprotectFile(userID, args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveLockCmd = &cobra.Command{
+	Use:   "lock <fileId>",
+	Short: "파일 잠금",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewDriveService(client).LockFile(userID, args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveUnlockCmd = &cobra.Command{
+	Use:   "unlock <fileId>",
+	Short: "파일 잠금 해제",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewDriveService(client).UnlockFile(userID, args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+// ─── MyDrive Revisions ───
+
+var driveRevisionCmd = &cobra.Command{
+	Use:   "revision",
+	Short: "파일 리비전 관리",
+}
+
+var driveRevisionListCmd = &cobra.Command{
+	Use:   "list <fileId>",
+	Short: "리비전 목록 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		cursor, _ := cmd.Flags().GetString("cursor")
+		count, _ := cmd.Flags().GetInt("count")
+		resp, err := api.NewDriveService(client).ListRevisions(userID, args[0], cursor, count)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var driveRevisionGetCmd = &cobra.Command{
+	Use:   "get <fileId> <revisionId>",
+	Short: "리비전 상세 조회",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewDriveService(client).GetRevision(userID, args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var driveRevisionRestoreCmd = &cobra.Command{
+	Use:   "restore <fileId> <revisionId>",
+	Short: "리비전 복원",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewDriveService(client).RestoreRevision(userID, args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveRevisionDownloadCmd = &cobra.Command{
+	Use:   "download <fileId> <revisionId>",
+	Short: "리비전 다운로드 URL 조회",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		downloadURL, err := api.NewDriveService(client).GetRevisionDownloadURL(userID, args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printDownloadURL(downloadURL)
+		return nil
+	},
+}
+
+// ─── MyDrive Trash (additional) ───
+
+var driveTrashDeleteCmd = &cobra.Command{
+	Use:   "trash-delete <fileId>",
+	Short: "휴지통 파일 영구 삭제",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewDriveService(client).DeleteTrashFile(userID, args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+// ─── MyDrive Link ───
+
+var driveLinkCmd = &cobra.Command{
+	Use:   "link",
+	Short: "파일 링크 관리",
+}
+
+var driveLinkSettingCmd = &cobra.Command{
+	Use:   "link-setting",
+	Short: "링크 설정 조회",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewDriveService(client).GetLinkSetting(userID)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var driveLinkGetCmd = &cobra.Command{
+	Use:   "get <fileId>",
+	Short: "파일 링크 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewDriveService(client).GetLink(userID, args[0])
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var driveLinkCreateCmd = &cobra.Command{
+	Use:   "create <fileId>",
+	Short: "파일 링크 생성",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewDriveService(client).CreateLink(userID, args[0], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveLinkUpdateCmd = &cobra.Command{
+	Use:   "update <fileId>",
+	Short: "파일 링크 수정",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewDriveService(client).PatchLink(userID, args[0], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveLinkDeleteCmd = &cobra.Command{
+	Use:   "delete <fileId>",
+	Short: "파일 링크 삭제",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewDriveService(client).DeleteLink(userID, args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+// ─── MyDrive Share ───
+
+var driveShareCmd = &cobra.Command{
+	Use:   "share",
+	Short: "파일 공유 관리",
+}
+
+var driveShareGetCmd = &cobra.Command{
+	Use:   "get <fileId>",
+	Short: "파일 공유 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewDriveService(client).GetShare(userID, args[0])
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
+var driveShareCreateCmd = &cobra.Command{
+	Use:   "create <fileId>",
+	Short: "파일 공유 생성",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewDriveService(client).CreateShare(userID, args[0], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveShareUpdateCmd = &cobra.Command{
+	Use:   "update <fileId>",
+	Short: "파일 공유 수정",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewDriveService(client).PatchShare(userID, args[0], body)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveShareDeleteCmd = &cobra.Command{
+	Use:   "delete <fileId>",
+	Short: "파일 공유 삭제",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := api.NewDriveService(client).DeleteShare(userID, args[0])
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
+var driveShareListSubFoldersCmd = &cobra.Command{
+	Use:   "list-sub-folders <fileId>",
+	Short: "공유 하위 폴더 목록 조회",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		cursor, _ := cmd.Flags().GetString("cursor")
+		count, _ := cmd.Flags().GetInt("count")
+		resp, err := api.NewDriveService(client).ListShareSubFolders(userID, args[0], cursor, count)
+		if err != nil {
+			return err
+		}
+		printBody(resp.Body)
+		return nil
+	},
+}
+
 // ─── SharedDrive ───
 
 var driveSharedCmd = &cobra.Command{
@@ -442,8 +894,27 @@ func init() {
 		driveInfoCmd, driveListCmd, driveGetCmd, driveDownloadCmd,
 		driveUploadCmd, driveMkdirCmd, driveDeleteCmd,
 		driveTrashListCmd, driveTrashRestoreCmd,
+		// Task 5-1: File operations
+		driveCopyCmd, driveRenameCmd, driveMoveCmd,
+		driveProtectCmd, driveUnprotectCmd, driveLockCmd, driveUnlockCmd,
+		// Task 5-2: Revisions
+		driveRevisionListCmd, driveRevisionGetCmd, driveRevisionRestoreCmd, driveRevisionDownloadCmd,
+		// Task 5-3: Trash delete, link-setting, link, share
+		driveTrashDeleteCmd, driveLinkSettingCmd,
+		driveLinkGetCmd, driveLinkCreateCmd, driveLinkUpdateCmd, driveLinkDeleteCmd,
+		driveShareGetCmd, driveShareCreateCmd, driveShareUpdateCmd, driveShareDeleteCmd,
+		driveShareListSubFoldersCmd,
 	} {
 		c.Flags().String("user-id", "", "사용자 ID (OAuth: me 허용)")
+	}
+
+	// --json flag for commands that need JSON body
+	for _, c := range []*cobra.Command{
+		driveCopyCmd, driveRenameCmd, driveMoveCmd,
+		driveLinkCreateCmd, driveLinkUpdateCmd,
+		driveShareCreateCmd, driveShareUpdateCmd,
+	} {
+		c.Flags().String("json", "", "JSON 요청 본문 (- 이면 stdin)")
 	}
 
 	// Pagination flags for all list commands
@@ -452,6 +923,7 @@ func init() {
 		driveSharedListDrivesCmd, driveSharedListCmd,
 		driveGroupListCmd,
 		driveSharedFolderListCmd, driveSharedFolderFilesCmd,
+		driveRevisionListCmd, driveShareListSubFoldersCmd,
 	} {
 		c.Flags().String("cursor", "", "페이지네이션 커서")
 		c.Flags().Int("count", 0, "페이지 크기")
@@ -473,6 +945,25 @@ func init() {
 
 	driveCmd.AddCommand(driveInfoCmd, driveListCmd, driveGetCmd, driveDownloadCmd,
 		driveUploadCmd, driveMkdirCmd, driveDeleteCmd, driveTrashListCmd, driveTrashRestoreCmd)
+
+	// Task 5-1: File operations
+	driveCmd.AddCommand(driveCopyCmd, driveRenameCmd, driveMoveCmd,
+		driveProtectCmd, driveUnprotectCmd, driveLockCmd, driveUnlockCmd)
+
+	// Task 5-2: Revisions
+	driveRevisionCmd.AddCommand(driveRevisionListCmd, driveRevisionGetCmd,
+		driveRevisionRestoreCmd, driveRevisionDownloadCmd)
+	driveCmd.AddCommand(driveRevisionCmd)
+
+	// Task 5-3: Trash delete + Link + Share
+	driveCmd.AddCommand(driveTrashDeleteCmd, driveLinkSettingCmd)
+
+	driveLinkCmd.AddCommand(driveLinkGetCmd, driveLinkCreateCmd, driveLinkUpdateCmd, driveLinkDeleteCmd)
+	driveCmd.AddCommand(driveLinkCmd)
+
+	driveShareCmd.AddCommand(driveShareGetCmd, driveShareCreateCmd, driveShareUpdateCmd,
+		driveShareDeleteCmd, driveShareListSubFoldersCmd)
+	driveCmd.AddCommand(driveShareCmd)
 
 	driveSharedCmd.AddCommand(driveSharedListDrivesCmd, driveSharedGetDriveCmd,
 		driveSharedListCmd, driveSharedGetCmd, driveSharedDownloadCmd, driveSharedUploadCmd)

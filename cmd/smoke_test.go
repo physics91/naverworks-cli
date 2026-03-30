@@ -1352,3 +1352,93 @@ func TestSmoke_DirectoryCustomFieldCreate_MissingJSON(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
+
+// ─── Drive Phase 5 Smoke Tests ───
+
+func TestSmoke_DriveHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "drive", "--help")
+	if err != nil {
+		t.Fatalf("drive --help failed: %v", err)
+	}
+	for _, sub := range []string{
+		// Existing
+		"info", "list", "get", "download", "upload", "mkdir", "delete",
+		"trash-list", "trash-restore",
+		// Task 5-1: File operations
+		"copy", "rename", "move", "protect", "unprotect", "lock", "unlock",
+		// Task 5-2: Revisions
+		"revision",
+		// Task 5-3: Trash delete, link, share
+		"trash-delete", "link-setting", "link", "share",
+		// Existing groups
+		"shared", "group", "shared-folder",
+	} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("drive --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_DriveRevisionHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "drive", "revision", "--help")
+	if err != nil {
+		t.Fatalf("drive revision --help failed: %v", err)
+	}
+	for _, sub := range []string{"list", "get", "restore", "download"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("drive revision --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_DriveLinkHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "drive", "link", "--help")
+	if err != nil {
+		t.Fatalf("drive link --help failed: %v", err)
+	}
+	for _, sub := range []string{"get", "create", "update", "delete"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("drive link --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_DriveShareHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "drive", "share", "--help")
+	if err != nil {
+		t.Fatalf("drive share --help failed: %v", err)
+	}
+	for _, sub := range []string{"get", "create", "update", "delete", "list-sub-folders"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("drive share --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_DriveCopy_MissingJSON(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "drive", "copy", "f1", "--user-id", "testuser")
+	if err == nil {
+		t.Fatal("expected error when --json is missing")
+	}
+	if !strings.Contains(err.Error(), "--json 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_DriveRevisionGet_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "drive", "revision", "get", "f1")
+	if err == nil {
+		t.Fatal("expected error when revisionId arg is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 2 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}

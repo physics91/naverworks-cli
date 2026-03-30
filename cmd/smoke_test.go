@@ -865,6 +865,32 @@ func TestSmoke_ApprovalUploadAttachment_MissingFile(t *testing.T) {
 	}
 }
 
+// ─── Security Smoke Tests ───
+
+func TestSmoke_SecurityHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "security", "--help")
+	if err != nil {
+		t.Fatalf("security --help failed: %v", err)
+	}
+	for _, sub := range []string{"get-external-browser", "enable-external-browser", "disable-external-browser"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("security --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_SecurityCommandRegistration(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "--help")
+	if err != nil {
+		t.Fatalf("root --help failed: %v", err)
+	}
+	if !strings.Contains(out, "security") {
+		t.Error("root --help missing 'security' command")
+	}
+}
+
 func TestSmoke_ContactFullUpdate_MissingJSON(t *testing.T) {
 	tmpDir := setupTestEnv(t)
 	writeTestConfig(t, tmpDir)

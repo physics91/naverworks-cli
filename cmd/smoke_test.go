@@ -672,6 +672,64 @@ func TestSmoke_NoteCreateAttachment_MissingFile(t *testing.T) {
 	}
 }
 
+// ─── Attendance Smoke Tests ───
+
+func TestSmoke_AttendanceHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "attendance", "--help")
+	if err != nil {
+		t.Fatalf("attendance --help failed: %v", err)
+	}
+	for _, sub := range []string{
+		"status", "clock-in", "clock-out",
+		"list-absences", "list-annual-leaves",
+		"create-timecard", "list-timecards", "get-timecard", "update-timecard",
+		"adjust-annual-leave",
+		"list-absence-schedules",
+		"create-absence", "get-absence", "update-absence", "delete-absence",
+	} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("attendance --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_AttendanceCreateTimecard_MissingJSON(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "attendance", "create-timecard")
+	if err == nil {
+		t.Fatal("expected error when --json is missing")
+	}
+	if !strings.Contains(err.Error(), "--json 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_AttendanceGetTimecard_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "attendance", "get-timecard")
+	if err == nil {
+		t.Fatal("expected error when timecardId is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 1 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_AttendanceDeleteAbsence_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "attendance", "delete-absence")
+	if err == nil {
+		t.Fatal("expected error when absenceId is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 1 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
 func TestSmoke_ContactFullUpdate_MissingJSON(t *testing.T) {
 	tmpDir := setupTestEnv(t)
 	writeTestConfig(t, tmpDir)

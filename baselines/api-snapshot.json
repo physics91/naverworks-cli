@@ -1,6 +1,6 @@
 {
   "_bootstrap": false,
-  "last_checked": "2026-03-29T00:00:00Z",
+  "last_checked": "2026-03-30T00:00:00Z",
   "known_announcements": [
     {
       "url": "https://naver.worksmobile.com/whats-new/workplace-user-notice/change-in-screen/sso/",
@@ -22,6 +22,13 @@
       "date": "2024-03-01",
       "summary": "NAVER WORKS, WORKPLACE 상품의 신청/갱신/해지 관리 기능이 NCP 콘솔에서 종료되고 네이버웍스 어드민 콘솔로 이관됨.",
       "affected_domains": ["businessplace"]
+    },
+    {
+      "url": "https://naver.worksmobile.com/notice/94415/",
+      "title": "네이버웍스 코어 & 웍스 드라이브 일부 기능의 사양 변경 및 종료 안내",
+      "date": "2025-06-17",
+      "summary": "모니터링 API 동시 호출 1회 제한, 감사 API 동시 호출 3회 제한으로 변경. Developer Console > 조직연동 > Custom URL의 조직도 팝업, 메일 주소록, 개인정보팝업 기능 종료.",
+      "affected_domains": ["monitoring", "audit", "directory"]
     }
   ]
 }

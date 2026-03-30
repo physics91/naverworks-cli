@@ -56,6 +56,11 @@ func (s *GroupFolderService) CreateUploadURL(groupID, fileID string, body map[st
 	return s.client.PostJSON(fmt.Sprintf("/groups/%s/folder/files/%s", url.PathEscape(groupID), url.PathEscape(fileID)), body)
 }
 
+func (s *GroupFolderService) CreateRootUploadURL(groupID string, body map[string]interface{}, fileSize int64) (*Response, error) {
+	body["fileSize"] = fileSize
+	return s.client.PostJSON(fmt.Sprintf("/groups/%s/folder/files", url.PathEscape(groupID)), body)
+}
+
 func (s *GroupFolderService) GetDownloadURL(groupID, fileID string) (string, error) {
 	return s.client.GetDownloadURL(fmt.Sprintf("/groups/%s/folder/files/%s/download", url.PathEscape(groupID), url.PathEscape(fileID)))
 }

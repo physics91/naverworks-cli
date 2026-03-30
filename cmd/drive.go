@@ -1655,9 +1655,9 @@ var driveGroupDeleteCmd = &cobra.Command{
 }
 
 var driveGroupUploadCmd = &cobra.Command{
-	Use:   "upload <groupId> <fileId> --file <path>",
-	Short: "그룹 파일 업로드 URL 생성",
-	Args:  cobra.ExactArgs(2),
+	Use:   "upload <groupId> [--folder <fileId>] --file <path>",
+	Short: "그룹 파일 업로드 URL 생성 (--folder 미지정 시 루트 업로드)",
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, _, _, err := newAPIClient()
 		if err != nil {
@@ -1670,13 +1670,20 @@ var driveGroupUploadCmd = &cobra.Command{
 			return fmt.Errorf("--file 플래그가 필요합니다")
 		}
 
+		folderID, _ := cmd.Flags().GetString("folder")
+
 		fileName, fileSize, err := statFileForUpload(filePath)
 		if err != nil {
 			return err
 		}
 
 		uploadBody := map[string]interface{}{"fileName": fileName}
-		resp, err := svc.CreateUploadURL(args[0], args[1], uploadBody, fileSize)
+		var resp *api.Response
+		if folderID != "" {
+			resp, err = svc.CreateUploadURL(args[0], folderID, uploadBody, fileSize)
+		} else {
+			resp, err = svc.CreateRootUploadURL(args[0], uploadBody, fileSize)
+		}
 		if err != nil {
 			return err
 		}
@@ -2907,6 +2914,7 @@ func init() {
 	// GroupFolder mkdir/upload flags
 	driveGroupMkdirCmd.Flags().String("parent", "", "상위 폴더 ID")
 	driveGroupUploadCmd.Flags().String("file", "", "업로드할 파일 경로 (필수)")
+	driveGroupUploadCmd.Flags().String("folder", "", "업로드 대상 폴더 ID (미지정 시 루트)")
 
 	driveCmd.AddCommand(driveInfoCmd, driveListCmd, driveGetCmd, driveDownloadCmd,
 		driveUploadCmd, driveMkdirCmd, driveDeleteCmd, driveTrashListCmd, driveTrashRestoreCmd)

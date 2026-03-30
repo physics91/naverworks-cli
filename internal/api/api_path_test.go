@@ -53,6 +53,15 @@ func TestAPIEndpointPaths(t *testing.T) {
 			wantPath:   "/users/u1/drive/sharedfolders/sf1/files/f1/link",
 		},
 		{
+			name: "GroupFolderService.CreateRootUploadURL",
+			call: func(c *Client) {
+				svc := NewGroupFolderService(c)
+				svc.CreateRootUploadURL("g1", map[string]interface{}{"fileName": "test.txt"}, 1024)
+			},
+			wantMethod: "POST",
+			wantPath:   "/groups/g1/folder/files",
+		},
+		{
 			name: "GroupFolderService.CopyFile",
 			call: func(c *Client) {
 				svc := NewGroupFolderService(c)

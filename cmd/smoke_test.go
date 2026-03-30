@@ -272,6 +272,93 @@ func TestSmoke_ReadFileFlag_Valid(t *testing.T) {
 	}
 }
 
+func TestSmoke_CalendarCreateCalendar_MissingJSON(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "calendar", "create-calendar")
+	if err == nil {
+		t.Fatal("expected error when --json is missing")
+	}
+	if !strings.Contains(err.Error(), "--json 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_CalendarDeleteEvent_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "calendar", "delete-event")
+	if err == nil {
+		t.Fatal("expected error when args are missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 2 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_CalendarDeleteEvent_OneArg(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "calendar", "delete-event", "cal1")
+	if err == nil {
+		t.Fatal("expected error when only one arg is provided")
+	}
+	if !strings.Contains(err.Error(), "accepts 2 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_CalendarDefaultDeleteEvent_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "calendar", "default", "delete-event")
+	if err == nil {
+		t.Fatal("expected error when eventId is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 1 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_CalendarGetCalendar_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "calendar", "get-calendar")
+	if err == nil {
+		t.Fatal("expected error when calendarId is missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 1 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_CalendarDefaultHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "calendar", "default", "--help")
+	if err != nil {
+		t.Fatalf("calendar default --help failed: %v", err)
+	}
+	for _, sub := range []string{"list-events", "get-event", "create-event", "update-event", "delete-event"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("calendar default --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_CalendarHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "calendar", "--help")
+	if err != nil {
+		t.Fatalf("calendar --help failed: %v", err)
+	}
+	for _, sub := range []string{"create-calendar", "get-calendar", "update-calendar", "delete-calendar",
+		"get-personal", "update-personal", "remove-user", "update-event", "delete-event", "default"} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("calendar --help missing subcommand %q", sub)
+		}
+	}
+}
+
 func TestSmoke_ReadJSONFlagRaw_Stdin(t *testing.T) {
 	// Simulate stdin by replacing os.Stdin with a pipe
 	oldStdin := os.Stdin
@@ -298,5 +385,74 @@ func TestSmoke_ReadJSONFlagRaw_Stdin(t *testing.T) {
 	}
 	if string(data) != input {
 		t.Errorf("expected %q, got %q", input, string(data))
+	}
+}
+
+// ─── Board Smoke Tests ───
+
+func TestSmoke_BoardHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "board", "--help")
+	if err != nil {
+		t.Fatalf("board --help failed: %v", err)
+	}
+	for _, sub := range []string{
+		"create", "update", "delete",
+		"list-readers", "list-recent", "list-my", "list-must",
+		"create-attachment", "list-attachments", "get-attachment", "delete-attachment",
+		"create-comment", "get-comment", "update-comment", "delete-comment",
+		"create-comment-attachment", "list-comment-attachments", "get-comment-attachment", "delete-comment-attachment",
+	} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("board --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_BoardCreate_MissingJSON(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "board", "create")
+	if err == nil {
+		t.Fatal("expected error when --json is missing")
+	}
+	if !strings.Contains(err.Error(), "--json 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_BoardDeleteComment_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "board", "delete-comment")
+	if err == nil {
+		t.Fatal("expected error when args are missing")
+	}
+	if !strings.Contains(err.Error(), "accepts 3 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_BoardGetCommentAttachment_MissingArgs(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "board", "get-comment-attachment", "b1", "p1")
+	if err == nil {
+		t.Fatal("expected error when not enough args")
+	}
+	if !strings.Contains(err.Error(), "accepts 4 arg(s)") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_BoardCreateAttachment_MissingFile(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "board", "create-attachment", "b1", "p1")
+	if err == nil {
+		t.Fatal("expected error when --file is missing")
+	}
+	if !strings.Contains(err.Error(), "--file 플래그가 필요합니다") {
+		t.Errorf("unexpected error: %v", err)
 	}
 }

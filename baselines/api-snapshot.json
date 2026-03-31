@@ -1,6 +1,6 @@
 {
   "_bootstrap": false,
-  "last_checked": "2026-03-30T00:00:00Z",
+  "last_checked": "2026-03-31T00:00:00Z",
   "known_announcements": [
     {
       "url": "https://naver.worksmobile.com/whats-new/workplace-user-notice/change-in-screen/sso/",
@@ -29,6 +29,27 @@
       "date": "2025-06-17",
       "summary": "모니터링 API 동시 호출 1회 제한, 감사 API 동시 호출 3회 제한으로 변경. Developer Console > 조직연동 > Custom URL의 조직도 팝업, 메일 주소록, 개인정보팝업 기능 종료.",
       "affected_domains": ["monitoring", "audit", "directory"]
+    },
+    {
+      "url": "https://naver.worksmobile.com/notice/88927/",
+      "title": "[중요] 네이버웍스 API 1.0 종료 최종 안내",
+      "date": "2024-08-27",
+      "summary": "2024년 9월 2일 API 1.0 완전 종료. 이후 API 1.0 호출 시 오류 반환. 2024년 10월경 Developers Console 'API 1.0' 메뉴 접속 제한.",
+      "affected_domains": ["auth", "directory", "approval", "attendance", "hr", "mail", "calendar", "bot", "drive", "board", "task", "contact"]
+    },
+    {
+      "url": "https://naver.worksmobile.com/notice/41474/",
+      "title": "네이버웍스 API 2.0 정식 출시 안내",
+      "date": "2023-01-01",
+      "summary": "API 2.0 정식 제공 시작. 신규 기능은 API 2.0으로만 제공. 기존 API 1.0은 충분한 마이그레이션 기간 후 종료 예정.",
+      "affected_domains": ["auth", "directory", "approval", "attendance", "hr", "mail", "calendar", "bot", "drive", "board", "task", "contact"]
+    },
+    {
+      "url": "https://gov-naverworks.com/notice/54601/",
+      "title": "네이버웍스 API 1.0 종료 사전 안내 (공공용)",
+      "date": "2024-03-05",
+      "summary": "공공용 NAVER WORKS API 1.0이 2024년 4월 1일 공식 종료. 관련 문서 삭제 및 Developers Console 메뉴 제거. API 2.0 전환 권고.",
+      "affected_domains": ["auth"]
     }
   ]
 }

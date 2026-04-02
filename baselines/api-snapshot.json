@@ -1,6 +1,6 @@
 {
   "_bootstrap": false,
-  "last_checked": "2026-04-01T00:00:00Z",
+  "last_checked": "2026-04-02T00:00:00Z",
   "known_announcements": [
     {
       "url": "https://naver.worksmobile.com/whats-new/workplace-user-notice/change-in-screen/sso/",
@@ -50,6 +50,13 @@
       "date": "2024-03-05",
       "summary": "공공용 NAVER WORKS API 1.0이 2024년 4월 1일 공식 종료. 관련 문서 삭제 및 Developers Console 메뉴 제거. API 2.0 전환 권고.",
       "affected_domains": ["auth"]
+    },
+    {
+      "url": "https://naver.worksmobile.com/notice/91690/",
+      "title": "WORKPLACE(구) 인증 및 API 서비스 종료 사전 안내 (25.11.30)",
+      "date": "2025-01-01",
+      "summary": "WORKPLACE 구버전 외부 서비스 인증 연동, 계정 동기화 API, 결재/근태/구성원 API가 2025년 11월 30일 18시(KST)에 종료됨. NAVER WORKS SSO 인증, Directory API, Business Support API(결재/근태)로 마이그레이션 필요.",
+      "affected_domains": ["auth", "directory", "approval", "attendance", "hr"]
     }
   ]
 }

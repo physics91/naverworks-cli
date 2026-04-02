@@ -230,7 +230,7 @@ var taskMoveCmd = &cobra.Command{
 		if categoryID == "" {
 			return fmt.Errorf("--category는 필수입니다")
 		}
-		body := map[string]interface{}{"taskCategoryId": categoryID}
+		body := buildTaskMoveBody(categoryID)
 		resp, err := svc.MoveTask(userID, args[0], body)
 		if err != nil {
 			return err
@@ -333,4 +333,8 @@ func init() {
 		taskCreateCategoryCmd, taskGetCategoryCmd, taskUpdateCategoryCmd, taskDeleteCategoryCmd,
 		taskMoveCmd, taskCompleteCmd, taskIncompleteCmd, taskCompleteAssigneeCmd, taskIncompleteAssigneeCmd)
 	rootCmd.AddCommand(taskCmd)
+}
+
+func buildTaskMoveBody(categoryID string) map[string]interface{} {
+	return map[string]interface{}{"toCategoryId": categoryID}
 }

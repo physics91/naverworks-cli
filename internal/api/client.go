@@ -86,6 +86,17 @@ func (c *Client) do(method, path string, body []byte) (*Response, error) {
 }
 
 func (c *Client) doWithRetry(method, path string, body []byte, retried401 bool) (*Response, error) {
+	return c.doWithRetryAndMaxResponseSize(method, path, body, retried401, maxAPIResponseSize)
+}
+
+func (c *Client) GetWithMaxResponseSize(path string, maxResponseSize int64) (*Response, error) {
+	if err := c.refreshIfNeeded(); err != nil {
+		return nil, err
+	}
+	return c.doWithRetryAndMaxResponseSize("GET", path, nil, false, maxResponseSize)
+}
+
+func (c *Client) doWithRetryAndMaxResponseSize(method, path string, body []byte, retried401 bool, maxResponseSize int64) (*Response, error) {
 	for attempt := 0; attempt <= maxRateLimitRetries; attempt++ {
 		var bodyReader io.Reader
 		if body != nil {
@@ -105,13 +116,9 @@ func (c *Client) doWithRetry(method, path string, body []byte, retried401 bool) 
 		if err != nil {
 			return nil, fmt.Errorf("네트워크 에러: %w", err)
 		}
-		respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxAPIResponseSize+1))
-		resp.Body.Close()
+		respBody, err := readResponseBodyWithLimit(resp.Body, maxResponseSize)
 		if err != nil {
-			return nil, fmt.Errorf("응답 읽기 실패: %w", err)
-		}
-		if int64(len(respBody)) > maxAPIResponseSize {
-			return nil, fmt.Errorf("API 응답 크기 초과: > %d bytes", maxAPIResponseSize)
+			return nil, err
 		}
 
 		switch {
@@ -119,7 +126,7 @@ func (c *Client) doWithRetry(method, path string, body []byte, retried401 bool) 
 			if err := c.refreshFn(c.token); err != nil {
 				return nil, fmt.Errorf("토큰 갱신 실패: %w", err)
 			}
-			return c.doWithRetry(method, path, body, true)
+			return c.doWithRetryAndMaxResponseSize(method, path, body, true, maxResponseSize)
 
 		case resp.StatusCode == 429 && attempt < maxRateLimitRetries:
 			waitDuration := parseRateLimitReset(resp.Header, attempt)
@@ -135,6 +142,18 @@ func (c *Client) doWithRetry(method, path string, body []byte, retried401 bool) 
 	}
 
 	return nil, &APIError{StatusCode: 429, Code: "RATE_LIMIT_EXCEEDED", Description: "최대 재시도 횟수 초과"}
+}
+
+func readResponseBodyWithLimit(body io.ReadCloser, maxResponseSize int64) ([]byte, error) {
+	respBody, err := io.ReadAll(io.LimitReader(body, maxResponseSize+1))
+	body.Close()
+	if err != nil {
+		return nil, fmt.Errorf("응답 읽기 실패: %w", err)
+	}
+	if int64(len(respBody)) > maxResponseSize {
+		return nil, fmt.Errorf("API 응답 크기 초과: > %d bytes", maxResponseSize)
+	}
+	return respBody, nil
 }
 
 // GetDownloadURL calls the API endpoint without following redirects,

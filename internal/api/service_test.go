@@ -1,6 +1,7 @@
 package api
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -195,7 +196,7 @@ func TestServiceMethods(t *testing.T) {
 		{
 			name: "TaskService.MoveTask",
 			call: func(c *Client) {
-				NewTaskService(c).MoveTask("u1", "t1", map[string]interface{}{"categoryId": "cat1"})
+				NewTaskService(c).MoveTask("u1", "t1", map[string]interface{}{"toCategoryId": "cat1"})
 			},
 			wantMethod: "POST",
 			wantPath:   "/users/u1/tasks/t1/move",
@@ -285,5 +286,30 @@ func TestServiceMethods(t *testing.T) {
 				t.Errorf("path = %s, want %s", gotPath, tt.wantPath)
 			}
 		})
+	}
+}
+
+func TestTaskService_MoveTask_SendsExpectedBody(t *testing.T) {
+	var gotBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Fatalf("failed to read request body: %v", err)
+		}
+		gotBody = string(body)
+		w.WriteHeader(200)
+		w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+
+	token := &auth.Token{AccessToken: "test-token", ExpiresAt: time.Now().Add(1 * time.Hour)}
+	client := NewClient(srv.URL, token, nil)
+
+	_, err := NewTaskService(client).MoveTask("u1", "t1", map[string]interface{}{"toCategoryId": "cat1"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotBody != `{"toCategoryId":"cat1"}` {
+		t.Fatalf("body = %s, want %s", gotBody, `{"toCategoryId":"cat1"}`)
 	}
 }

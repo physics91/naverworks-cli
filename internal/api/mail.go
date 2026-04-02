@@ -5,6 +5,8 @@ import (
 	"net/url"
 )
 
+const maxMailAttachmentResponseSize = 40 << 20
+
 type MailService struct {
 	client *Client
 }
@@ -46,7 +48,13 @@ func (s *MailService) GetUnreadCount(userID string) (*Response, error) {
 }
 
 func (s *MailService) GetAttachment(userID, mailID, attachmentID string) (*Response, error) {
-	return s.client.Get(fmt.Sprintf("/users/%s/mail/%s/attachments/%s", url.PathEscape(userID), url.PathEscape(mailID), url.PathEscape(attachmentID)))
+	// Mail attachments are returned as JSON with base64-encoded file data.
+	// The documented 25 MB attachment limit expands beyond the default 10 MB
+	// response ceiling, so this endpoint uses a dedicated higher limit.
+	return s.client.GetWithMaxResponseSize(
+		fmt.Sprintf("/users/%s/mail/%s/attachments/%s", url.PathEscape(userID), url.PathEscape(mailID), url.PathEscape(attachmentID)),
+		maxMailAttachmentResponseSize,
+	)
 }
 
 func (s *MailService) ListFavoriteContactsFolders(userID string) (*Response, error) {

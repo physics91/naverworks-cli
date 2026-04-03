@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/physics91/naverworks-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -2070,5 +2071,108 @@ func TestResolveUserID(t *testing.T) {
 				t.Errorf("got %q, want %q", uid, tt.wantUID)
 			}
 		})
+	}
+}
+
+func TestRequireTitleBodyPost(t *testing.T) {
+	tests := []struct {
+		name    string
+		title   string
+		body    string
+		wantErr bool
+	}{
+		{"both set", "t1", "b1", false},
+		{"missing title", "", "b1", true},
+		{"missing body", "t1", "", true},
+		{"both missing", "", "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			cmd.Flags().String("title", tt.title, "")
+			cmd.Flags().String("body", tt.body, "")
+			_, err := requireTitleBodyPost(cmd)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			}
+		})
+	}
+}
+
+func TestParseOptionalJSONData(t *testing.T) {
+	tests := []struct {
+		name    string
+		data    string
+		wantNil bool
+		wantErr bool
+	}{
+		{"empty", "", true, false},
+		{"valid json", `{"key":"val"}`, false, false},
+		{"invalid json", `{bad`, false, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			cmd.Flags().String("data", tt.data, "")
+			result, err := parseOptionalJSONData(cmd)
+			if tt.wantErr {
+				if err == nil {
+					t.Error("expected error")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if tt.wantNil && result != nil {
+				t.Error("expected nil result")
+			}
+			if !tt.wantNil && result == nil {
+				t.Error("expected non-nil result")
+			}
+		})
+	}
+}
+
+func TestResolveBotID(t *testing.T) {
+	tests := []struct {
+		name    string
+		flagVal string
+		cfgVal  string
+		wantID  string
+		wantErr bool
+	}{
+		{"flag value", "flag-bot", "cfg-bot", "flag-bot", false},
+		{"config value", "", "cfg-bot", "cfg-bot", false},
+		{"both empty", "", "", "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			cmd.Flags().String("bot-id", tt.flagVal, "")
+			id, err := resolveBotID(cmd, tt.cfgVal)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+			}
+			if !tt.wantErr && id != tt.wantID {
+				t.Errorf("got %q, want %q", id, tt.wantID)
+			}
+		})
+	}
+}
+
+func TestResolveOrCreateProfile(t *testing.T) {
+	pc := &config.ProfileConfig{
+		CurrentProfile: "default",
+		Profiles: map[string]*config.Config{
+			"default": {ClientID: "cid1"},
+		},
+	}
+	cfg, name := resolveOrCreateProfile(pc)
+	if name != "default" {
+		t.Errorf("expected default, got %s", name)
+	}
+	if cfg.ClientID != "cid1" {
+		t.Errorf("expected cid1, got %s", cfg.ClientID)
 	}
 }

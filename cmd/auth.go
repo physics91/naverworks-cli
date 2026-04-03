@@ -95,7 +95,7 @@ func loginOAuth(cfg *config.Config, store *auth.ProfileTokenStore) error {
 	}
 	authURL := auth.BuildAuthorizationURL(authBaseURL, cfg.ClientID, redirectURI, state, scope)
 
-	if err := openBrowser(authURL); err != nil {
+	if err := openBrowserFn(authURL); err != nil {
 		fmt.Fprintf(os.Stderr, "브라우저를 열 수 없습니다. 아래 URL을 직접 열어주세요:\n%s\n", authURL)
 	}
 
@@ -243,7 +243,7 @@ func init() {
 	rootCmd.AddCommand(authCmd)
 }
 
-func openBrowser(url string) error {
+var openBrowserFn = func(url string) error {
 	switch runtime.GOOS {
 	case "linux":
 		return exec.Command("xdg-open", url).Start()

@@ -60,6 +60,15 @@ func setupTestEnv(t *testing.T) string {
 	t.Setenv("NW_SCOPE", "")
 	t.Setenv("NW_DEFAULT_CALENDAR_USER_ID", "")
 	t.Setenv("NW_SCIM_ACCESS_TOKEN", "")
+
+	// Seam 복원
+	origAPI := apiBaseURL
+	origSCIM := scimBaseURL
+	t.Cleanup(func() {
+		apiBaseURL = origAPI
+		scimBaseURL = origSCIM
+	})
+
 	return tmpDir
 }
 
@@ -2009,5 +2018,57 @@ func TestSmoke_DriveGroupMkdir_WithParent(t *testing.T) {
 	_, err := runCLI(t, "drive", "group", "mkdir", "groupId1", "--parent", "file1", "--json", `{"fileName":"test"}`)
 	if err != nil && strings.Contains(err.Error(), "unknown flag") {
 		t.Errorf("unexpected flag error: %v", err)
+	}
+}
+
+func setAPIBaseURL(t *testing.T, url string) {
+	t.Helper()
+	old := apiBaseURL
+	apiBaseURL = url
+	t.Cleanup(func() { apiBaseURL = old })
+}
+
+func setSCIMBaseURL(t *testing.T, url string) {
+	t.Helper()
+	old := scimBaseURL
+	scimBaseURL = url
+	t.Cleanup(func() { scimBaseURL = old })
+}
+
+func TestResolveUserID(t *testing.T) {
+	tests := []struct {
+		name       string
+		flagValue  string
+		defaultUID string
+		authMethod string
+		wantUID    string
+		wantErr    bool
+	}{
+		{"flag value used", "user1", "default1", "oauth", "user1", false},
+		{"default used when flag empty", "", "default1", "oauth", "default1", false},
+		{"error when both empty", "", "", "oauth", "", true},
+		{"me rejected in jwt mode", "me", "", "jwt", "", true},
+		{"me allowed in oauth mode", "me", "", "oauth", "me", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			cmd.Flags().String("user-id", tt.flagValue, "")
+
+			uid, err := resolveUserID(cmd, tt.defaultUID, tt.authMethod)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if uid != tt.wantUID {
+				t.Errorf("got %q, want %q", uid, tt.wantUID)
+			}
+		})
 	}
 }

@@ -24,6 +24,8 @@ type Response struct {
 const maxRateLimitRetries = 3
 const maxAPIResponseSize = 10 << 20 // 10MB
 
+var errRateLimitExceeded = &APIError{StatusCode: 429, Code: "RATE_LIMIT_EXCEEDED", Description: "최대 재시도 횟수 초과"}
+
 type RefreshFunc func(token *auth.Token) error
 
 type Client struct {
@@ -32,6 +34,7 @@ type Client struct {
 	refreshFn        RefreshFunc
 	httpClient       *http.Client
 	noRedirectClient *http.Client
+	uploadClient     *http.Client
 }
 
 func NewClient(baseURL string, token *auth.Token, refreshFn RefreshFunc) *Client {
@@ -46,6 +49,7 @@ func NewClient(baseURL string, token *auth.Token, refreshFn RefreshFunc) *Client
 				return http.ErrUseLastResponse
 			},
 		},
+		uploadClient: &http.Client{Timeout: 10 * time.Minute},
 	}
 }
 
@@ -141,7 +145,7 @@ func (c *Client) doWithRetryAndMaxResponseSize(method, path string, body []byte,
 		}
 	}
 
-	return nil, &APIError{StatusCode: 429, Code: "RATE_LIMIT_EXCEEDED", Description: "최대 재시도 횟수 초과"}
+	return nil, errRateLimitExceeded
 }
 
 func readResponseBodyWithLimit(body io.ReadCloser, maxResponseSize int64) ([]byte, error) {
@@ -220,7 +224,7 @@ func (c *Client) getDownloadURLWithRetry(path string, retried401 bool) (string, 
 		}
 	}
 
-	return "", &APIError{StatusCode: 429, Code: "RATE_LIMIT_EXCEEDED", Description: "최대 재시도 횟수 초과"}
+	return "", errRateLimitExceeded
 }
 
 // UploadFile uploads a file to a pre-signed URL using PUT.
@@ -252,17 +256,19 @@ func (c *Client) UploadFile(uploadURL string, filePath string) error {
 	req.Header.Set("Content-Type", "application/octet-stream")
 	req.ContentLength = stat.Size()
 
-	uploadClient := &http.Client{Timeout: 10 * time.Minute}
-	resp, err := uploadClient.Do(req)
+	resp, err := c.uploadClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("업로드 네트워크 에러: %w", err)
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := readResponseBodyWithLimit(resp.Body, maxAPIResponseSize)
+		if err != nil {
+			return err
+		}
 		return fmt.Errorf("업로드 실패 (HTTP %d): %s", resp.StatusCode, string(body))
 	}
+	resp.Body.Close()
 	return nil
 }
 
@@ -367,7 +373,7 @@ func (c *Client) uploadMultipartWithRetry(path, fieldName, fileName string, data
 		}
 	}
 
-	return nil, &APIError{StatusCode: 429, Code: "RATE_LIMIT_EXCEEDED", Description: "최대 재시도 횟수 초과"}
+	return nil, errRateLimitExceeded
 }
 
 // DownloadFile performs a GET request and returns the raw response body along
@@ -417,5 +423,5 @@ func (c *Client) downloadFileWithRetry(path string, retried401 bool) ([]byte, ht
 		}
 	}
 
-	return nil, nil, &APIError{StatusCode: 429, Code: "RATE_LIMIT_EXCEEDED", Description: "최대 재시도 횟수 초과"}
+	return nil, nil, errRateLimitExceeded
 }

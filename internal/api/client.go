@@ -178,13 +178,9 @@ func (c *Client) getDownloadURLWithRetry(path string, retried401 bool) (string, 
 		if err != nil {
 			return "", fmt.Errorf("네트워크 에러: %w", err)
 		}
-		body, err := io.ReadAll(io.LimitReader(resp.Body, maxAPIResponseSize+1))
-		resp.Body.Close()
+		body, err := readResponseBodyWithLimit(resp.Body, maxAPIResponseSize)
 		if err != nil {
-			return "", fmt.Errorf("응답 읽기 실패: %w", err)
-		}
-		if int64(len(body)) > maxAPIResponseSize {
-			return "", fmt.Errorf("API 응답 크기 초과: > %d bytes", maxAPIResponseSize)
+			return "", err
 		}
 
 		switch {
@@ -346,13 +342,9 @@ func (c *Client) uploadMultipartWithRetry(path, fieldName, fileName string, data
 		if err != nil {
 			return nil, fmt.Errorf("네트워크 에러: %w", err)
 		}
-		respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxAPIResponseSize+1))
-		resp.Body.Close()
+		respBody, err := readResponseBodyWithLimit(resp.Body, maxAPIResponseSize)
 		if err != nil {
-			return nil, fmt.Errorf("응답 읽기 실패: %w", err)
-		}
-		if int64(len(respBody)) > maxAPIResponseSize {
-			return nil, fmt.Errorf("API 응답 크기 초과: > %d bytes", maxAPIResponseSize)
+			return nil, err
 		}
 
 		switch {
@@ -400,13 +392,9 @@ func (c *Client) downloadFileWithRetry(path string, retried401 bool) ([]byte, ht
 		if err != nil {
 			return nil, nil, fmt.Errorf("네트워크 에러: %w", err)
 		}
-		respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxAPIResponseSize+1))
-		resp.Body.Close()
+		respBody, err := readResponseBodyWithLimit(resp.Body, maxAPIResponseSize)
 		if err != nil {
-			return nil, nil, fmt.Errorf("응답 읽기 실패: %w", err)
-		}
-		if int64(len(respBody)) > maxAPIResponseSize {
-			return nil, nil, fmt.Errorf("API 응답 크기 초과: > %d bytes", maxAPIResponseSize)
+			return nil, nil, err
 		}
 
 		switch {

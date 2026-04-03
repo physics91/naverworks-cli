@@ -43,6 +43,7 @@ In Claude Code, when a trigger condition below is matched, the corresponding ski
 | `build` | "빌드", "build", `/build` | Build local or cross-platform binaries with ldflags version metadata |
 | `version` | "버전", "version", `/version`, "bump" | Inspect version state or create/push release tags |
 | `deploy` | "배포", "릴리스", "deploy", "release", `/deploy` | Preflight checks → release tag → GitHub Actions verification |
+| `release` | "릴리스 관리", "release manage", "release edit", "release delete", "release rollback" | View, edit, delete, rollback GitHub Releases |
 | `naverworks-profile` | "프로필", "인증", "NW_PROFILE", "auth setup" | Multi-profile setup, auth, and troubleshooting |
 | `commit-work` | Any commit request | Create commits (never run `git commit` directly) |
 
@@ -51,3 +52,4 @@ In Claude Code, when a trigger condition below is matched, the corresponding ski
 - `deploy` includes tests — no need to invoke `test` separately before deploy
 - After a version bump, suggest deploy if appropriate
 - `build`, `test`, and `version` can be invoked independently
+- "릴리스 관리", "release manage", "release edit", "release delete", "release rollback" 요청은 `release`를 `deploy`보다 우선한다

@@ -31,7 +31,7 @@ npx naverworks version
 ### 설치 스크립트
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/physics91/naverworks-cli/master/install.sh | sh
+curl -sSL https://raw.githubusercontent.com/physics91/naverworks-cli/main/install.sh | sh
 ```
 
 기본 설치 경로는 `/usr/local/bin`이며, `INSTALL_DIR`로 변경할 수 있습니다.

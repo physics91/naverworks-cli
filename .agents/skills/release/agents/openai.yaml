@@ -1,3 +1,4 @@
 interface:
   display_name: "Release"
   short_description: "Manage GitHub Releases for naverworks — view, edit, delete, and rollback published releases using gh CLI"
+  auto_invoke: false

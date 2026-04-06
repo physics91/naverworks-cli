@@ -96,11 +96,39 @@ func loginOAuth(cfg *config.Config, store *auth.ProfileTokenStore) error {
 	authURL := auth.BuildAuthorizationURL(authBaseURL, cfg.ClientID, redirectURI, state, scope)
 
 	if err := openBrowserFn(authURL); err != nil {
-		fmt.Fprintf(os.Stderr, "브라우저를 열 수 없습니다. 아래 URL을 직접 열어주세요:\n%s\n", authURL)
+		fmt.Fprintf(os.Stderr, "브라우저를 열 수 없습니다.\n")
 	}
 
-	code, err := auth.WaitForCallback(ln, state, 120*time.Second)
-	if err != nil {
+	fmt.Fprintf(os.Stderr, "\n아래 URL을 브라우저에서 열어 로그인하세요:\n%s\n", authURL)
+	fmt.Fprintf(os.Stderr, "\n로그인 후 자동으로 완료됩니다.\n")
+	fmt.Fprintf(os.Stderr, "만약 자동 전환이 안 되면, 리다이렉트된 URL을 여기에 붙여넣으세요:\n> ")
+
+	codeCh := make(chan string, 1)
+	errCh := make(chan error, 1)
+
+	// 방법 1: 로컬 서버 callback 대기
+	go func() {
+		code, err := auth.WaitForCallback(ln, state, 120*time.Second)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		codeCh <- code
+	}()
+
+	// 방법 2: stdin에서 callback URL 붙여넣기
+	go func() {
+		code, err := auth.ReadCallbackURLFromStdin(state)
+		if err != nil {
+			return // stdin 실패는 무시 (서버 callback으로 대체)
+		}
+		codeCh <- code
+	}()
+
+	var code string
+	select {
+	case code = <-codeCh:
+	case err := <-errCh:
 		return err
 	}
 

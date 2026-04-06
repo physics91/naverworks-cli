@@ -22,3 +22,8 @@ npm/win32-x64/package.json
 docs/research/
 docs/plans/
 docs/reviews/
+
+# 에이전트 런타임 아티팩트
+.brain/
+.codex
+.kilocode/

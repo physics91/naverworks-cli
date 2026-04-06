@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"bufio"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -9,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -147,6 +149,39 @@ func WaitForCallback(ln net.Listener, expectedState string, timeout time.Duratio
 	case <-time.After(timeout):
 		return "", fmt.Errorf("인증 타임아웃 (%v)", timeout)
 	}
+}
+
+func ReadCallbackURLFromStdin(expectedState string) (string, error) {
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		u, err := url.Parse(line)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "URL 형식 오류, 다시 붙여넣으세요:")
+			fmt.Fprint(os.Stderr, "> ")
+			continue
+		}
+		state := u.Query().Get("state")
+		if state != expectedState {
+			fmt.Fprintln(os.Stderr, "state 불일치, 다시 붙여넣으세요:")
+			fmt.Fprint(os.Stderr, "> ")
+			continue
+		}
+		code := u.Query().Get("code")
+		if code == "" {
+			fmt.Fprintln(os.Stderr, "code 파라미터 없음, 다시 붙여넣으세요:")
+			fmt.Fprint(os.Stderr, "> ")
+			continue
+		}
+		return code, nil
+	}
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("stdin 읽기 실패: %w", err)
+	}
+	return "", fmt.Errorf("stdin 입력 없음")
 }
 
 func HasScope(scopeStr string, target string) bool {

@@ -128,6 +128,7 @@ var calCreateEventCmd = &cobra.Command{
 		description, _ := cmd.Flags().GetString("description")
 		location, _ := cmd.Flags().GetString("location")
 		isAllDay, _ := cmd.Flags().GetBool("is-all-day")
+		timezone, _ := cmd.Flags().GetString("timezone")
 
 		if calendarID == "" || title == "" || start == "" || end == "" {
 			return fmt.Errorf("--calendar-id, --title, --start, --end는 필수입니다")
@@ -150,8 +151,24 @@ var calCreateEventCmd = &cobra.Command{
 			event["end"] = map[string]string{"date": endTime.Format("2006-01-02")}
 			event["isAllDay"] = true
 		} else {
-			event["start"] = map[string]string{"dateTime": start}
-			event["end"] = map[string]string{"dateTime": end}
+			startPayload := map[string]string{
+				"dateTime": startTime.Format(time.RFC3339),
+			}
+			endPayload := map[string]string{
+				"dateTime": endTime.Format(time.RFC3339),
+			}
+			if timezone != "" {
+				loc, err := time.LoadLocation(timezone)
+				if err != nil {
+					return fmt.Errorf("--timezone 형식 오류: %w", err)
+				}
+				startPayload["dateTime"] = startTime.In(loc).Format("2006-01-02T15:04:05")
+				endPayload["dateTime"] = endTime.In(loc).Format("2006-01-02T15:04:05")
+				startPayload["timeZone"] = timezone
+				endPayload["timeZone"] = timezone
+			}
+			event["start"] = startPayload
+			event["end"] = endPayload
 		}
 		if description != "" {
 			event["description"] = description
@@ -508,6 +525,7 @@ func init() {
 	calCreateEventCmd.Flags().String("description", "", "설명")
 	calCreateEventCmd.Flags().String("location", "", "장소")
 	calCreateEventCmd.Flags().Bool("is-all-day", false, "종일 일정")
+	calCreateEventCmd.Flags().String("timezone", "Asia/Seoul", "타임존 (IANA)")
 
 	// New Calendar CRUD commands
 	calCreateCalendarCmd.Flags().String("json", "", "JSON 페이로드 (필수, -: stdin)")

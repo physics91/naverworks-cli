@@ -414,7 +414,7 @@ func TestSmoke_ReadFileFlag_NotFound(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for nonexistent file")
 	}
-	if !strings.Contains(err.Error(), "파일 읽기 실패") {
+	if !strings.Contains(err.Error(), "파일 접근 실패") {
 		t.Errorf("unexpected error: %v", err)
 	}
 }

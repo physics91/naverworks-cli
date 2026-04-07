@@ -671,7 +671,7 @@ var botRichMenuSetImageCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		data, fileName, err := readFileFlag(cmd, "file")
+		data, fileName, err := readFileFlagWithLimit(cmd, "file", 3<<20) // 3MB: rich menu image limit
 		if err != nil {
 			return err
 		}

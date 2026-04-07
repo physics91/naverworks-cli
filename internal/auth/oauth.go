@@ -14,9 +14,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/physics91/naverworks-cli/internal/httputil"
 )
 
-var authHTTPClient = &http.Client{Timeout: 30 * time.Second}
+var authHTTPClient = &http.Client{
+	Timeout:   30 * time.Second,
+	Transport: httputil.NewSecureTransport(),
+}
 
 func GenerateState() (string, error) {
 	b := make([]byte, 16)
@@ -120,7 +125,7 @@ func WaitForCallback(ln net.Listener, expectedState string, timeout time.Duratio
 	mux.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
 		state := r.URL.Query().Get("state")
 		if state != expectedState {
-			errCh <- fmt.Errorf("state 불일치: expected %q, got %q", expectedState, state)
+			errCh <- fmt.Errorf("state 불일치: 인증 요청이 유효하지 않습니다")
 			w.WriteHeader(400)
 			fmt.Fprint(w, "인증 실패: state 불일치")
 			return

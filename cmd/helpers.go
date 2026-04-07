@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -241,8 +240,23 @@ func addListFlags(cmds ...*cobra.Command) {
 	}
 }
 
+const maxStdinSize int64 = 1 << 20 // 1MB
+
+// readStdinLimited reads from the given reader up to maxBytes.
+// Returns an explicit error if the input exceeds maxBytes.
+func readStdinLimited(r io.Reader, maxBytes int64) ([]byte, error) {
+	data, err := io.ReadAll(io.LimitReader(r, maxBytes+1))
+	if err != nil {
+		return nil, fmt.Errorf("stdin 읽기 실패: %w", err)
+	}
+	if int64(len(data)) > maxBytes {
+		return nil, fmt.Errorf("stdin 입력이 너무 큽니다 (최대 %d bytes)", maxBytes)
+	}
+	return data, nil
+}
+
 // readJSONFlagRaw reads the --json flag value as raw bytes.
-// If the value is "-", it reads from stdin.
+// If the value is "-", it reads from stdin (limited to maxStdinSize).
 // It validates that the content is valid JSON.
 func readJSONFlagRaw(cmd *cobra.Command) ([]byte, error) {
 	val, _ := cmd.Flags().GetString("json")
@@ -253,9 +267,9 @@ func readJSONFlagRaw(cmd *cobra.Command) ([]byte, error) {
 	var data []byte
 	if val == "-" {
 		var err error
-		data, err = io.ReadAll(bufio.NewReader(os.Stdin))
+		data, err = readStdinLimited(os.Stdin, maxStdinSize)
 		if err != nil {
-			return nil, fmt.Errorf("stdin 읽기 실패: %w", err)
+			return nil, err
 		}
 	} else {
 		data = []byte(val)
@@ -281,19 +295,46 @@ func readJSONFlag(cmd *cobra.Command) (map[string]interface{}, error) {
 	return body, nil
 }
 
-// readFileFlag reads the file path from the given flag and returns the file
-// contents along with the base file name. Returns an error if the flag is
-// empty or the file cannot be read.
-func readFileFlag(cmd *cobra.Command, flagName string) ([]byte, string, error) {
+const maxDefaultFileSize int64 = 10 << 20 // 10MB
+
+// readFileFlagWithLimit reads the file from the given flag, rejecting files
+// larger than maxBytes. Only regular files are accepted (no FIFO, devices, etc.).
+// File type is checked via os.Stat before opening to avoid blocking on FIFOs.
+// Returns file contents and base filename.
+func readFileFlagWithLimit(cmd *cobra.Command, flagName string, maxBytes int64) ([]byte, string, error) {
 	filePath, _ := cmd.Flags().GetString(flagName)
 	if filePath == "" {
 		return nil, "", fmt.Errorf("--%s 플래그가 필요합니다", flagName)
 	}
-	data, err := os.ReadFile(filePath)
+	info, err := os.Stat(filePath)
+	if err != nil {
+		return nil, "", fmt.Errorf("파일 접근 실패 (%s): %w", filePath, err)
+	}
+	if !info.Mode().IsRegular() {
+		return nil, "", fmt.Errorf("일반 파일만 허용합니다: %s", filePath)
+	}
+	if info.Size() > maxBytes {
+		return nil, "", fmt.Errorf("파일 크기 초과: %s (%d bytes, 최대 %d bytes)", filePath, info.Size(), maxBytes)
+	}
+	f, err := os.Open(filePath)
+	if err != nil {
+		return nil, "", fmt.Errorf("파일 열기 실패 (%s): %w", filePath, err)
+	}
+	defer f.Close()
+	data, err := io.ReadAll(io.LimitReader(f, maxBytes+1))
 	if err != nil {
 		return nil, "", fmt.Errorf("파일 읽기 실패 (%s): %w", filePath, err)
 	}
+	if int64(len(data)) > maxBytes {
+		return nil, "", fmt.Errorf("파일 크기 초과: %s (%d bytes, 최대 %d bytes)", filePath, len(data), maxBytes)
+	}
 	return data, filepath.Base(filePath), nil
+}
+
+// readFileFlag reads the file path from the given flag and returns the file
+// contents along with the base file name. Uses default 10MB limit.
+func readFileFlag(cmd *cobra.Command, flagName string) ([]byte, string, error) {
+	return readFileFlagWithLimit(cmd, flagName, maxDefaultFileSize)
 }
 
 func resolveOrCreateProfile(pc *config.ProfileConfig) (*config.Config, string) {

@@ -2,10 +2,13 @@ package auth
 
 import (
 	"encoding/json"
+	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestBuildAuthorizationURL(t *testing.T) {
@@ -124,6 +127,30 @@ func TestGenerateState(t *testing.T) {
 	}
 	if len(state) != 32 {
 		t.Errorf("expected 32 hex chars, got %d", len(state))
+	}
+}
+
+func TestWaitForCallback_StateMismatch_NoExpectedValue(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	port := ln.Addr().(*net.TCPAddr).Port
+
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		resp, _ := http.Get(fmt.Sprintf("http://127.0.0.1:%d/callback?state=wrong&code=test", port))
+		if resp != nil {
+			resp.Body.Close()
+		}
+	}()
+
+	_, err = WaitForCallback(ln, "expected-state", 5*time.Second)
+	if err == nil {
+		t.Fatal("expected error for state mismatch")
+	}
+	if strings.Contains(err.Error(), "expected-state") {
+		t.Errorf("error message should not contain expected state value: %s", err.Error())
 	}
 }
 

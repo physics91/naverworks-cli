@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/physics91/naverworks-cli/internal/auth"
+	"github.com/physics91/naverworks-cli/internal/httputil"
 )
 
 type Response struct {
@@ -38,18 +39,20 @@ type Client struct {
 }
 
 func NewClient(baseURL string, token *auth.Token, refreshFn RefreshFunc) *Client {
+	transport := httputil.NewSecureTransport()
 	return &Client{
 		baseURL:    strings.TrimRight(baseURL, "/"),
 		token:      token,
 		refreshFn:  refreshFn,
-		httpClient: &http.Client{Timeout: 30 * time.Second},
+		httpClient: &http.Client{Timeout: 30 * time.Second, Transport: transport},
 		noRedirectClient: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout:   30 * time.Second,
+			Transport: transport,
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				return http.ErrUseLastResponse
 			},
 		},
-		uploadClient: &http.Client{Timeout: 10 * time.Minute},
+		uploadClient: &http.Client{Timeout: 10 * time.Minute, Transport: transport},
 	}
 }
 

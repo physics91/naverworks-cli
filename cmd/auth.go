@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"runtime"
@@ -94,6 +95,11 @@ func loginOAuth(cfg *config.Config, store *auth.ProfileTokenStore) error {
 		return err
 	}
 	authURL := auth.BuildAuthorizationURL(authBaseURL, cfg.ClientID, redirectURI, state, scope)
+
+	if err := makeAuthURLValidator(authBaseURL)(authURL); err != nil {
+		ln.Close()
+		return fmt.Errorf("보안 검증 실패: %w", err)
+	}
 
 	if err := openBrowserFn(authURL); err != nil {
 		fmt.Fprintf(os.Stderr, "브라우저를 열 수 없습니다.\n")
@@ -271,14 +277,33 @@ func init() {
 	rootCmd.AddCommand(authCmd)
 }
 
-var openBrowserFn = func(url string) error {
+// makeAuthURLValidator creates a URL validator that only allows https
+// with the same host as the given base URL.
+func makeAuthURLValidator(baseURL string) func(string) error {
+	base, _ := url.Parse(baseURL)
+	return func(rawURL string) error {
+		u, err := url.Parse(rawURL)
+		if err != nil {
+			return fmt.Errorf("유효하지 않은 URL: %w", err)
+		}
+		if u.Scheme != "https" {
+			return fmt.Errorf("허용되지 않는 URL 스키마: %s (https만 허용)", u.Scheme)
+		}
+		if base != nil && u.Host != base.Host {
+			return fmt.Errorf("허용되지 않는 호스트: %s (expected %s)", u.Host, base.Host)
+		}
+		return nil
+	}
+}
+
+var openBrowserFn = func(rawURL string) error {
 	switch runtime.GOOS {
 	case "linux":
-		return exec.Command("xdg-open", url).Start()
+		return exec.Command("xdg-open", rawURL).Start()
 	case "darwin":
-		return exec.Command("open", url).Start()
+		return exec.Command("open", rawURL).Start()
 	case "windows":
-		return exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+		return exec.Command("rundll32", "url.dll,FileProtocolHandler", rawURL).Start()
 	}
 	return fmt.Errorf("지원하지 않는 OS")
 }

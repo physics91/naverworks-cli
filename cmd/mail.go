@@ -23,8 +23,11 @@ var mailSendCmd = &cobra.Command{
 		svc := api.NewMailService(client)
 
 		to, _ := cmd.Flags().GetString("to")
+		cc, _ := cmd.Flags().GetString("cc")
+		bcc, _ := cmd.Flags().GetString("bcc")
 		subject, _ := cmd.Flags().GetString("subject")
 		body, _ := cmd.Flags().GetString("body")
+		contentType, _ := cmd.Flags().GetString("content-type")
 
 		if to == "" || subject == "" || body == "" {
 			return fmt.Errorf("--to, --subject, --body는 필수입니다")
@@ -34,6 +37,15 @@ var mailSendCmd = &cobra.Command{
 			"to":      to,
 			"subject": subject,
 			"body":    body,
+		}
+		if cc != "" {
+			mail["cc"] = cc
+		}
+		if bcc != "" {
+			mail["bcc"] = bcc
+		}
+		if contentType != "" {
+			mail["contentType"] = contentType
 		}
 
 		resp, err := svc.SendMail(userID, mail)
@@ -501,9 +513,12 @@ func init() {
 
 	addListFlags(mailListFoldersCmd, mailListCmd)
 
-	mailSendCmd.Flags().String("to", "", "수신자 (필수)")
+	mailSendCmd.Flags().String("to", "", "수신자 (필수, 세미콜론으로 복수 지정)")
+	mailSendCmd.Flags().String("cc", "", "참조 (세미콜론으로 복수 지정)")
+	mailSendCmd.Flags().String("bcc", "", "숨은참조 (세미콜론으로 복수 지정)")
 	mailSendCmd.Flags().String("subject", "", "제목 (필수)")
 	mailSendCmd.Flags().String("body", "", "본문 (필수)")
+	mailSendCmd.Flags().String("content-type", "", "본문 형식 (html 또는 text, 기본: html)")
 
 	// --json flags
 	mailUpdateCmd.Flags().String("json", "", "JSON 페이로드 (필수, -: stdin)")

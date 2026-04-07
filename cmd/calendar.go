@@ -3,12 +3,34 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/physics91/naverworks-cli/internal/api"
 	"github.com/physics91/naverworks-cli/internal/output"
 	"github.com/spf13/cobra"
 )
+
+// parseReminders parses --reminder flag values in "METHOD:TRIGGER" format.
+// Examples: "DISPLAY:-PT10M", "EMAIL:-P1D"
+func parseReminders(values []string) ([]map[string]interface{}, error) {
+	var reminders []map[string]interface{}
+	for _, v := range values {
+		parts := strings.SplitN(v, ":", 2)
+		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			return nil, fmt.Errorf("--reminder 형식 오류: %q (올바른 형식: METHOD:TRIGGER, 예: DISPLAY:-PT10M)", v)
+		}
+		method := strings.ToUpper(parts[0])
+		if method != "DISPLAY" && method != "EMAIL" {
+			return nil, fmt.Errorf("--reminder method는 DISPLAY 또는 EMAIL만 가능합니다: %q", parts[0])
+		}
+		reminders = append(reminders, map[string]interface{}{
+			"method":  method,
+			"trigger": parts[1],
+		})
+	}
+	return reminders, nil
+}
 
 var calendarCmd = &cobra.Command{
 	Use:   "calendar",
@@ -129,6 +151,9 @@ var calCreateEventCmd = &cobra.Command{
 		location, _ := cmd.Flags().GetString("location")
 		isAllDay, _ := cmd.Flags().GetBool("is-all-day")
 		timezone, _ := cmd.Flags().GetString("timezone")
+		reminderVals, _ := cmd.Flags().GetStringArray("reminder")
+		visibility, _ := cmd.Flags().GetString("visibility")
+		transparency, _ := cmd.Flags().GetString("transparency")
 
 		if calendarID == "" || title == "" || start == "" || end == "" {
 			return fmt.Errorf("--calendar-id, --title, --start, --end는 필수입니다")
@@ -175,6 +200,19 @@ var calCreateEventCmd = &cobra.Command{
 		}
 		if location != "" {
 			event["location"] = location
+		}
+		if len(reminderVals) > 0 {
+			reminders, err := parseReminders(reminderVals)
+			if err != nil {
+				return err
+			}
+			event["reminders"] = reminders
+		}
+		if visibility != "" {
+			event["visibility"] = visibility
+		}
+		if transparency != "" {
+			event["transparency"] = transparency
 		}
 
 		cal := api.NewCalendarService(client)
@@ -526,6 +564,9 @@ func init() {
 	calCreateEventCmd.Flags().String("location", "", "장소")
 	calCreateEventCmd.Flags().Bool("is-all-day", false, "종일 일정")
 	calCreateEventCmd.Flags().String("timezone", "Asia/Seoul", "타임존 (IANA)")
+	calCreateEventCmd.Flags().StringArray("reminder", nil, "알림 (형식: METHOD:TRIGGER, 예: DISPLAY:-PT10M, EMAIL:-P1D, 여러 개 가능)")
+	calCreateEventCmd.Flags().String("visibility", "", "공개 범위 (PUBLIC 또는 PRIVATE)")
+	calCreateEventCmd.Flags().String("transparency", "", "바쁨 표시 (OPAQUE: 바쁨, TRANSPARENT: 한가함)")
 
 	// New Calendar CRUD commands
 	calCreateCalendarCmd.Flags().String("json", "", "JSON 페이로드 (필수, -: stdin)")

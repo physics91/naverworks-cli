@@ -69,12 +69,16 @@ var contactCreateCmd = &cobra.Command{
 		if body == nil {
 			contactName, _ := cmd.Flags().GetString("name")
 			email, _ := cmd.Flags().GetString("email")
+			phone, _ := cmd.Flags().GetString("phone")
 			if contactName == "" {
 				return fmt.Errorf("--name은 필수입니다")
 			}
 			body = map[string]interface{}{"name": contactName}
 			if email != "" {
 				body["email"] = email
+			}
+			if phone != "" {
+				body["phone"] = phone
 			}
 		}
 
@@ -108,6 +112,9 @@ var contactUpdateCmd = &cobra.Command{
 			}
 			if email, _ := cmd.Flags().GetString("email"); email != "" {
 				body["email"] = email
+			}
+			if phone, _ := cmd.Flags().GetString("phone"); phone != "" {
+				body["phone"] = phone
 			}
 		}
 
@@ -513,10 +520,12 @@ func init() {
 
 	contactCreateCmd.Flags().String("name", "", "연락처 이름 (필수)")
 	contactCreateCmd.Flags().String("email", "", "이메일")
+	contactCreateCmd.Flags().String("phone", "", "전화번호")
 	contactCreateCmd.Flags().String("data", "", "전체 JSON 페이로드")
 
 	contactUpdateCmd.Flags().String("name", "", "연락처 이름")
 	contactUpdateCmd.Flags().String("email", "", "이메일")
+	contactUpdateCmd.Flags().String("phone", "", "전화번호")
 	contactUpdateCmd.Flags().String("data", "", "전체 JSON 페이로드")
 
 	contactFullUpdateCmd.Flags().String("json", "", "JSON 페이로드 (필수, -: stdin)")

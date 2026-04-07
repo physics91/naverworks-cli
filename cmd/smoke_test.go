@@ -2176,3 +2176,151 @@ func TestResolveOrCreateProfile(t *testing.T) {
 		t.Errorf("expected cid1, got %s", cfg.ClientID)
 	}
 }
+
+// --- parseReminders tests ---
+
+func TestParseReminders_Valid(t *testing.T) {
+	tests := []struct {
+		input   []string
+		method  string
+		trigger string
+	}{
+		{[]string{"DISPLAY:-PT10M"}, "DISPLAY", "-PT10M"},
+		{[]string{"email:-P1D"}, "EMAIL", "-P1D"},
+		{[]string{"display:PT15M"}, "DISPLAY", "PT15M"},
+	}
+	for _, tt := range tests {
+		reminders, err := parseReminders(tt.input)
+		if err != nil {
+			t.Fatalf("parseReminders(%v) unexpected error: %v", tt.input, err)
+		}
+		if len(reminders) != 1 {
+			t.Fatalf("expected 1 reminder, got %d", len(reminders))
+		}
+		if reminders[0]["method"] != tt.method {
+			t.Errorf("expected method %q, got %q", tt.method, reminders[0]["method"])
+		}
+		if reminders[0]["trigger"] != tt.trigger {
+			t.Errorf("expected trigger %q, got %q", tt.trigger, reminders[0]["trigger"])
+		}
+	}
+}
+
+func TestParseReminders_Multiple(t *testing.T) {
+	reminders, err := parseReminders([]string{"DISPLAY:-PT10M", "EMAIL:-P1D"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(reminders) != 2 {
+		t.Fatalf("expected 2 reminders, got %d", len(reminders))
+	}
+	if reminders[0]["method"] != "DISPLAY" || reminders[1]["method"] != "EMAIL" {
+		t.Errorf("unexpected methods: %v, %v", reminders[0]["method"], reminders[1]["method"])
+	}
+}
+
+func TestParseReminders_InvalidFormat(t *testing.T) {
+	badInputs := [][]string{
+		{"DISPLAY"},
+		{""},
+		{":PT10M"},
+		{"DISPLAY:"},
+	}
+	for _, input := range badInputs {
+		_, err := parseReminders(input)
+		if err == nil {
+			t.Errorf("parseReminders(%v) expected error, got nil", input)
+		}
+	}
+}
+
+func TestParseReminders_InvalidMethod(t *testing.T) {
+	_, err := parseReminders([]string{"PUSH:-PT10M"})
+	if err == nil {
+		t.Fatal("expected error for invalid method")
+	}
+	if !strings.Contains(err.Error(), "DISPLAY 또는 EMAIL") {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
+func TestSmoke_CalendarCreateEvent_ReminderFlag(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "calendar", "create-event", "--help")
+	if err != nil {
+		t.Fatalf("calendar create-event --help failed: %v", err)
+	}
+	if !strings.Contains(out, "--reminder") {
+		t.Error("calendar create-event --help missing --reminder flag")
+	}
+	for _, flag := range []string{"--visibility", "--transparency"} {
+		if !strings.Contains(out, flag) {
+			t.Errorf("calendar create-event --help missing %s flag", flag)
+		}
+	}
+}
+
+func TestSmoke_MailSend_Flags(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "mail", "send", "--help")
+	if err != nil {
+		t.Fatalf("mail send --help failed: %v", err)
+	}
+	for _, flag := range []string{"--to", "--cc", "--bcc", "--subject", "--body", "--content-type"} {
+		if !strings.Contains(out, flag) {
+			t.Errorf("mail send --help missing %s flag", flag)
+		}
+	}
+}
+
+func TestSmoke_TaskCreate_Flags(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "task", "create", "--help")
+	if err != nil {
+		t.Fatalf("task create --help failed: %v", err)
+	}
+	for _, flag := range []string{"--title", "--description", "--due-date"} {
+		if !strings.Contains(out, flag) {
+			t.Errorf("task create --help missing %s flag", flag)
+		}
+	}
+}
+
+func TestSmoke_TaskUpdate_Flags(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "task", "update", "--help")
+	if err != nil {
+		t.Fatalf("task update --help failed: %v", err)
+	}
+	for _, flag := range []string{"--title", "--description", "--due-date"} {
+		if !strings.Contains(out, flag) {
+			t.Errorf("task update --help missing %s flag", flag)
+		}
+	}
+}
+
+func TestSmoke_ContactCreate_Flags(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "contact", "create", "--help")
+	if err != nil {
+		t.Fatalf("contact create --help failed: %v", err)
+	}
+	for _, flag := range []string{"--name", "--email", "--phone"} {
+		if !strings.Contains(out, flag) {
+			t.Errorf("contact create --help missing %s flag", flag)
+		}
+	}
+}
+
+func TestSmoke_ContactUpdate_Flags(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "contact", "update", "--help")
+	if err != nil {
+		t.Fatalf("contact update --help failed: %v", err)
+	}
+	for _, flag := range []string{"--name", "--email", "--phone"} {
+		if !strings.Contains(out, flag) {
+			t.Errorf("contact update --help missing %s flag", flag)
+		}
+	}
+}

@@ -58,6 +58,12 @@ var taskCreateCmd = &cobra.Command{
 				return fmt.Errorf("--title은 필수입니다")
 			}
 			body = map[string]interface{}{"title": title}
+			if desc, _ := cmd.Flags().GetString("description"); desc != "" {
+				body["description"] = desc
+			}
+			if dueDate, _ := cmd.Flags().GetString("due-date"); dueDate != "" {
+				body["dueDate"] = dueDate
+			}
 		}
 
 		resp, err := svc.CreateTask(userID, body)
@@ -87,6 +93,12 @@ var taskUpdateCmd = &cobra.Command{
 			body = map[string]interface{}{}
 			if title, _ := cmd.Flags().GetString("title"); title != "" {
 				body["title"] = title
+			}
+			if desc, _ := cmd.Flags().GetString("description"); desc != "" {
+				body["description"] = desc
+			}
+			if dueDate, _ := cmd.Flags().GetString("due-date"); dueDate != "" {
+				body["dueDate"] = dueDate
 			}
 		}
 
@@ -320,8 +332,12 @@ func init() {
 	}
 
 	taskCreateCmd.Flags().String("title", "", "태스크 제목 (필수)")
+	taskCreateCmd.Flags().String("description", "", "태스크 설명")
+	taskCreateCmd.Flags().String("due-date", "", "마감일 (YYYY-MM-DD)")
 	taskCreateCmd.Flags().String("data", "", "전체 JSON 페이로드")
 	taskUpdateCmd.Flags().String("title", "", "태스크 제목")
+	taskUpdateCmd.Flags().String("description", "", "태스크 설명")
+	taskUpdateCmd.Flags().String("due-date", "", "마감일 (YYYY-MM-DD)")
 	taskUpdateCmd.Flags().String("data", "", "전체 JSON 페이로드")
 
 	taskCreateCategoryCmd.Flags().String("json", "", "JSON 페이로드")

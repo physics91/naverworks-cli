@@ -27,7 +27,7 @@ var hrGetUserPropertiesCmd = &cobra.Command{
 	Short: "사용자 확장 속성 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewHRService(client).GetUserExtensionProperties(args[0])
 		})
 	},
@@ -83,7 +83,7 @@ var hrGetExtensionPropertyCmd = &cobra.Command{
 	Short: "확장 속성 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewHRService(client).GetExtensionProperty(args[0])
 		})
 	},
@@ -116,7 +116,7 @@ var hrDeleteExtensionPropertyCmd = &cobra.Command{
 	Short: "확장 속성 삭제",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewHRService(client).DeleteExtensionProperty(args[0])
 		})
 	},
@@ -127,7 +127,7 @@ var hrGetUserPropertyCmd = &cobra.Command{
 	Short: "사용자 확장 속성 상세 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewHRService(client).GetUserExtensionProperty(args[0], args[1])
 		})
 	},
@@ -181,7 +181,7 @@ var hrGetLeaveOfAbsenceCmd = &cobra.Command{
 	Short: "휴직 유형 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewHRService(client).GetLeaveOfAbsence(args[0])
 		})
 	},
@@ -214,7 +214,7 @@ var hrDeleteLeaveOfAbsenceCmd = &cobra.Command{
 	Short: "휴직 유형 삭제",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewHRService(client).DeleteLeaveOfAbsence(args[0])
 		})
 	},

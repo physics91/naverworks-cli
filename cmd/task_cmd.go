@@ -32,7 +32,7 @@ var taskGetCmd = &cobra.Command{
 	Short: "태스크 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewTaskService(client).GetTask(args[0])
 		})
 	},

@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"bufio"
-	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/physics91/naverworks-cli/internal/api"
@@ -169,12 +166,11 @@ var botSendCmd = &cobra.Command{
 		jsonStr, _ := cmd.Flags().GetString("json")
 
 		if text == "-" {
-			scanner := bufio.NewScanner(os.Stdin)
-			var lines []string
-			for scanner.Scan() {
-				lines = append(lines, scanner.Text())
+			data, err := readStdinLimited(os.Stdin, maxStdinSize)
+			if err != nil {
+				return err
 			}
-			text = strings.Join(lines, "\n")
+			text = strings.TrimRight(string(data), "\n")
 		}
 
 		if to == "" && channel == "" {
@@ -223,11 +219,7 @@ var botCreateAttachmentCmd = &cobra.Command{
 	Use:   "create-attachment",
 	Short: "Bot 첨부파일 생성 (presigned URL)",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, _, err := newAPIClient()
-		if err != nil {
-			return err
-		}
-		bot, botID, err := newBotSvc(cmd)
+		bot, client, botID, err := newBotSvcWithClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -236,12 +228,10 @@ var botCreateAttachmentCmd = &cobra.Command{
 		if filePath == "" {
 			return fmt.Errorf("--file 플래그가 필요합니다")
 		}
-		stat, err := os.Stat(filePath)
+		fileName, fileSize, err := statFileForUpload(filePath)
 		if err != nil {
-			return fmt.Errorf("파일 정보 조회 실패: %w", err)
+			return err
 		}
-		fileName := filepath.Base(filePath)
-		fileSize := stat.Size()
 
 		uploadBody := map[string]interface{}{
 			"fileName": fileName,
@@ -252,16 +242,7 @@ var botCreateAttachmentCmd = &cobra.Command{
 			return err
 		}
 
-		var result struct {
-			UploadURL string `json:"uploadUrl"`
-		}
-		if err := json.Unmarshal(resp.Body, &result); err != nil {
-			return fmt.Errorf("업로드 URL 파싱 실패: %w", err)
-		}
-		if result.UploadURL == "" {
-			return fmt.Errorf("업로드 URL을 받지 못했습니다")
-		}
-		if err := client.UploadFile(result.UploadURL, filePath); err != nil {
+		if err := doUploadFromResponse(client, resp.Body, filePath); err != nil {
 			return err
 		}
 		printBody(resp.Body)
@@ -820,6 +801,18 @@ func newBotSvc(cmd *cobra.Command) (*api.BotService, string, error) {
 		return nil, "", err
 	}
 	return api.NewBotService(client), botID, nil
+}
+
+func newBotSvcWithClient(cmd *cobra.Command) (*api.BotService, *api.Client, string, error) {
+	client, cfg, _, err := newAPIClient()
+	if err != nil {
+		return nil, nil, "", err
+	}
+	botID, err := resolveBotID(cmd, cfg.BotID)
+	if err != nil {
+		return nil, nil, "", err
+	}
+	return api.NewBotService(client), client, botID, nil
 }
 
 func resolveBotID(cmd *cobra.Command, cfgBotID string) (string, error) {

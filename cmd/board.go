@@ -29,7 +29,7 @@ var boardGetCmd = &cobra.Command{
 	Short: "게시판 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewBoardService(client).GetBoard(args[0])
 		})
 	},
@@ -118,7 +118,7 @@ var boardGetPostCmd = &cobra.Command{
 	Short: "게시글 상세 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewBoardService(client).GetPost(args[0], args[1])
 		})
 	},
@@ -283,7 +283,7 @@ var boardListAttachmentsCmd = &cobra.Command{
 	Short: "게시글 첨부파일 목록 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewBoardService(client).ListPostAttachments(args[0], args[1])
 		})
 	},
@@ -294,7 +294,7 @@ var boardGetAttachmentCmd = &cobra.Command{
 	Short: "게시글 첨부파일 상세 조회",
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewBoardService(client).GetPostAttachment(args[0], args[1], args[2])
 		})
 	},
@@ -362,7 +362,7 @@ var boardGetCommentCmd = &cobra.Command{
 	Short: "댓글 상세 조회",
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewBoardService(client).GetComment(args[0], args[1], args[2])
 		})
 	},
@@ -450,7 +450,7 @@ var boardListCommentAttachmentsCmd = &cobra.Command{
 	Short: "댓글 첨부파일 목록 조회",
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewBoardService(client).ListCommentAttachments(args[0], args[1], args[2])
 		})
 	},
@@ -461,7 +461,7 @@ var boardGetCommentAttachmentCmd = &cobra.Command{
 	Short: "댓글 첨부파일 상세 조회",
 	Args:  cobra.ExactArgs(4),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewBoardService(client).GetCommentAttachment(args[0], args[1], args[2], args[3])
 		})
 	},

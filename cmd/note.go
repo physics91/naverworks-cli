@@ -68,7 +68,7 @@ var noteGetPostCmd = &cobra.Command{
 	Short: "노트 게시글 상세 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewNoteService(client).GetPost(args[0], args[1])
 		})
 	},
@@ -200,7 +200,7 @@ var noteListAttachmentsCmd = &cobra.Command{
 	Short: "노트 게시글 첨부파일 목록 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewNoteService(client).ListPostAttachments(args[0], args[1])
 		})
 	},
@@ -211,7 +211,7 @@ var noteGetAttachmentCmd = &cobra.Command{
 	Short: "노트 게시글 첨부파일 상세 조회",
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewNoteService(client).GetPostAttachment(args[0], args[1], args[2])
 		})
 	},

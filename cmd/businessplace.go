@@ -29,7 +29,7 @@ var bpGetCmd = &cobra.Command{
 	Short: "사업장 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewBusinessPlaceService(client).GetBusinessPlace(args[0])
 		})
 	},

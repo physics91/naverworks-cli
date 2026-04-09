@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/physics91/naverworks-cli/internal/auth"
 	"github.com/physics91/naverworks-cli/internal/config"
 	"github.com/spf13/cobra"
 )
@@ -62,13 +63,7 @@ func setupTestEnv(t *testing.T) string {
 	t.Setenv("NW_DEFAULT_CALENDAR_USER_ID", "")
 	t.Setenv("NW_SCIM_ACCESS_TOKEN", "")
 
-	// Seam 복원
-	origAPI := apiBaseURL
-	origSCIM := scimBaseURL
-	t.Cleanup(func() {
-		apiBaseURL = origAPI
-		scimBaseURL = origSCIM
-	})
+	// apiBaseURL and scimBaseURL are constants; no seam restore needed
 
 	return tmpDir
 }
@@ -2022,34 +2017,20 @@ func TestSmoke_DriveGroupMkdir_WithParent(t *testing.T) {
 	}
 }
 
-func setAPIBaseURL(t *testing.T, url string) {
-	t.Helper()
-	old := apiBaseURL
-	apiBaseURL = url
-	t.Cleanup(func() { apiBaseURL = old })
-}
-
-func setSCIMBaseURL(t *testing.T, url string) {
-	t.Helper()
-	old := scimBaseURL
-	scimBaseURL = url
-	t.Cleanup(func() { scimBaseURL = old })
-}
-
 func TestResolveUserID(t *testing.T) {
 	tests := []struct {
 		name       string
 		flagValue  string
 		defaultUID string
-		authMethod string
+		authMethod auth.AuthMethod
 		wantUID    string
 		wantErr    bool
 	}{
-		{"flag value used", "user1", "default1", "oauth", "user1", false},
-		{"default used when flag empty", "", "default1", "oauth", "default1", false},
-		{"error when both empty", "", "", "oauth", "", true},
-		{"me rejected in jwt mode", "me", "", "jwt", "", true},
-		{"me allowed in oauth mode", "me", "", "oauth", "me", false},
+		{"flag value used", "user1", "default1", auth.AuthMethodOAuth, "user1", false},
+		{"default used when flag empty", "", "default1", auth.AuthMethodOAuth, "default1", false},
+		{"error when both empty", "", "", auth.AuthMethodOAuth, "", true},
+		{"me rejected in jwt mode", "me", "", auth.AuthMethodJWT, "", true},
+		{"me allowed in oauth mode", "me", "", auth.AuthMethodOAuth, "me", false},
 	}
 
 	for _, tt := range tests {

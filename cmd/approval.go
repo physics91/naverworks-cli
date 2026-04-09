@@ -3,8 +3,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/physics91/naverworks-cli/internal/api"
 	"github.com/spf13/cobra"
@@ -47,7 +45,7 @@ var approvalGetCmd = &cobra.Command{
 	Short: "결재 문서 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewApprovalService(client).GetDocument(args[0])
 		})
 	},
@@ -70,7 +68,7 @@ var approvalGetCategoryCmd = &cobra.Command{
 	Short: "결재 카테고리 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewApprovalService(client).GetCategory(args[0])
 		})
 	},
@@ -136,7 +134,7 @@ var approvalDeleteCategoryCmd = &cobra.Command{
 	Short: "결재 카테고리 삭제",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewApprovalService(client).DeleteCategory(args[0])
 		})
 	},
@@ -212,7 +210,7 @@ var approvalGetFormCmd = &cobra.Command{
 	Short: "결재 양식 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewApprovalService(client).GetDocumentForm(args[0])
 		})
 	},
@@ -230,30 +228,24 @@ var approvalUploadAttachmentCmd = &cobra.Command{
 		if filePath == "" {
 			return fmt.Errorf("--file 플래그가 필요합니다")
 		}
-		stat, err := os.Stat(filePath)
+		fileName, fileSize, err := statFileForUpload(filePath)
 		if err != nil {
-			return fmt.Errorf("파일 정보 조회 실패: %w", err)
+			return err
 		}
 		uploadBody := map[string]interface{}{
-			"fileName": filepath.Base(filePath),
-			"fileSize": stat.Size(),
+			"fileName": fileName,
+			"fileSize": fileSize,
 		}
-		bodyBytes, _ := json.Marshal(uploadBody)
+		bodyBytes, err := json.Marshal(uploadBody)
+		if err != nil {
+			return fmt.Errorf("JSON 직렬화 실패: %w", err)
+		}
 		svc := api.NewApprovalService(client)
 		resp, err := svc.CreateUserDocumentAttachment(userID, bodyBytes)
 		if err != nil {
 			return err
 		}
-		var result struct {
-			UploadURL string `json:"uploadUrl"`
-		}
-		if err := json.Unmarshal(resp.Body, &result); err != nil {
-			return fmt.Errorf("업로드 URL 파싱 실패: %w", err)
-		}
-		if result.UploadURL == "" {
-			return fmt.Errorf("업로드 URL을 받지 못했습니다")
-		}
-		if err := client.UploadFile(result.UploadURL, filePath); err != nil {
+		if err := doUploadFromResponse(client, resp.Body, filePath); err != nil {
 			return err
 		}
 		printBody(resp.Body)
@@ -273,30 +265,24 @@ var approvalUploadImportedAttachmentCmd = &cobra.Command{
 		if filePath == "" {
 			return fmt.Errorf("--file 플래그가 필요합니다")
 		}
-		stat, err := os.Stat(filePath)
+		fileName, fileSize, err := statFileForUpload(filePath)
 		if err != nil {
-			return fmt.Errorf("파일 정보 조회 실패: %w", err)
+			return err
 		}
 		uploadBody := map[string]interface{}{
-			"fileName": filepath.Base(filePath),
-			"fileSize": stat.Size(),
+			"fileName": fileName,
+			"fileSize": fileSize,
 		}
-		bodyBytes, _ := json.Marshal(uploadBody)
+		bodyBytes, err := json.Marshal(uploadBody)
+		if err != nil {
+			return fmt.Errorf("JSON 직렬화 실패: %w", err)
+		}
 		svc := api.NewApprovalService(client)
 		resp, err := svc.CreateImportedDocumentAttachment(bodyBytes)
 		if err != nil {
 			return err
 		}
-		var result struct {
-			UploadURL string `json:"uploadUrl"`
-		}
-		if err := json.Unmarshal(resp.Body, &result); err != nil {
-			return fmt.Errorf("업로드 URL 파싱 실패: %w", err)
-		}
-		if result.UploadURL == "" {
-			return fmt.Errorf("업로드 URL을 받지 못했습니다")
-		}
-		if err := client.UploadFile(result.UploadURL, filePath); err != nil {
+		if err := doUploadFromResponse(client, resp.Body, filePath); err != nil {
 			return err
 		}
 		printBody(resp.Body)
@@ -328,7 +314,7 @@ var approvalLinkageCodeGetCmd = &cobra.Command{
 	Short: "연동 코드 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewApprovalService(client).GetLinkageCode(args[0])
 		})
 	},
@@ -404,7 +390,7 @@ var approvalLinkageCodeItemGetCmd = &cobra.Command{
 	Short: "연동 코드 항목 상세 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewApprovalService(client).GetLinkageCodeItem(args[0], args[1])
 		})
 	},
@@ -459,7 +445,7 @@ var approvalLinkageCodeItemDeleteCmd = &cobra.Command{
 	Short: "연동 코드 항목 삭제",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewApprovalService(client).DeleteLinkageCodeItem(args[0], args[1])
 		})
 	},

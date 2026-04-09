@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
+const (
 	apiBaseURL  = "https://www.worksapis.com/v1.0"
 	scimBaseURL = "https://www.worksapis.com/scim/v2"
 )
@@ -67,7 +67,7 @@ func buildAPIClient(cfg *config.Config, token *auth.Token, activeProfileName str
 			}
 		}
 
-		if t.AuthMethod == "jwt" {
+		if t.AuthMethod == auth.AuthMethodJWT {
 			return refreshJWTTokenFromAssertion(cfg, t, store)
 		}
 
@@ -109,7 +109,7 @@ func buildScimClient(cfg *config.Config) (*api.Client, error) {
 		return nil, fmt.Errorf("scim_access_token이 설정되지 않았습니다. naverworks config set scim_access_token <token>")
 	}
 	token := &auth.Token{
-		AuthMethod:  "scim",
+		AuthMethod:  auth.AuthMethodSCIM,
 		AccessToken: cfg.ScimAccessToken,
 		TokenType:   "Bearer",
 		ExpiresAt:   time.Now().Add(365 * 24 * time.Hour),
@@ -117,7 +117,7 @@ func buildScimClient(cfg *config.Config) (*api.Client, error) {
 	return api.NewClient(scimBaseURL, token, nil), nil
 }
 
-func resolveUserID(cmd *cobra.Command, defaultUID string, authMethod string) (string, error) {
+func resolveUserID(cmd *cobra.Command, defaultUID string, authMethod auth.AuthMethod) (string, error) {
 	userID, _ := cmd.Flags().GetString("user-id")
 	if userID == "" {
 		userID = defaultUID
@@ -125,7 +125,7 @@ func resolveUserID(cmd *cobra.Command, defaultUID string, authMethod string) (st
 	if userID == "" {
 		return "", fmt.Errorf("--user-id를 지정하거나 config에서 기본값을 설정하세요")
 	}
-	if userID == "me" && authMethod == "jwt" {
+	if userID == "me" && authMethod == auth.AuthMethodJWT {
 		return "", fmt.Errorf("JWT 모드에서는 --user-id me를 사용할 수 없습니다. 명시적 userId를 지정하세요")
 	}
 	return userID, nil
@@ -156,7 +156,7 @@ func printBody(body []byte) {
 	output.NewFormatter(outputFormat, os.Stdout).PrintRaw(body)
 }
 
-func getAndPrint(fn func(*api.Client) (*api.Response, error)) error {
+func fetchAndPrint(fn func(*api.Client) (*api.Response, error)) error {
 	client, _, _, err := newAPIClient()
 	if err != nil {
 		return err
@@ -228,7 +228,11 @@ func parseOptionalJSONData(cmd *cobra.Command) (map[string]interface{}, error) {
 }
 
 func printDownloadURL(downloadURL string) {
-	result, _ := json.Marshal(map[string]string{"download_url": downloadURL})
+	result, err := json.Marshal(map[string]string{"download_url": downloadURL})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, `{"error":{"code":"marshal_error","description":"%s"}}`+"\n", err)
+		return
+	}
 	printBody(result)
 }
 
@@ -335,6 +339,51 @@ func readFileFlagWithLimit(cmd *cobra.Command, flagName string, maxBytes int64) 
 // contents along with the base file name. Uses default 10MB limit.
 func readFileFlag(cmd *cobra.Command, flagName string) ([]byte, string, error) {
 	return readFileFlagWithLimit(cmd, flagName, maxDefaultFileSize)
+}
+
+// validateFromUntil parses from/until RFC3339 strings, validates the range
+// (until >= from, max 31 days), and returns the parsed times.
+func validateFromUntil(from, until string) (time.Time, time.Time, error) {
+	fromTime, err := time.Parse(time.RFC3339, from)
+	if err != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("--from 형식 오류 (RFC3339): %w", err)
+	}
+	untilTime, err := time.Parse(time.RFC3339, until)
+	if err != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("--until 형식 오류 (RFC3339): %w", err)
+	}
+	if untilTime.Before(fromTime) {
+		return time.Time{}, time.Time{}, fmt.Errorf("--from이 --until보다 이후입니다")
+	}
+	if untilTime.Sub(fromTime) > 31*24*time.Hour {
+		return time.Time{}, time.Time{}, fmt.Errorf("--from과 --until 간격은 최대 31일입니다")
+	}
+	return fromTime, untilTime, nil
+}
+
+// statFileForUpload returns the base file name and size for a local file path.
+// Used by presigned-upload commands across drive, bot, contact, directory, and approval.
+func statFileForUpload(localPath string) (fileName string, fileSize int64, err error) {
+	stat, err := os.Stat(localPath)
+	if err != nil {
+		return "", 0, fmt.Errorf("파일 정보 조회 실패: %w", err)
+	}
+	return filepath.Base(localPath), stat.Size(), nil
+}
+
+// doUploadFromResponse extracts the uploadUrl from a JSON response body
+// and uploads the local file to it.
+func doUploadFromResponse(client *api.Client, respBody []byte, localPath string) error {
+	var result struct {
+		UploadURL string `json:"uploadUrl"`
+	}
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return fmt.Errorf("업로드 URL 파싱 실패: %w", err)
+	}
+	if result.UploadURL == "" {
+		return fmt.Errorf("업로드 URL을 받지 못했습니다")
+	}
+	return client.UploadFile(result.UploadURL, localPath)
 }
 
 func resolveOrCreateProfile(pc *config.ProfileConfig) (*config.Config, string) {

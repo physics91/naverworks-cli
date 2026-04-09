@@ -1,10 +1,7 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/physics91/naverworks-cli/internal/api"
 	"github.com/spf13/cobra"
@@ -47,7 +44,7 @@ var contactGetCmd = &cobra.Command{
 	Short: "연락처 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewContactService(client).GetContact(args[0])
 		})
 	},
@@ -202,12 +199,10 @@ var contactUploadPhotoCmd = &cobra.Command{
 		if filePath == "" {
 			return fmt.Errorf("--file 플래그가 필요합니다")
 		}
-		stat, err := os.Stat(filePath)
+		fileName, fileSize, err := statFileForUpload(filePath)
 		if err != nil {
-			return fmt.Errorf("파일 정보 조회 실패: %w", err)
+			return err
 		}
-		fileName := filepath.Base(filePath)
-		fileSize := stat.Size()
 
 		uploadBody := map[string]interface{}{
 			"fileName": fileName,
@@ -218,16 +213,7 @@ var contactUploadPhotoCmd = &cobra.Command{
 			return err
 		}
 
-		var result struct {
-			UploadURL string `json:"uploadUrl"`
-		}
-		if err := json.Unmarshal(resp.Body, &result); err != nil {
-			return fmt.Errorf("업로드 URL 파싱 실패: %w", err)
-		}
-		if result.UploadURL == "" {
-			return fmt.Errorf("업로드 URL을 받지 못했습니다")
-		}
-		if err := client.UploadFile(result.UploadURL, filePath); err != nil {
+		if err := doUploadFromResponse(client, resp.Body, filePath); err != nil {
 			return err
 		}
 		printBody(resp.Body)
@@ -295,7 +281,7 @@ var contactCustomPropertyGetCmd = &cobra.Command{
 	Short: "커스텀 속성 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewContactService(client).GetCustomProperty(args[0])
 		})
 	},
@@ -422,7 +408,7 @@ var contactTagGetCmd = &cobra.Command{
 	Short: "태그 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewContactService(client).GetTag(args[0])
 		})
 	},

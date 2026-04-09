@@ -107,7 +107,7 @@ var auditGetPolicyGroupCmd = &cobra.Command{
 	Short: "감사 정책 그룹 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewAuditService(client).GetPolicyGroup(args[0])
 		})
 	},
@@ -140,7 +140,7 @@ var auditDeletePolicyGroupCmd = &cobra.Command{
 	Short: "감사 정책 그룹 삭제",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewAuditService(client).DeletePolicyGroup(args[0])
 		})
 	},
@@ -188,7 +188,7 @@ var auditRemovePolicyMemberCmd = &cobra.Command{
 	Short: "감사 정책 그룹 멤버 제거",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewAuditService(client).RemovePolicyGroupMember(args[0], args[1])
 		})
 	},

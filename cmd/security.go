@@ -14,7 +14,7 @@ var secGetExternalBrowserCmd = &cobra.Command{
 	Use:   "get-external-browser",
 	Short: "외부 브라우저 설정 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewSecurityService(client).GetExternalBrowser()
 		})
 	},

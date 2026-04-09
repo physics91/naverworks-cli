@@ -1,10 +1,7 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/physics91/naverworks-cli/internal/api"
 	"github.com/spf13/cobra"
@@ -178,14 +175,10 @@ var driveTrashListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		resp, err := api.NewDriveService(client).ListTrashFiles(userID, cursor, count)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		svc := api.NewDriveService(client)
+		return runListCmd(cmd, nil, "files", func(c string, n int) (*api.Response, error) {
+			return svc.ListTrashFiles(userID, c, n)
+		})
 	},
 }
 
@@ -363,14 +356,10 @@ var driveRevisionListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		resp, err := api.NewDriveService(client).ListRevisions(userID, args[0], cursor, count)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		svc := api.NewDriveService(client)
+		return runListCmd(cmd, nil, "revisions", func(c string, n int) (*api.Response, error) {
+			return svc.ListRevisions(userID, args[0], c, n)
+		})
 	},
 }
 
@@ -648,14 +637,10 @@ var driveShareListSubFoldersCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		resp, err := api.NewDriveService(client).ListShareSubFolders(userID, args[0], cursor, count)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		svc := api.NewDriveService(client)
+		return runListCmd(cmd, nil, "folders", func(c string, n int) (*api.Response, error) {
+			return svc.ListShareSubFolders(userID, args[0], c, n)
+		})
 	},
 }
 
@@ -683,7 +668,7 @@ var driveSharedGetDriveCmd = &cobra.Command{
 	Short: "공유 드라이브 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewSharedDriveService(client).GetDrive(args[0])
 		})
 	},
@@ -707,7 +692,7 @@ var driveSharedGetCmd = &cobra.Command{
 	Short: "공유 드라이브 파일 상세 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewSharedDriveService(client).GetFile(args[0], args[1])
 		})
 	},
@@ -1039,14 +1024,9 @@ var driveSharedRevisionListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		resp, err := svc.ListRevisions(args[0], args[1], cursor, count)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return runListCmd(cmd, nil, "revisions", func(c string, n int) (*api.Response, error) {
+			return svc.ListRevisions(args[0], args[1], c, n)
+		})
 	},
 }
 
@@ -1055,7 +1035,7 @@ var driveSharedRevisionGetCmd = &cobra.Command{
 	Short: "공유 드라이브 파일 리비전 상세 조회",
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewSharedDriveService(client).GetRevision(args[0], args[1], args[2])
 		})
 	},
@@ -1106,14 +1086,9 @@ var driveSharedTrashListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		resp, err := svc.ListTrashFiles(args[0], cursor, count)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return runListCmd(cmd, nil, "files", func(c string, n int) (*api.Response, error) {
+			return svc.ListTrashFiles(args[0], c, n)
+		})
 	},
 }
 
@@ -1160,7 +1135,7 @@ var driveSharedLinkSettingCmd = &cobra.Command{
 	Short: "공유 드라이브 링크 설정 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewSharedDriveService(client).GetLinkSetting(args[0])
 		})
 	},
@@ -1176,7 +1151,7 @@ var driveSharedLinkGetCmd = &cobra.Command{
 	Short: "공유 드라이브 파일 링크 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewSharedDriveService(client).GetLink(args[0], args[1])
 		})
 	},
@@ -1256,7 +1231,7 @@ var driveSharedPermissionListCmd = &cobra.Command{
 	Short: "공유 드라이브 권한 목록 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewSharedDriveService(client).ListPermissions(args[0])
 		})
 	},
@@ -1289,7 +1264,7 @@ var driveSharedPermissionGetCmd = &cobra.Command{
 	Short: "공유 드라이브 권한 상세 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewSharedDriveService(client).GetPermission(args[0], args[1])
 		})
 	},
@@ -1401,7 +1376,7 @@ var driveSharedFilePermissionListCmd = &cobra.Command{
 	Short: "공유 드라이브 파일 권한 목록 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewSharedDriveService(client).ListFilePermissions(args[0], args[1])
 		})
 	},
@@ -1434,7 +1409,7 @@ var driveSharedFilePermissionGetCmd = &cobra.Command{
 	Short: "공유 드라이브 파일 권한 상세 조회",
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewSharedDriveService(client).GetFilePermission(args[0], args[1], args[2])
 		})
 	},
@@ -1546,7 +1521,7 @@ var driveGroupGetFolderCmd = &cobra.Command{
 	Short: "그룹 폴더 정보 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewGroupFolderService(client).GetFolder(args[0])
 		})
 	},
@@ -1570,7 +1545,7 @@ var driveGroupGetCmd = &cobra.Command{
 	Short: "그룹 폴더 파일 상세 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewGroupFolderService(client).GetFile(args[0], args[1])
 		})
 	},
@@ -1583,7 +1558,7 @@ var driveGroupCreateFolderCmd = &cobra.Command{
 	Short: "그룹 폴더 생성",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewGroupFolderService(client).CreateFolder(args[0])
 		})
 	},
@@ -1870,14 +1845,9 @@ var driveGroupRevisionListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		resp, err := svc.ListRevisions(args[0], args[1], cursor, count)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return runListCmd(cmd, nil, "revisions", func(c string, n int) (*api.Response, error) {
+			return svc.ListRevisions(args[0], args[1], c, n)
+		})
 	},
 }
 
@@ -1886,7 +1856,7 @@ var driveGroupRevisionGetCmd = &cobra.Command{
 	Short: "그룹 파일 리비전 상세 조회",
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewGroupFolderService(client).GetRevision(args[0], args[1], args[2])
 		})
 	},
@@ -1937,14 +1907,9 @@ var driveGroupTrashListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		resp, err := svc.ListTrashFiles(args[0], cursor, count)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return runListCmd(cmd, nil, "files", func(c string, n int) (*api.Response, error) {
+			return svc.ListTrashFiles(args[0], c, n)
+		})
 	},
 }
 
@@ -1991,7 +1956,7 @@ var driveGroupLinkSettingCmd = &cobra.Command{
 	Short: "그룹 폴더 링크 설정 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewGroupFolderService(client).GetLinkSetting(args[0])
 		})
 	},
@@ -2007,7 +1972,7 @@ var driveGroupLinkGetCmd = &cobra.Command{
 	Short: "그룹 파일 링크 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewGroupFolderService(client).GetLink(args[0], args[1])
 		})
 	},
@@ -2085,7 +2050,7 @@ var driveGroupPermissionListCmd = &cobra.Command{
 	Short: "그룹 파일 권한 목록 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewGroupFolderService(client).ListPermissions(args[0], args[1])
 		})
 	},
@@ -2118,7 +2083,7 @@ var driveGroupPermissionGetCmd = &cobra.Command{
 	Short: "그룹 파일 권한 상세 조회",
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewGroupFolderService(client).GetPermission(args[0], args[1], args[2])
 		})
 	},
@@ -2582,14 +2547,10 @@ var driveSFRevisionListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		resp, err := api.NewSharedFolderService(client).ListRevisions(userID, args[0], args[1], cursor, count)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		svc := api.NewSharedFolderService(client)
+		return runListCmd(cmd, nil, "revisions", func(c string, n int) (*api.Response, error) {
+			return svc.ListRevisions(userID, args[0], args[1], c, n)
+		})
 	},
 }
 
@@ -2775,27 +2736,6 @@ func listFilesWithFolder(cmd *cobra.Command, id string, svc driveLister) error {
 	return nil
 }
 
-func statFileForUpload(localPath string) (fileName string, fileSize int64, err error) {
-	stat, err := os.Stat(localPath)
-	if err != nil {
-		return "", 0, fmt.Errorf("파일 정보 조회 실패: %w", err)
-	}
-	return filepath.Base(localPath), stat.Size(), nil
-}
-
-func doUploadFromResponse(client *api.Client, respBody []byte, localPath string) error {
-	var result struct {
-		UploadURL string `json:"uploadUrl"`
-	}
-	if err := json.Unmarshal(respBody, &result); err != nil {
-		return fmt.Errorf("업로드 URL 파싱 실패: %w", err)
-	}
-	if result.UploadURL == "" {
-		return fmt.Errorf("업로드 URL을 받지 못했습니다")
-	}
-	return client.UploadFile(result.UploadURL, localPath)
-}
-
 func init() {
 	// MyDrive commands with --user-id
 	for _, c := range []*cobra.Command{
@@ -2846,19 +2786,23 @@ func init() {
 		c.Flags().String("json", "", "JSON 요청 본문 (- 이면 stdin)")
 	}
 
-	// Pagination flags for all list commands
+	// Pagination flags for list commands that use runListCmd (cursor + count + all)
+	addListFlags(
+		driveSharedListDrivesCmd,
+		driveTrashListCmd,
+		driveRevisionListCmd, driveShareListSubFoldersCmd,
+		driveGroupRevisionListCmd, driveGroupTrashListCmd,
+		driveSharedRevisionListCmd, driveSharedTrashListCmd,
+		driveSFRevisionListCmd,
+	)
+
+	// Pagination flags for list commands with manual branching (cursor + count only)
 	for _, c := range []*cobra.Command{
-		driveListCmd, driveTrashListCmd,
-		driveSharedListDrivesCmd, driveSharedListCmd,
+		driveListCmd,
+		driveSharedListCmd,
 		driveGroupListCmd,
 		driveSharedFolderListCmd, driveSharedFolderFilesCmd,
-		driveRevisionListCmd, driveShareListSubFoldersCmd,
-		// Task 5-6: Group revision + trash list
-		driveGroupRevisionListCmd, driveGroupTrashListCmd,
-		// Task 5-10: SharedDrive revision + trash list
-		driveSharedRevisionListCmd, driveSharedTrashListCmd,
-		// Task 5-12/13: SharedFolder list + revision list
-		driveSFListFilesCmd, driveSFRevisionListCmd,
+		driveSFListFilesCmd,
 	} {
 		c.Flags().String("cursor", "", "페이지네이션 커서")
 		c.Flags().Int("count", 0, "페이지 크기")

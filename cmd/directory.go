@@ -1,10 +1,7 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/physics91/naverworks-cli/internal/api"
 	"github.com/spf13/cobra"
@@ -34,7 +31,7 @@ var dirGetUserCmd = &cobra.Command{
 	Short: "사용자 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewDirectoryService(client).GetUser(args[0])
 		})
 	},
@@ -57,7 +54,7 @@ var dirGetGroupCmd = &cobra.Command{
 	Short: "그룹 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewDirectoryService(client).GetGroup(args[0])
 		})
 	},
@@ -80,7 +77,7 @@ var dirGetOrgUnitCmd = &cobra.Command{
 	Short: "조직 단위 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewDirectoryService(client).GetOrgUnit(args[0])
 		})
 	},
@@ -388,12 +385,10 @@ var dirUploadPhotoCmd = &cobra.Command{
 		if filePath == "" {
 			return fmt.Errorf("--file 플래그가 필요합니다")
 		}
-		stat, statErr := os.Stat(filePath)
-		if statErr != nil {
-			return fmt.Errorf("파일 정보 조회 실패: %w", statErr)
+		fileName, fileSize, err := statFileForUpload(filePath)
+		if err != nil {
+			return err
 		}
-		fileName := filepath.Base(filePath)
-		fileSize := stat.Size()
 
 		uploadBody := map[string]interface{}{
 			"fileName": fileName,
@@ -404,16 +399,7 @@ var dirUploadPhotoCmd = &cobra.Command{
 			return err
 		}
 
-		var result struct {
-			UploadURL string `json:"uploadUrl"`
-		}
-		if err := json.Unmarshal(resp.Body, &result); err != nil {
-			return fmt.Errorf("업로드 URL 파싱 실패: %w", err)
-		}
-		if result.UploadURL == "" {
-			return fmt.Errorf("업로드 URL을 받지 못했습니다")
-		}
-		if err := client.UploadFile(result.UploadURL, filePath); err != nil {
+		if err := doUploadFromResponse(client, resp.Body, filePath); err != nil {
 			return err
 		}
 		printBody(resp.Body)
@@ -484,7 +470,7 @@ var dirProfileStatusGetCmd = &cobra.Command{
 	Short: "프로필 상태 상세 조회",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewDirectoryService(client).GetProfileStatus(args[0], args[1])
 		})
 	},
@@ -758,7 +744,7 @@ var dirGetLinkUrlCmd = &cobra.Command{
 	Short: "사용자 연동 URL 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewDirectoryService(client).GetLinkUrl(args[0])
 		})
 	},
@@ -841,7 +827,7 @@ var dirUserCustomPropertyGetCmd = &cobra.Command{
 	Short: "사용자 커스텀 속성 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewDirectoryService(client).GetUserCustomProperty(args[0])
 		})
 	},
@@ -1292,7 +1278,7 @@ var dirOrgUnitAccessRestrictGetCmd = &cobra.Command{
 	Short: "조직 단위 접근 제한 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewDirectoryService(client).GetOrgUnitAccessRestrict(args[0])
 		})
 	},
@@ -1378,7 +1364,7 @@ var dirGetPositionCmd = &cobra.Command{
 	Short: "직책 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewDirectoryService(client).GetPosition(args[0])
 		})
 	},
@@ -1526,7 +1512,7 @@ var dirListPositionExternalKeysCmd = &cobra.Command{
 	Use:   "list-position-external-keys",
 	Short: "직책 외부 키 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewDirectoryService(client).ListPositionExternalKeys()
 		})
 	},
@@ -1539,7 +1525,7 @@ var dirGetLevelCmd = &cobra.Command{
 	Short: "직급 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewDirectoryService(client).GetLevel(args[0])
 		})
 	},
@@ -1687,7 +1673,7 @@ var dirListLevelExternalKeysCmd = &cobra.Command{
 	Use:   "list-level-external-keys",
 	Short: "직급 외부 키 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewDirectoryService(client).ListLevelExternalKeys()
 		})
 	},
@@ -1700,7 +1686,7 @@ var dirGetEmploymentTypeCmd = &cobra.Command{
 	Short: "고용 유형 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewDirectoryService(client).GetEmploymentType(args[0])
 		})
 	},
@@ -1848,7 +1834,7 @@ var dirListEmploymentTypeExternalKeysCmd = &cobra.Command{
 	Use:   "list-employment-type-external-keys",
 	Short: "고용 유형 외부 키 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewDirectoryService(client).ListEmploymentTypeExternalKeys()
 		})
 	},
@@ -1888,7 +1874,7 @@ var dirEmploymentTypeAccessRestrictGetCmd = &cobra.Command{
 	Short: "고용 유형 접근 제한 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewDirectoryService(client).GetEmploymentTypeAccessRestrict(args[0])
 		})
 	},
@@ -1941,7 +1927,7 @@ var dirGetUserTypeCmd = &cobra.Command{
 	Short: "사용자 유형 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewDirectoryService(client).GetUserType(args[0])
 		})
 	},
@@ -2089,7 +2075,7 @@ var dirListUserTypeExternalKeysCmd = &cobra.Command{
 	Use:   "list-user-type-external-keys",
 	Short: "사용자 유형 외부 키 목록 조회",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewDirectoryService(client).ListUserTypeExternalKeys()
 		})
 	},
@@ -2129,7 +2115,7 @@ var dirUserTypeAccessRestrictGetCmd = &cobra.Command{
 	Short: "사용자 유형 접근 제한 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewDirectoryService(client).GetUserTypeAccessRestrict(args[0])
 		})
 	},
@@ -2199,7 +2185,7 @@ var dirProfileStatusDefGetCmd = &cobra.Command{
 	Short: "프로필 상태 정의 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewDirectoryService(client).GetDirectoryProfileStatus(args[0])
 		})
 	},
@@ -2346,7 +2332,7 @@ var dirCustomFieldGetCmd = &cobra.Command{
 	Short: "커스텀 필드 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewDirectoryService(client).GetCustomField(args[0])
 		})
 	},

@@ -170,7 +170,7 @@ var authStatusCmd = &cobra.Command{
 			"scopes":      strings.Fields(token.Scope),
 		}
 
-		if token.AuthMethod == "jwt" {
+		if token.AuthMethod == auth.AuthMethodJWT {
 			status["service_account_id"] = token.ServiceAccountID
 		} else if auth.HasScope(token.Scope, "openid") && auth.HasScope(token.Scope, "profile") {
 			if name, err := auth.FetchUserName(token.AccessToken, authBaseURL); err == nil && name != "" {
@@ -206,7 +206,7 @@ var authLogoutCmd = &cobra.Command{
 			return fmt.Errorf("로그인되어 있지 않습니다")
 		}
 
-		if token.AuthMethod == "oauth" && cfg.ClientID != "" && cfg.ClientSecret != "" {
+		if token.AuthMethod == auth.AuthMethodOAuth && cfg.ClientID != "" && cfg.ClientSecret != "" {
 			if token.RefreshToken != "" {
 				if err := auth.RevokeToken(authBaseURL, cfg.ClientID, cfg.ClientSecret, token.RefreshToken, "refresh_token"); err != nil {
 					fmt.Fprintf(os.Stderr, "경고: refresh token revoke 실패: %v\n", err)
@@ -239,7 +239,7 @@ var authRefreshCmd = &cobra.Command{
 			return fmt.Errorf("로그인되어 있지 않습니다. naverworks auth login을 실행하세요")
 		}
 
-		if token.AuthMethod == "oauth" && token.RefreshToken != "" {
+		if token.AuthMethod == auth.AuthMethodOAuth && token.RefreshToken != "" {
 			if err := auth.RefreshAccessToken(authBaseURL, cfg.ClientID, cfg.ClientSecret, token); err != nil {
 				return fmt.Errorf("OAuth 토큰 갱신 실패: %w", err)
 			}
@@ -250,7 +250,7 @@ var authRefreshCmd = &cobra.Command{
 			return nil
 		}
 
-		if token.AuthMethod == "jwt" {
+		if token.AuthMethod == auth.AuthMethodJWT {
 			if token.RefreshToken != "" {
 				if err := auth.RefreshAccessToken(authBaseURL, cfg.ClientID, cfg.ClientSecret, token); err == nil {
 					if err := store.Save(token); err != nil {

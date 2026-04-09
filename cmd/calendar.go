@@ -80,19 +80,8 @@ var calListEventsCmd = &cobra.Command{
 			return fmt.Errorf("--calendar-id, --from, --until은 필수입니다")
 		}
 
-		fromTime, err := time.Parse(time.RFC3339, from)
-		if err != nil {
-			return fmt.Errorf("--from 형식 오류 (RFC3339): %w", err)
-		}
-		untilTime, err := time.Parse(time.RFC3339, until)
-		if err != nil {
-			return fmt.Errorf("--until 형식 오류 (RFC3339): %w", err)
-		}
-		if untilTime.Before(fromTime) {
-			return fmt.Errorf("--from이 --until보다 이후입니다")
-		}
-		if untilTime.Sub(fromTime) > 31*24*time.Hour {
-			return fmt.Errorf("--from과 --until 간격은 최대 31일입니다")
+		if _, _, err := validateFromUntil(from, until); err != nil {
+			return err
 		}
 
 		cal := api.NewCalendarService(client)
@@ -254,7 +243,7 @@ var calGetCalendarCmd = &cobra.Command{
 	Short: "캘린더 상세 조회",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return getAndPrint(func(client *api.Client) (*api.Response, error) {
+		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
 			return api.NewCalendarService(client).GetCalendar(args[0])
 		})
 	},
@@ -431,19 +420,8 @@ var calDefaultListEventsCmd = &cobra.Command{
 			return fmt.Errorf("--from, --until은 필수입니다")
 		}
 
-		fromTime, err := time.Parse(time.RFC3339, from)
-		if err != nil {
-			return fmt.Errorf("--from 형식 오류 (RFC3339): %w", err)
-		}
-		untilTime, err := time.Parse(time.RFC3339, until)
-		if err != nil {
-			return fmt.Errorf("--until 형식 오류 (RFC3339): %w", err)
-		}
-		if untilTime.Before(fromTime) {
-			return fmt.Errorf("--from이 --until보다 이후입니다")
-		}
-		if untilTime.Sub(fromTime) > 31*24*time.Hour {
-			return fmt.Errorf("--from과 --until 간격은 최대 31일입니다")
+		if _, _, err := validateFromUntil(from, until); err != nil {
+			return err
 		}
 
 		cal := api.NewCalendarService(client)

@@ -26,13 +26,25 @@ func encodeQueryFromValues(params url.Values) string {
 }
 
 func ExtractNextCursor(body []byte) string {
-	var resp struct {
-		ResponseMetaData struct {
-			NextCursor string `json:"nextCursor"`
-		} `json:"responseMetaData"`
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return ""
 	}
-	_ = json.Unmarshal(body, &resp)
-	return resp.ResponseMetaData.NextCursor
+	return extractNextCursorFromParsed(raw)
+}
+
+func extractNextCursorFromParsed(raw map[string]json.RawMessage) string {
+	metaRaw, ok := raw["responseMetaData"]
+	if !ok {
+		return ""
+	}
+	var meta struct {
+		NextCursor string `json:"nextCursor"`
+	}
+	if json.Unmarshal(metaRaw, &meta) != nil {
+		return ""
+	}
+	return meta.NextCursor
 }
 
 type FetchFunc func(cursor string) (*Response, error)
@@ -60,7 +72,7 @@ func PaginateAll(fetch FetchFunc, itemsKey string) (json.RawMessage, error) {
 			allItems = append(allItems, pageItems...)
 		}
 
-		cursor = ExtractNextCursor(resp.Body)
+		cursor = extractNextCursorFromParsed(raw)
 		if cursor == "" {
 			break
 		}

@@ -7,18 +7,29 @@ import (
 	"path/filepath"
 	"runtime"
 	"time"
+
+	"github.com/physics91/naverworks-cli/internal/fileutil"
 )
 
 const refreshBuffer = 60 * time.Second
 
+// AuthMethod represents the authentication method used to obtain a token.
+type AuthMethod string
+
+const (
+	AuthMethodJWT   AuthMethod = "jwt"
+	AuthMethodOAuth AuthMethod = "oauth"
+	AuthMethodSCIM  AuthMethod = "scim"
+)
+
 type Token struct {
-	AuthMethod       string    `json:"auth_method"`
-	AccessToken      string    `json:"access_token"`
-	RefreshToken     string    `json:"refresh_token,omitempty"`
-	TokenType        string    `json:"token_type"`
-	ExpiresAt        time.Time `json:"expires_at"`
-	Scope            string    `json:"scope"`
-	ServiceAccountID string    `json:"service_account_id,omitempty"`
+	AuthMethod       AuthMethod `json:"auth_method"`
+	AccessToken      string     `json:"access_token"`
+	RefreshToken     string     `json:"refresh_token,omitempty"`
+	TokenType        string     `json:"token_type"`
+	ExpiresAt        time.Time  `json:"expires_at"`
+	Scope            string     `json:"scope"`
+	ServiceAccountID string     `json:"service_account_id,omitempty"`
 }
 
 func (t *Token) IsExpired() bool {
@@ -61,7 +72,7 @@ func (s *TokenStore) Load() (*Token, error) {
 }
 
 func (s *TokenStore) Save(token *Token) error {
-	return writeSecureJSON(s.path, token)
+	return fileutil.WriteSecureJSON(s.path, token)
 }
 
 func (s *TokenStore) Delete() error {
@@ -130,62 +141,7 @@ func (s *ProfileTokenStore) Save(token *Token) error {
 	}
 
 	pf.Tokens[s.profile] = token
-	return writeSecureJSON(s.path, pf)
-}
-
-// writeSecureJSON serializes v as indented JSON and writes it to path with
-// secure permissions (0700 directory, 0600 file).
-// On non-Windows, it uses atomic write (temp file + sync + rename) to prevent
-// file corruption on process crash. On Windows, it falls back to os.WriteFile
-// because os.Rename cannot replace an existing file atomically.
-func writeSecureJSON(path string, v interface{}) error {
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0700); err != nil {
-		return fmt.Errorf("디렉토리 생성 실패: %w", err)
-	}
-	if runtime.GOOS != "windows" {
-		if err := os.Chmod(dir, 0700); err != nil {
-			return fmt.Errorf("디렉토리 권한 설정 실패: %w", err)
-		}
-	}
-	data, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return fmt.Errorf("토큰 직렬화 실패: %w", err)
-	}
-
-	if runtime.GOOS == "windows" {
-		if err := os.WriteFile(path, data, 0600); err != nil {
-			return err
-		}
-		return nil
-	}
-
-	// Atomic write: temp file in same directory → sync → rename
-	tmp, err := os.CreateTemp(dir, ".naverworks-*.tmp")
-	if err != nil {
-		return fmt.Errorf("임시 파일 생성 실패: %w", err)
-	}
-	tmpPath := tmp.Name()
-	defer os.Remove(tmpPath) // 실패 시 정리
-
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		return fmt.Errorf("임시 파일 쓰기 실패: %w", err)
-	}
-	if err := tmp.Sync(); err != nil {
-		tmp.Close()
-		return fmt.Errorf("임시 파일 동기화 실패: %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("임시 파일 닫기 실패: %w", err)
-	}
-	if err := os.Chmod(tmpPath, 0600); err != nil {
-		return fmt.Errorf("파일 권한 설정 실패: %w", err)
-	}
-	if err := os.Rename(tmpPath, path); err != nil {
-		return fmt.Errorf("원자적 파일 교체 실패: %w", err)
-	}
-	return nil
+	return fileutil.WriteSecureJSON(s.path, pf)
 }
 
 func (s *ProfileTokenStore) Delete() error {
@@ -214,5 +170,5 @@ func (s *ProfileTokenStore) Delete() error {
 		return os.Remove(s.path)
 	}
 
-	return writeSecureJSON(s.path, pf)
+	return fileutil.WriteSecureJSON(s.path, pf)
 }

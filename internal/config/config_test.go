@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/physics91/naverworks-cli/internal/fileutil"
 )
 
 func TestLoadConfig_EmptyDir(t *testing.T) {
@@ -170,8 +172,8 @@ func TestSaveSecureJSON_NewFile(t *testing.T) {
 	path := filepath.Join(dir, "sub", "config.json")
 
 	cfg := &Config{ClientID: "new-file-test"}
-	if err := saveSecureJSON(cfg, path); err != nil {
-		t.Fatalf("saveSecureJSON failed: %v", err)
+	if err := fileutil.WriteSecureJSON(path, cfg); err != nil {
+		t.Fatalf("WriteSecureJSON failed: %v", err)
 	}
 
 	data, err := os.ReadFile(path)
@@ -198,12 +200,12 @@ func TestSaveSecureJSON_OverwriteExisting(t *testing.T) {
 	path := filepath.Join(dir, "config.json")
 
 	// Write initial
-	if err := saveSecureJSON(&Config{ClientID: "first"}, path); err != nil {
+	if err := fileutil.WriteSecureJSON(path, &Config{ClientID: "first"}); err != nil {
 		t.Fatalf("first write failed: %v", err)
 	}
 
 	// Overwrite
-	if err := saveSecureJSON(&Config{ClientID: "second"}, path); err != nil {
+	if err := fileutil.WriteSecureJSON(path, &Config{ClientID: "second"}); err != nil {
 		t.Fatalf("overwrite failed: %v", err)
 	}
 
@@ -223,7 +225,7 @@ func TestSaveSecureJSON_NoTempFileLeftOver(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 
-	if err := saveSecureJSON(&Config{ClientID: "cleanup-test"}, path); err != nil {
+	if err := fileutil.WriteSecureJSON(path, &Config{ClientID: "cleanup-test"}); err != nil {
 		t.Fatalf("write failed: %v", err)
 	}
 
@@ -246,7 +248,7 @@ func TestSaveSecureJSON_DirPermissionsPreserved(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 
-	if err := saveSecureJSON(&Config{ClientID: "perm-test"}, path); err != nil {
+	if err := fileutil.WriteSecureJSON(path, &Config{ClientID: "perm-test"}); err != nil {
 		t.Fatalf("write failed: %v", err)
 	}
 
@@ -268,12 +270,12 @@ func TestSaveSecureJSON_OriginalPreservedOnMarshalError(t *testing.T) {
 	path := filepath.Join(dir, "config.json")
 
 	// Write initial file
-	if err := saveSecureJSON(&Config{ClientID: "original"}, path); err != nil {
+	if err := fileutil.WriteSecureJSON(path, &Config{ClientID: "original"}); err != nil {
 		t.Fatalf("initial write failed: %v", err)
 	}
 
 	// Attempt to write something that will fail serialization
-	err := saveSecureJSON(make(chan int), path)
+	err := fileutil.WriteSecureJSON(path, make(chan int))
 	if err == nil {
 		t.Fatal("expected serialization error")
 	}

@@ -271,6 +271,7 @@ func (c *Client) UploadFile(uploadURL string, filePath string) error {
 		}
 		return fmt.Errorf("업로드 실패 (HTTP %d): %s", resp.StatusCode, string(body))
 	}
+	io.Copy(io.Discard, resp.Body)
 	resp.Body.Close()
 	return nil
 }
@@ -326,26 +327,29 @@ func (c *Client) UploadMultipart(path, fieldName, fileName string, data []byte) 
 }
 
 func (c *Client) uploadMultipartWithRetry(path, fieldName, fileName string, data []byte, retried401 bool) (*Response, error) {
-	for attempt := 0; attempt <= maxRateLimitRetries; attempt++ {
-		body := &bytes.Buffer{}
-		writer := multipart.NewWriter(body)
-		part, err := writer.CreateFormFile(fieldName, fileName)
-		if err != nil {
-			return nil, fmt.Errorf("multipart 파트 생성 실패: %w", err)
-		}
-		if _, err := part.Write(data); err != nil {
-			return nil, fmt.Errorf("multipart 파트 쓰기 실패: %w", err)
-		}
-		if err := writer.Close(); err != nil {
-			return nil, fmt.Errorf("multipart writer 닫기 실패: %w", err)
-		}
+	// Build multipart body once before the retry loop
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile(fieldName, fileName)
+	if err != nil {
+		return nil, fmt.Errorf("multipart 파트 생성 실패: %w", err)
+	}
+	if _, err := part.Write(data); err != nil {
+		return nil, fmt.Errorf("multipart 파트 쓰기 실패: %w", err)
+	}
+	if err := writer.Close(); err != nil {
+		return nil, fmt.Errorf("multipart writer 닫기 실패: %w", err)
+	}
+	contentType := writer.FormDataContentType()
+	bodyBytes := body.Bytes()
 
-		req, err := http.NewRequest("POST", c.baseURL+path, body)
+	for attempt := 0; attempt <= maxRateLimitRetries; attempt++ {
+		req, err := http.NewRequest("POST", c.baseURL+path, bytes.NewReader(bodyBytes))
 		if err != nil {
 			return nil, fmt.Errorf("요청 생성 실패: %w", err)
 		}
 		req.Header.Set("Authorization", "Bearer "+c.token.AccessToken)
-		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.Header.Set("Content-Type", contentType)
 
 		resp, err := c.httpClient.Do(req)
 		if err != nil {

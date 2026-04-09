@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/physics91/naverworks-cli/internal/fileutil"
 )
 
 func TestTokenStore_SaveAndLoad(t *testing.T) {
@@ -192,8 +194,8 @@ func TestWriteSecureJSON_NewFile(t *testing.T) {
 	path := filepath.Join(dir, "sub", "token.json")
 
 	token := &Token{AccessToken: "new-file-test"}
-	if err := writeSecureJSON(path, token); err != nil {
-		t.Fatalf("writeSecureJSON failed: %v", err)
+	if err := fileutil.WriteSecureJSON(path, token); err != nil {
+		t.Fatalf("WriteSecureJSON failed: %v", err)
 	}
 
 	data, err := os.ReadFile(path)
@@ -220,12 +222,12 @@ func TestWriteSecureJSON_OverwriteExisting(t *testing.T) {
 	path := filepath.Join(dir, "token.json")
 
 	// Write initial file
-	if err := writeSecureJSON(path, &Token{AccessToken: "first"}); err != nil {
+	if err := fileutil.WriteSecureJSON(path, &Token{AccessToken: "first"}); err != nil {
 		t.Fatalf("first write failed: %v", err)
 	}
 
 	// Overwrite
-	if err := writeSecureJSON(path, &Token{AccessToken: "second"}); err != nil {
+	if err := fileutil.WriteSecureJSON(path, &Token{AccessToken: "second"}); err != nil {
 		t.Fatalf("overwrite failed: %v", err)
 	}
 
@@ -245,7 +247,7 @@ func TestWriteSecureJSON_NoTempFileLeftOver(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "token.json")
 
-	if err := writeSecureJSON(path, &Token{AccessToken: "cleanup-test"}); err != nil {
+	if err := fileutil.WriteSecureJSON(path, &Token{AccessToken: "cleanup-test"}); err != nil {
 		t.Fatalf("write failed: %v", err)
 	}
 
@@ -268,7 +270,7 @@ func TestWriteSecureJSON_DirPermissionsPreserved(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "token.json")
 
-	if err := writeSecureJSON(path, &Token{AccessToken: "perm-test"}); err != nil {
+	if err := fileutil.WriteSecureJSON(path, &Token{AccessToken: "perm-test"}); err != nil {
 		t.Fatalf("write failed: %v", err)
 	}
 
@@ -290,12 +292,12 @@ func TestWriteSecureJSON_OriginalPreservedOnMarshalError(t *testing.T) {
 	path := filepath.Join(dir, "token.json")
 
 	// Write initial file
-	if err := writeSecureJSON(path, &Token{AccessToken: "original"}); err != nil {
+	if err := fileutil.WriteSecureJSON(path, &Token{AccessToken: "original"}); err != nil {
 		t.Fatalf("initial write failed: %v", err)
 	}
 
 	// Attempt to write something that will fail serialization (channel is not JSON-serializable)
-	err := writeSecureJSON(path, make(chan int))
+	err := fileutil.WriteSecureJSON(path, make(chan int))
 	if err == nil {
 		t.Fatal("expected serialization error")
 	}

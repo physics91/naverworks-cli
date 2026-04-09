@@ -1,6 +1,7 @@
 package output
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -35,9 +36,10 @@ func (f *Formatter) PrintRaw(data []byte) {
 		f.printAsTable(data)
 		return
 	}
-	var pretty interface{}
-	if err := json.Unmarshal(data, &pretty); err == nil {
-		f.Print(pretty)
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, data, "", "  "); err == nil {
+		buf.WriteByte('\n')
+		buf.WriteTo(f.writer)
 	} else {
 		fmt.Fprintln(f.writer, string(data))
 	}

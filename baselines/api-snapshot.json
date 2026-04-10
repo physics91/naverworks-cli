@@ -1,6 +1,6 @@
 {
   "_bootstrap": false,
-  "last_checked": "2026-04-06T00:00:00Z",
+  "last_checked": "2026-04-10T00:00:00Z",
   "known_announcements": [
     {
       "url": "https://naver.worksmobile.com/whats-new/workplace-user-notice/change-in-screen/sso/",
@@ -57,6 +57,27 @@
       "date": "2025-01-01",
       "summary": "WORKPLACE 구버전 외부 서비스 인증 연동, 계정 동기화 API, 결재/근태/구성원 API가 2025년 11월 30일 18시(KST)에 종료됨. NAVER WORKS SSO 인증, Directory API, Business Support API(결재/근태)로 마이그레이션 필요.",
       "affected_domains": ["auth", "directory", "approval", "attendance", "hr"]
+    },
+    {
+      "url": "https://naver.worksmobile.com/notice/89142/",
+      "title": "네이버웍스 경영지원 API 출시 안내",
+      "date": "2024-09-27",
+      "summary": "경영지원 API 정식 출시 (2024-09-27). 결재/근태/HR/사업장 API가 경영지원 상품 사용자에게 제공됨. NCP 기반 레거시 API는 계속 동작하나 신규 스펙은 반영되지 않음.",
+      "affected_domains": ["approval", "attendance", "hr", "businessplace"]
+    },
+    {
+      "url": "https://naver.worksmobile.com/notice/92558/",
+      "title": "네이버웍스 코어 & 웍스 드라이브 일부 기능의 사양 변경 및 종료 안내 (v4.2)",
+      "date": "2025-04-01",
+      "summary": "v4.2 정기 업데이트: 감사 로그 다운로드 API 변경 (멤버 계정 인증 시 [관리자 > 감사] 동의 팝업 확인 필요). MDM 원격 기기 초기화 기능 종료 (2025-04-09 19:00 KST). WORKS Drive Explorer 32비트 지원 종료.",
+      "affected_domains": ["audit"]
+    },
+    {
+      "url": "https://gov-naverworks.com/notice/48341/",
+      "title": "[중요] 네이버웍스 API 1.0 종료 안내 - 공공용 네이버웍스",
+      "date": "2024-02-01",
+      "summary": "공공용 NAVER WORKS API 1.0 종료 최종 안내. API 2.0으로의 전환 권고.",
+      "affected_domains": ["auth"]
     }
   ]
 }

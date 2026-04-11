@@ -1,6 +1,6 @@
 {
   "_bootstrap": false,
-  "last_checked": "2026-04-10T00:00:00Z",
+  "last_checked": "2026-04-11T00:00:00Z",
   "known_announcements": [
     {
       "url": "https://naver.worksmobile.com/whats-new/workplace-user-notice/change-in-screen/sso/",
@@ -78,6 +78,27 @@
       "date": "2024-02-01",
       "summary": "공공용 NAVER WORKS API 1.0 종료 최종 안내. API 2.0으로의 전환 권고.",
       "affected_domains": ["auth"]
+    },
+    {
+      "url": "https://naver.worksmobile.com/release-notes/core_20250410/",
+      "title": "네이버웍스 코어 정기 업데이트 (2025-04-10 / v4.2)",
+      "date": "2025-04-10",
+      "summary": "신규 Survey Result Query API 추가 (form). Mail Read API에 threadData 파라미터 추가 (mail). 파일 업로드 URL 생성 API에 resume 파라미터 추가 (drive). 감사 로그 API에 service='approval' 파라미터 값 추가로 결재 감사로그 조회 가능 (audit). GitHub Issue #4 생성.",
+      "affected_domains": ["form", "mail", "drive", "audit"]
+    },
+    {
+      "url": "https://naver.worksmobile.com/notice/95685/",
+      "title": "경영지원 재무/법인카드 연동/전자세금계산서/급여/서약서/자원 예약 종료 안내",
+      "date": "2025-08-01",
+      "summary": "경영지원 재무/법인카드 연동/전자세금계산서: 2025-08-21부터 신규 신청 제한. 급여/서약서/자원 예약: 2026-01-22부터 신규 신청 제한. 해당 기능과 연계된 Business Support API 범위에 영향 가능성.",
+      "affected_domains": ["businessplace", "hr"]
+    },
+    {
+      "url": "https://naver.worksmobile.com/release-notes/core_20251127/",
+      "title": "네이버웍스 코어 정기 업데이트 (2025-11-27)",
+      "date": "2025-11-27",
+      "summary": "2025년 11월 정기 코어 업데이트. 구체적인 API 변경사항은 공식 페이지 확인 필요 (403 접근 제한으로 상세 내용 미확인).",
+      "affected_domains": []
     }
   ]
 }

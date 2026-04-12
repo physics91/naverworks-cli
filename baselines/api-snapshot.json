@@ -1,6 +1,6 @@
 {
   "_bootstrap": false,
-  "last_checked": "2026-04-11T00:00:00Z",
+  "last_checked": "2026-04-12T00:00:00Z",
   "known_announcements": [
     {
       "url": "https://naver.worksmobile.com/whats-new/workplace-user-notice/change-in-screen/sso/",
@@ -99,6 +99,13 @@
       "date": "2025-11-27",
       "summary": "2025년 11월 정기 코어 업데이트. 구체적인 API 변경사항은 공식 페이지 확인 필요 (403 접근 제한으로 상세 내용 미확인).",
       "affected_domains": []
+    },
+    {
+      "url": "https://naver.worksmobile.com/release-notes/core_20260409/",
+      "title": "네이버웍스 코어 정기 업데이트 (2026-04-09 / v4.5)",
+      "date": "2026-04-09",
+      "summary": "Audit API: Developers 감사 섹션에서 '조직 연동 팝업 URL' 이벤트 대상 항목 제거. Provisioning: 앱 등록/수정/삭제 작업이 감사 이벤트 대상에 추가. GitHub Issue #5 생성.",
+      "affected_domains": ["audit", "scim"]
     }
   ]
 }

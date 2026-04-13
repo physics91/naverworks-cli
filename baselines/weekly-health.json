@@ -1,15 +1,48 @@
 {
   "_bootstrap": false,
-  "created_at": "2026-04-06T00:00:00Z",
+  "created_at": "2026-04-13T00:00:00Z",
   "vulnerabilities": [],
-  "outdated_deps": [],
+  "outdated_deps": [
+    {
+      "path": "golang.org/x/term",
+      "current": "v0.27.0",
+      "latest": "v0.42.0",
+      "indirect": false
+    },
+    {
+      "path": "golang.org/x/sys",
+      "current": "v0.28.0",
+      "latest": "v0.43.0",
+      "indirect": true
+    },
+    {
+      "path": "github.com/spf13/pflag",
+      "current": "v1.0.9",
+      "latest": "v1.0.10",
+      "indirect": true
+    },
+    {
+      "path": "github.com/cpuguy83/go-md2man/v2",
+      "current": "v2.0.6",
+      "latest": "v2.0.7",
+      "indirect": true
+    },
+    {
+      "path": "gopkg.in/check.v1",
+      "current": "v0.0.0-20161208181325-20d25e280405",
+      "latest": "v1.0.0-20201130134442-10cb98267c6c",
+      "indirect": true
+    }
+  ],
   "coverage": {
     "github.com/physics91/naverworks-cli": 0.0,
-    "github.com/physics91/naverworks-cli/cmd": 12.7,
-    "github.com/physics91/naverworks-cli/internal/api": 86.0,
-    "github.com/physics91/naverworks-cli/internal/auth": 56.1,
-    "github.com/physics91/naverworks-cli/internal/config": 65.5,
-    "github.com/physics91/naverworks-cli/internal/output": 88.1,
+    "github.com/physics91/naverworks-cli/cmd": 13.6,
+    "github.com/physics91/naverworks-cli/internal/api": 85.3,
+    "github.com/physics91/naverworks-cli/internal/auth": 56.5,
+    "github.com/physics91/naverworks-cli/internal/config": 68.3,
+    "github.com/physics91/naverworks-cli/internal/fileutil": 0.0,
+    "github.com/physics91/naverworks-cli/internal/httputil": 80.0,
+    "github.com/physics91/naverworks-cli/internal/output": 88.4,
     "github.com/physics91/naverworks-cli/scripts": 0.0
   }
 }

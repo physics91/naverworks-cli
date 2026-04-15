@@ -36,11 +36,16 @@
      -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
      "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=npm:registry.npmjs.org" \
      | jq -r '.value')
-   echo "$TOKEN" | cut -d'.' -f2 | base64 -d 2>/dev/null | jq '{
+   PAYLOAD=$(echo "$TOKEN" | cut -d'.' -f2 | tr '_-' '/+')
+   PAD=$(( (4 - ${#PAYLOAD} % 4) % 4 ))
+   if [ "$PAD" -gt 0 ]; then
+     PAYLOAD="${PAYLOAD}$(printf '%*s' "$PAD" '' | tr ' ' '=')"
+   fi
+   echo "$PAYLOAD" | base64 -d 2>/dev/null | jq '{
      repository, repository_owner, workflow_ref, environment
    }'
    ```
-   이 claim이 npm Trusted Publisher 설정과 100% 일치해야 한다.
+   JWT의 payload는 base64url 인코딩이므로 `_-` → `/+` 치환과 `=` 패딩 보정이 필요하다. 이 claim이 npm Trusted Publisher 설정과 100% 일치해야 한다.
 
 ## 필수 전제 조건 체크리스트
 

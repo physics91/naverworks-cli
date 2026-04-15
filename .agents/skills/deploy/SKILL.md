@@ -122,23 +122,43 @@ npm 확인:
 
 ```bash
 TARGET=<VERSION>
-MISMATCH=0
+FAIL_COUNT=0
+LOOKUP_FAIL=0
+NPM_ERR=$(mktemp)
+trap 'rm -f "$NPM_ERR"' EXIT
 for pkg in naverworks \
            @physics91org/linux-x64 @physics91org/linux-arm64 \
            @physics91org/darwin-x64 @physics91org/darwin-arm64 \
            @physics91org/win32-x64; do
-  v=$(npm view "$pkg" version 2>/dev/null)
-  if [ "$v" = "$TARGET" ]; then
-    printf "✓ %-32s %s\n" "$pkg" "$v"
+  if v=$(npm --loglevel=error view "$pkg" version 2>"$NPM_ERR"); then
+    if [ "$v" = "$TARGET" ]; then
+      printf "✓ %-32s %s\n" "$pkg" "$v"
+    else
+      printf "✗ %-32s %s (expected %s)\n" "$pkg" "$v" "$TARGET"
+      FAIL_COUNT=$((FAIL_COUNT+1))
+    fi
   else
-    printf "✗ %-32s %s (expected %s)\n" "$pkg" "$v" "$TARGET"
-    MISMATCH=1
+    err=$(cat "$NPM_ERR")
+    case "$err" in
+      *E404*|*"404 Not Found"*)
+        printf "✗ %-32s not published (expected %s)\n" "$pkg" "$TARGET"
+        FAIL_COUNT=$((FAIL_COUNT+1))
+        ;;
+      *)
+        printf "! %-32s lookup failed: %s\n" "$pkg" "$err"
+        LOOKUP_FAIL=$((LOOKUP_FAIL+1))
+        ;;
+    esac
   fi
 done
 ```
 
-- 모두 일치: `npm_status: 6개 패키지 @<VERSION> 확인 완료`
-- 일부 불일치: `npm_status: partial — N개 실패`로 보고하고, **트러블슈팅 섹션 참조** 안내
+상태 판정은 아래 우선순위를 따른다 (첫 번째로 매칭되는 항목 하나만 보고). 확정 실패(`FAIL_COUNT`)와 조회 실패(`LOOKUP_FAIL`)가 동시에 발생하면 둘 다 표시한다:
+
+1. `FAIL_COUNT>0 && LOOKUP_FAIL>0`: `npm_status: partial_with_verification_failures — <FAIL_COUNT>개 실패, <LOOKUP_FAIL>개 조회 실패`. 확정 실패와 조회 실패가 섞여 있으므로 **트러블슈팅 섹션 참조** 후 두 유형을 각각 처리한다.
+2. `FAIL_COUNT>0`: `npm_status: partial — <FAIL_COUNT>개 실패`. 일부 패키지가 미게시(E404) 또는 버전 불일치 — **트러블슈팅 섹션 참조** 안내.
+3. `LOOKUP_FAIL>0`: `npm_status: verification_failed — <LOOKUP_FAIL>개 조회 실패`. 레지스트리/네트워크/인증 문제이므로 publish 성공 여부와 무관 — 재확인 필요.
+4. 그 외: `npm_status: 6개 패키지 @<VERSION> 확인 완료`.
 
 `gh`를 사용할 수 없으면 태그 push 완료까지만 확정 보고하고, Release/npm 검증은 생략 사유를 함께 보고한다.
 

@@ -28,12 +28,28 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
-          node-version: "20"
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Upgrade npm for trusted publishing
         run: npm install -g npm@latest
+
+      - name: Diagnostic (trusted publishing readiness)
+        run: |
+          echo "=== versions ==="
+          node --version
+          npm --version
+          echo "=== OIDC env vars ==="
+          echo "URL set: ${ACTIONS_ID_TOKEN_REQUEST_URL:+yes}"
+          echo "TOKEN set: ${ACTIONS_ID_TOKEN_REQUEST_TOKEN:+yes}"
+          echo "NODE_AUTH_TOKEN set: ${NODE_AUTH_TOKEN:+yes}"
+          echo "=== npmrc ==="
+          echo "path: ${NPM_CONFIG_USERCONFIG:-~/.npmrc}"
+          if [ -n "$NPM_CONFIG_USERCONFIG" ] && [ -f "$NPM_CONFIG_USERCONFIG" ]; then
+            cat "$NPM_CONFIG_USERCONFIG"
+          fi
 
       - name: Extract version
         id: version

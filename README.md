@@ -277,6 +277,7 @@ git push origin v0.1.0
 
 - 코어 v4.5 (2026-04-09, #5): 감사 이벤트 타깃에서 "조직 연동 팝업 URL"이 제거되었고, Provisioning 앱 등록/수정/삭제 이벤트가 추가되었습니다. 본 CLI는 이벤트 타입 필터를 노출하지 않으므로 `audit download-logs`로 변경 없이 동일하게 수신합니다.
 - 코어 v4.2 (2025-04-10, #4): 설문 결과 조회 API는 신규 엔드포인트가 아니라 기존 `form list-responses` (`GET /forms/{formId}/responses`)가 처음 공개된 것이며, 별도 명령 추가는 없습니다.
+- 코어 v4.2 신규 플래그 (#4): 결재 감사 로그는 `audit download-logs --service=approval`, 메일 스레드 조회는 `mail get --has-threads`, 드라이브 업로드 재개 세션 요청은 `drive upload --resume` (MyDrive/Shared/Group/SharedFolder 공통). `--resume`은 서버 측 resumable 세션 시작만 담당하며 offset 기반 실제 재전송은 #7에서 관리합니다.
 
 ## 라이선스
 

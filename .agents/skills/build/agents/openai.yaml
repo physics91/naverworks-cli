@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build"
+  short_description: "Use when building naverworks binaries — single-platform or cross-platform artifacts with ldflags version metadata"
+  auto_invoke: true

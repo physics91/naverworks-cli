@@ -7,6 +7,28 @@ description: Use when building naverworks binaries — single-platform or cross-
 
 이 스킬은 AI 에이전트가 직접 실행한다. 로컬 또는 크로스 플랫폼 바이너리를 빌드한다.
 
+## 입출력 계약
+
+### 입력
+
+| 입력 | 필수 여부 | 형식 | 설명 |
+|------|----------|------|------|
+| 인자 | 선택 | enum: `local`(기본), `all` | `local`은 현재 플랫폼, `all`은 5개 플랫폼 크로스 빌드 |
+
+### 출력
+
+| 필드 | 설명 |
+|------|------|
+| `mode` | `local` 또는 `all` |
+| `artifacts` | 생성된 바이너리/아카이브 경로 목록 |
+| `version_metadata` | `./naverworks version` 결과 (JSON) |
+
+### 성공 기준
+
+- `go vet` 및 `go test`가 통과한다.
+- `local`: `./naverworks` 실행 파일이 생성되고 `naverworks version`이 동작한다.
+- `all`: 5개 플랫폼 아카이브(4 tar.gz + 1 zip)가 `dist/`에 생성된다.
+
 ## 실행 규칙
 
 1. 모든 명령을 직접 Bash로 실행한다.
@@ -50,90 +72,20 @@ ls -lh naverworks
 ```bash
 git describe --tags --abbrev=0 2>/dev/null
 ```
-→ 태그가 있으면 `v` prefix를 제거하여 VERSION에 저장 (예: `v0.1.0` → `0.1.0`)
-→ 태그가 없으면 `dev`를 사용
+→ 태그가 있으면 `v` prefix 제거하여 VERSION에 저장 (예: `v0.1.0` → `0.1.0`)
+→ 태그가 없으면 `dev` 사용
 
 goreleaser 확인:
 ```bash
 command -v goreleaser
 ```
 
-**goreleaser가 있으면:**
+**goreleaser가 있으면** (권장):
 ```bash
 goreleaser release --clean --skip=publish --snapshot
 ```
 
-**goreleaser가 없으면** 각 플랫폼을 개별 명령으로 빌드:
-
-```bash
-COMMIT=$(git rev-parse --short HEAD)
-```
-```bash
-DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-```
-```bash
-mkdir -p dist
-```
-
-각 플랫폼별 빌드 + 아카이브 (deploy/npm과 동일한 산출물 형식):
-
-linux-amd64:
-```bash
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/naverworks .
-```
-```bash
-tar -czf "dist/naverworks_${VERSION}_linux_amd64.tar.gz" -C dist naverworks
-```
-```bash
-rm dist/naverworks
-```
-
-linux-arm64:
-```bash
-GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/naverworks .
-```
-```bash
-tar -czf "dist/naverworks_${VERSION}_linux_arm64.tar.gz" -C dist naverworks
-```
-```bash
-rm dist/naverworks
-```
-
-darwin-amd64:
-```bash
-GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/naverworks .
-```
-```bash
-tar -czf "dist/naverworks_${VERSION}_darwin_amd64.tar.gz" -C dist naverworks
-```
-```bash
-rm dist/naverworks
-```
-
-darwin-arm64:
-```bash
-GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/naverworks .
-```
-```bash
-tar -czf "dist/naverworks_${VERSION}_darwin_arm64.tar.gz" -C dist naverworks
-```
-```bash
-rm dist/naverworks
-```
-
-windows-amd64:
-```bash
-GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/naverworks.exe .
-```
-```bash
-zip dist/naverworks_${VERSION}_windows_amd64.zip -j dist/naverworks.exe
-```
-```bash
-rm dist/naverworks.exe
-```
-
-> LDFLAGS는 Phase 2b 시작 시 아래와 같이 구성한다:
-> `-s -w -X github.com/physics91/naverworks-cli/cmd.version=$VERSION -X github.com/physics91/naverworks-cli/cmd.commit=$COMMIT -X github.com/physics91/naverworks-cli/cmd.buildDate=$DATE`
+**goreleaser가 없으면** 각 플랫폼을 수동으로 빌드한다. LDFLAGS 구성, 플랫폼별 `GOOS/GOARCH` 명령, 아카이브 포맷은 [`references/cross-build-commands.md`](references/cross-build-commands.md)를 참조한다.
 
 ### 보고
 

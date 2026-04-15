@@ -1,3 +1,4 @@
 interface:
   display_name: "Test"
   short_description: "Use when verifying the naverworks codebase — runs unit, integration, and e2e test layers with go test, go vet, and build smoke check"
+  auto_invoke: true

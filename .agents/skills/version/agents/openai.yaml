@@ -1,0 +1,4 @@
+interface:
+  display_name: "Version"
+  short_description: "Use when inspecting naverworks version state or creating/pushing SemVer release tags directly"
+  auto_invoke: false

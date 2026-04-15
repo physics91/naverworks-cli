@@ -1,0 +1,4 @@
+interface:
+  display_name: "Deploy"
+  short_description: "Use when releasing a new version of naverworks — preflight checks, SemVer tag push, GitHub Actions release workflow verification"
+  auto_invoke: false

@@ -13,6 +13,29 @@ description: >
 
 이 스킬은 AI 에이전트가 직접 실행한다. 모든 명령을 순서대로 실행하고 결과를 보고한다.
 
+## 입출력 계약
+
+### 입력
+
+| 입력 | 필수 여부 | 형식 | 설명 |
+|------|----------|------|------|
+| scope | 선택 | enum: `all`(기본), `unit`, `integration`, `e2e`, `coverage` | 실행할 테스트 범위 |
+
+### 출력
+
+| 필드 | 설명 |
+|------|------|
+| `mod_status` | `go mod tidy` 및 `go.mod`/`go.sum` 변경 여부 |
+| `vet_status` | `go vet ./...` 결과 |
+| `layer_results` | Unit/Integration/E2E 각 레이어의 PASS/FAIL과 실패 테스트 상세 |
+| `build_status` | 스모크 빌드 및 `version` 명령 실행 결과 |
+
+### 성공 기준
+
+- 지정된 모든 레이어에서 테스트가 PASS한다.
+- `go vet`이 이상 없다.
+- 스모크 빌드가 성공하고 `naverworks version`이 정상 출력된다.
+
 ## 실행 규칙
 
 1. 모든 명령을 직접 Bash로 실행한다.
@@ -22,52 +45,25 @@ description: >
 
 ## Test Pyramid Strategy
 
+각 레이어의 전략만 간략히 기술한다. 실제 실행 명령은 [Run by Layer](#run-by-layer) 섹션이 **단일 source of truth**다.
+
 ### Layer 1: Unit Tests
-- Target: 순수 함수, 데이터 모델, 유틸리티
-  - internal/output — 포맷팅 로직
-  - internal/auth/jwt — JWT assertion 빌드
-  - internal/config — 설정 저장/로드/마이그레이션
-  - internal/auth/token — 토큰 저장소
-  - cmd/task_cmd — body 빌더
-  - cmd/smoke_test.go 내 헬퍼/파서 (TestResolveUserID, TestRequireTitleBodyPost 등)
+- Target: 순수 함수, 데이터 모델, 유틸리티 (internal/output, internal/auth/jwt, internal/config, internal/auth/token, cmd/task_cmd, cmd/smoke_test.go 내 헬퍼/파서)
 - Isolation: 파일시스템은 t.TempDir(), HTTP 없음
 - Speed: <1초, 매 커밋마다 실행
-- Commands (각 명령 개별 실행 후 결과를 모두 보고):
-  1. `go test ./internal/output/... ./internal/config/... -v -count=1`
-  2. `go test ./internal/auth/... -run "Test(BuildJWT|CheckKey|Token|ProfileToken|WriteSecure|SaveSecure)" -v -count=1`
-  3. `go test ./cmd/... -run "Test(BuildTask|ResolveUserID|RequireTitleBodyPost|ParseOptionalJSONData|ResolveBotID|ResolveOrCreateProfile)" -v -count=1`
 
 ### Layer 2: Integration Tests
-- Target: 모듈 경계 — HTTP 클라이언트, OAuth 흐름, API 서비스 엔드포인트
-  - internal/api/client — 인증 헤더, 재시도, 에러 파싱, 업로드/다운로드
-  - internal/auth/oauth — 토큰 교환/리프레시/폐기
-  - internal/api/* — 서비스별 엔드포인트 경로·메서드 검증 (100+ 테이블 기반 케이스)
+- Target: 모듈 경계 — HTTP 클라이언트, OAuth 흐름, API 서비스 엔드포인트 (internal/api/client, internal/auth/oauth, internal/api/* 서비스별 100+ 테이블 기반 케이스)
 - Isolation: httptest.NewServer로 로컬 HTTP 서버, 실제 외부 API 호출 없음
 - Speed: 1~3초, PR 전/CI 전 실행
-- Fixtures: 테이블 기반 테스트 케이스 (100+ 서비스 메서드)
-- Commands (각 명령 개별 실행 후 결과를 모두 보고):
-  1. `go test ./internal/api/... -v -count=1`
-  2. `go test ./internal/auth/... -run "Test(BuildAuthorizationURL|ExchangeCode|RefreshToken|RevokeToken|FindAvailableListener|HasScope|GenerateState|RequestToken)" -v -count=1`
 
 ### Layer 3: E2E Tests
-- Target: CLI 명령 워크플로우 검증, 보안 검증, 워크플로우 파일 무결성
-  - cmd/smoke_test — 46개 CLI 워크플로우 (버전, 도움말, 플래그 검증, JSON 입력)
-  - cmd/e2e_security — atomic write, 동시성, 응답 크기 제한, SHA 핀닝
+- Target: CLI 명령 워크플로우 (cmd/smoke_test의 46개 CLI 워크플로우), 보안 검증 (cmd/e2e_security의 atomic write, 동시성, 응답 크기 제한, SHA 핀닝), `.github/workflows/*.yml` SHA 핀닝 검증
+- Entry Points: `naverworks version/help`, `bot send`, `config get/set`, `auth status`, `calendar` 명령
 - Isolation: setupTestEnv로 HOME/환경변수 격리, httptest로 API 모킹
 - Speed: 수초~수십초, 릴리스 전 또는 보안 변경 후 실행
-- Entry Points:
-  - naverworks version / help
-  - naverworks bot send (--to, --channel, 플래그 충돌)
-  - naverworks config get/set
-  - naverworks auth status
-  - naverworks calendar (create/delete event 인자 검증)
-  - .github/workflows/*.yml SHA 핀닝 검증
-- Commands:
-  1. `go test ./cmd/... -run "Test(Smoke|E2E)" -v -count=1`
 
 ## Procedure
-
-> Run by Layer 섹션의 명령을 레이어 실행의 단일 기준(source of truth)으로 사용하며, Layer 설명과 Procedure는 이 명령과 동일해야 한다.
 
 ### Run All Tests (피라미드 순서)
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "NAVER WORKS Profile"
+  short_description: "Use when setting up or troubleshooting naverworks CLI multi-profile authentication — profile creation, OAuth/JWT login, CI/CD auth"
+  auto_invoke: false

@@ -36,18 +36,6 @@ jobs:
       - name: Upgrade npm for trusted publishing
         run: npm install -g npm@latest
 
-      - name: Clean npm config for OIDC
-        run: |
-          echo "=== before cleanup ==="
-          find / -name ".npmrc" 2>/dev/null | head -20 || true
-          echo "USERCONFIG=$NPM_CONFIG_USERCONFIG"
-          [ -f "$NPM_CONFIG_USERCONFIG" ] && cat "$NPM_CONFIG_USERCONFIG" || true
-          echo "--- removing files ---"
-          rm -fv "$NPM_CONFIG_USERCONFIG" ~/.npmrc 2>/dev/null || true
-          echo "=== after cleanup ==="
-          find / -name ".npmrc" 2>/dev/null | head -20 || true
-          npm config ls -l 2>&1 | grep -iE "authtoken|registry" | head || true
-
       - name: Extract version
         id: version
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
@@ -60,13 +48,12 @@ jobs:
       - name: Publish to npm (Trusted Publishing / OIDC)
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
+          NPM_CONFIG_PROVENANCE: "true"
         run: |
-          unset NODE_AUTH_TOKEN
-          echo "npm: $(npm --version) / node: $(node --version)"
           ROOT="$(pwd)"
           for dir in npm/linux-x64 npm/linux-arm64 npm/darwin-x64 npm/darwin-arm64 npm/win32-x64; do
             if [ -f "$dir/naverworks" ] || [ -f "$dir/naverworks.exe" ]; then
-              (cd "$dir" && npm publish --access public)
+              (cd "$dir" && npm publish --access public --provenance)
             fi
           done
-          (cd "$ROOT/npm/cli" && npm publish --access public)
+          (cd "$ROOT/npm/cli" && npm publish --access public --provenance)

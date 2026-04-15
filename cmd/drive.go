@@ -93,6 +93,7 @@ var driveUploadCmd = &cobra.Command{
 
 		localPath := args[0]
 		folder, _ := cmd.Flags().GetString("folder")
+		resume, _ := cmd.Flags().GetBool("resume")
 
 		fileName, fileSize, err := statFileForUpload(localPath)
 		if err != nil {
@@ -100,6 +101,9 @@ var driveUploadCmd = &cobra.Command{
 		}
 
 		uploadBody := map[string]interface{}{"fileName": fileName}
+		if resume {
+			uploadBody["resume"] = true
+		}
 
 		var resp *api.Response
 		if folder != "" {
@@ -739,6 +743,10 @@ var driveSharedUploadCmd = &cobra.Command{
 
 		uploadBody := map[string]interface{}{"fileName": fileName}
 		folder, _ := cmd.Flags().GetString("folder")
+		resume, _ := cmd.Flags().GetBool("resume")
+		if resume {
+			uploadBody["resume"] = true
+		}
 
 		var resp *api.Response
 		if folder != "" {
@@ -1646,6 +1654,7 @@ var driveGroupUploadCmd = &cobra.Command{
 		}
 
 		folderID, _ := cmd.Flags().GetString("folder")
+		resume, _ := cmd.Flags().GetBool("resume")
 
 		fileName, fileSize, err := statFileForUpload(filePath)
 		if err != nil {
@@ -1653,6 +1662,9 @@ var driveGroupUploadCmd = &cobra.Command{
 		}
 
 		uploadBody := map[string]interface{}{"fileName": fileName}
+		if resume {
+			uploadBody["resume"] = true
+		}
 		var resp *api.Response
 		if folderID != "" {
 			resp, err = svc.CreateUploadURL(args[0], folderID, uploadBody, fileSize)
@@ -2356,6 +2368,10 @@ var driveSFUploadCmd = &cobra.Command{
 
 		uploadBody := map[string]interface{}{"fileName": fileName}
 		folder, _ := cmd.Flags().GetString("folder")
+		resume, _ := cmd.Flags().GetBool("resume")
+		if resume {
+			uploadBody["resume"] = true
+		}
 
 		var resp *api.Response
 		if folder != "" {
@@ -2859,6 +2875,11 @@ func init() {
 	driveGroupMkdirCmd.Flags().String("parent", "", "상위 폴더 ID")
 	driveGroupUploadCmd.Flags().String("file", "", "업로드할 파일 경로 (필수)")
 	driveGroupUploadCmd.Flags().String("folder", "", "업로드 대상 폴더 ID (미지정 시 루트)")
+
+	// --resume flag for all upload commands (Core v4.2 #4)
+	for _, c := range []*cobra.Command{driveUploadCmd, driveSharedUploadCmd, driveGroupUploadCmd, driveSFUploadCmd} {
+		c.Flags().Bool("resume", false, "업로드 실패 시 재개 가능 모드 (resume=true)")
+	}
 
 	driveCmd.AddCommand(driveInfoCmd, driveListCmd, driveGetCmd, driveDownloadCmd,
 		driveUploadCmd, driveMkdirCmd, driveDeleteCmd, driveTrashListCmd, driveTrashRestoreCmd)

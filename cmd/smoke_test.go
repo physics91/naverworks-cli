@@ -1844,6 +1844,24 @@ func TestSmoke_DriveSharedFolderUpload_MissingFile(t *testing.T) {
 	}
 }
 
+func TestSmoke_DriveUpload_ResumeFlag(t *testing.T) {
+	setupTestEnv(t)
+	for _, path := range [][]string{
+		{"drive", "upload", "--help"},
+		{"drive", "shared", "upload", "--help"},
+		{"drive", "group", "upload", "--help"},
+		{"drive", "shared-folder", "upload", "--help"},
+	} {
+		out, err := runCLI(t, path...)
+		if err != nil {
+			t.Fatalf("%v failed: %v", path, err)
+		}
+		if !strings.Contains(out, "--resume") {
+			t.Errorf("%v missing --resume flag in help output", path)
+		}
+	}
+}
+
 // ─── SCIM Smoke Tests ───
 
 func TestSmoke_ScimHelp(t *testing.T) {

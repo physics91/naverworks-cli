@@ -36,11 +36,17 @@ jobs:
       - name: Upgrade npm for trusted publishing
         run: npm install -g npm@latest
 
-      - name: Strip setup-node authToken line for OIDC
+      - name: Clean npm config for OIDC
         run: |
-          if [ -n "$NPM_CONFIG_USERCONFIG" ] && [ -f "$NPM_CONFIG_USERCONFIG" ]; then
-            sed -i '/_authToken/d' "$NPM_CONFIG_USERCONFIG"
-          fi
+          echo "=== before cleanup ==="
+          find / -name ".npmrc" 2>/dev/null | head -20 || true
+          echo "USERCONFIG=$NPM_CONFIG_USERCONFIG"
+          [ -f "$NPM_CONFIG_USERCONFIG" ] && cat "$NPM_CONFIG_USERCONFIG" || true
+          echo "--- removing files ---"
+          rm -fv "$NPM_CONFIG_USERCONFIG" ~/.npmrc 2>/dev/null || true
+          echo "=== after cleanup ==="
+          find / -name ".npmrc" 2>/dev/null | head -20 || true
+          npm config ls -l 2>&1 | grep -iE "authtoken|registry" | head || true
 
       - name: Extract version
         id: version
@@ -55,6 +61,8 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
         run: |
+          unset NODE_AUTH_TOKEN
+          echo "npm: $(npm --version) / node: $(node --version)"
           ROOT="$(pwd)"
           for dir in npm/linux-x64 npm/linux-arm64 npm/darwin-x64 npm/darwin-arm64 npm/win32-x64; do
             if [ -f "$dir/naverworks" ] || [ -f "$dir/naverworks.exe" ]; then

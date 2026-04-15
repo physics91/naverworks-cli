@@ -199,7 +199,7 @@ func init() {
 		c.Flags().String("start-time", "", "시작 시간 (필수)")
 		c.Flags().String("end-time", "", "종료 시간 (필수)")
 	}
-	auditDownloadLogsCmd.Flags().String("service", "", "서비스 필터")
+	auditDownloadLogsCmd.Flags().String("service", "", "서비스 필터 (예: approval)")
 
 	addListFlags(auditListPolicyGroupsCmd, auditListPolicyMembersCmd)
 

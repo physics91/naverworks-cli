@@ -4,7 +4,7 @@ naverworks-cli — A Go CLI for NAVER WORKS REST API v1.0.
 
 ## Project Context
 
-- Go 1.22, Cobra CLI framework, minimal external dependencies
+- Go 1.25, Cobra CLI framework, minimal external dependencies
 - Profile-based multi-auth (OAuth + JWT) with automatic token refresh
 - `cmd/` for Cobra commands, `internal/` for business logic separation
 - `npm/` wrapper for cross-platform distribution (goreleaser + GitHub Actions)

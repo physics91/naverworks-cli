@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -64,7 +65,7 @@ var authSetupCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fd := int(os.Stdin.Fd())
 		if !term.IsTerminal(fd) {
-			return fmt.Errorf(nonTTYErrorMessage())
+			return errors.New(nonTTYErrorMessage())
 		}
 
 		reader := bufio.NewReader(os.Stdin)

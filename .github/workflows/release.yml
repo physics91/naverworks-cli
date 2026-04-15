@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   release:
@@ -32,6 +33,9 @@ jobs:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
 
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@latest
+
       - name: Extract version
         id: version
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
@@ -41,9 +45,8 @@ jobs:
           VERSION: ${{ steps.version.outputs.VERSION }}
         run: ./npm/build-npm.sh "$VERSION" dist
 
-      - name: Publish to npm
+      - name: Publish to npm (Trusted Publishing / OIDC)
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           VERSION: ${{ steps.version.outputs.VERSION }}
         run: |
           ROOT="$(pwd)"

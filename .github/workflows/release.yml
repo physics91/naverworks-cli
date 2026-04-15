@@ -36,19 +36,10 @@ jobs:
       - name: Upgrade npm for trusted publishing
         run: npm install -g npm@latest
 
-      - name: Diagnostic (trusted publishing readiness)
+      - name: Strip setup-node authToken line for OIDC
         run: |
-          echo "=== versions ==="
-          node --version
-          npm --version
-          echo "=== OIDC env vars ==="
-          echo "URL set: ${ACTIONS_ID_TOKEN_REQUEST_URL:+yes}"
-          echo "TOKEN set: ${ACTIONS_ID_TOKEN_REQUEST_TOKEN:+yes}"
-          echo "NODE_AUTH_TOKEN set: ${NODE_AUTH_TOKEN:+yes}"
-          echo "=== npmrc ==="
-          echo "path: ${NPM_CONFIG_USERCONFIG:-~/.npmrc}"
           if [ -n "$NPM_CONFIG_USERCONFIG" ] && [ -f "$NPM_CONFIG_USERCONFIG" ]; then
-            cat "$NPM_CONFIG_USERCONFIG"
+            sed -i '/_authToken/d' "$NPM_CONFIG_USERCONFIG"
           fi
 
       - name: Extract version

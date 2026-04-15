@@ -573,7 +573,7 @@ func TestServiceMethods(t *testing.T) {
 		},
 		{
 			name:       "MailService.GetMail",
-			call:       func(c *Client) { NewMailService(c).GetMail("u1", "m1") },
+			call:       func(c *Client) { NewMailService(c).GetMail("u1", "m1", false) },
 			wantMethod: "GET",
 			wantPath:   "/users/u1/mail/m1",
 		},

@@ -19,8 +19,12 @@ func (s *MailService) SendMail(userID string, body map[string]interface{}) (*Res
 	return s.client.PostJSON(fmt.Sprintf("/users/%s/mail", url.PathEscape(userID)), body)
 }
 
-func (s *MailService) GetMail(userID, mailID string) (*Response, error) {
-	return s.client.Get(fmt.Sprintf("/users/%s/mail/%s", url.PathEscape(userID), url.PathEscape(mailID)))
+func (s *MailService) GetMail(userID, mailID string, hasThreads bool) (*Response, error) {
+	path := fmt.Sprintf("/users/%s/mail/%s", url.PathEscape(userID), url.PathEscape(mailID))
+	if hasThreads {
+		path += "?hasThreads=true"
+	}
+	return s.client.Get(path)
 }
 
 func (s *MailService) DeleteMail(userID, mailID string) (*Response, error) {

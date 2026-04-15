@@ -708,6 +708,17 @@ func TestSmoke_MailGetAttachment_MissingArgs(t *testing.T) {
 	}
 }
 
+func TestSmoke_MailGet_HasThreadsFlag(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "mail", "get", "--help")
+	if err != nil {
+		t.Fatalf("mail get --help failed: %v", err)
+	}
+	if !strings.Contains(out, "--has-threads") {
+		t.Errorf("mail get --help missing --has-threads flag; got: %s", out)
+	}
+}
+
 // ─── Task Smoke Tests ───
 
 func TestSmoke_TaskHelp(t *testing.T) {

@@ -66,7 +66,8 @@ var mailGetCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		resp, err := api.NewMailService(client).GetMail(userID, args[0])
+		hasThreads, _ := cmd.Flags().GetBool("has-threads")
+		resp, err := api.NewMailService(client).GetMail(userID, args[0], hasThreads)
 		if err != nil {
 			return err
 		}
@@ -519,6 +520,8 @@ func init() {
 	mailSendCmd.Flags().String("subject", "", "제목 (필수)")
 	mailSendCmd.Flags().String("body", "", "본문 (필수)")
 	mailSendCmd.Flags().String("content-type", "", "본문 형식 (html 또는 text, 기본: html)")
+
+	mailGetCmd.Flags().Bool("has-threads", false, "메일 스레드 데이터 포함 조회 (hasThreads=true)")
 
 	// --json flags
 	mailUpdateCmd.Flags().String("json", "", "JSON 페이로드 (필수, -: stdin)")

@@ -20,6 +20,9 @@ func (s *MailService) SendMail(userID string, body map[string]interface{}) (*Res
 }
 
 func (s *MailService) GetMail(userID, mailID string, hasThreads bool) (*Response, error) {
+	// NAVER WORKS v4.2 release notes call this parameter "threadData", but the actual
+	// API spec (developers.worksmobile.com/en/docs/mail-get) defines two query params:
+	// hasThreads (bool) + threadCount (int). The server does not recognize "threadData".
 	path := fmt.Sprintf("/users/%s/mail/%s", url.PathEscape(userID), url.PathEscape(mailID))
 	if hasThreads {
 		path += "?hasThreads=true"

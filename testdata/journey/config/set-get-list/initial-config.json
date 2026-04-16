@@ -1,0 +1,6 @@
+{
+  "client_id": "client-from-fixture",
+  "client_secret": "super-secret",
+  "bot_id": "bot-initial",
+  "scope": "bot directory"
+}

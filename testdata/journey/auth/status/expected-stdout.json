@@ -1,0 +1,10 @@
+{
+  "auth_method": "jwt",
+  "expires_at": "2099-01-01T00:00:00Z",
+  "scopes": [
+    "bot",
+    "directory",
+    "calendar"
+  ],
+  "service_account_id": "svc-123"
+}

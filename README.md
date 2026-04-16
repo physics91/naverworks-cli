@@ -82,6 +82,17 @@ naverworks --help
 naverworks <command> --help
 ```
 
+## 개발 검증
+
+빠른 회귀 확인과 전체 검증을 분리해서 돌릴 수 있습니다.
+
+```bash
+make test-fast   # 핵심 unit/contract + meta + 대표 journey
+make test-full   # 전체 테스트 스위트
+make build
+go vet ./...
+```
+
 ## 라이선스
 
 MIT

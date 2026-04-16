@@ -66,3 +66,19 @@ naverworks scim --help
 ```
 
 대표 예시는 [Domain Command Guide](Domain-Command-Guide.md)에 정리돼 있습니다.
+
+## 수정 후 뭐부터 돌려야 할지 모르겠음
+
+빠르게 회귀만 보고 싶으면:
+
+```bash
+make test-fast
+```
+
+전체 테스트를 다시 확인하려면:
+
+```bash
+make test-full
+go vet ./...
+make build
+```

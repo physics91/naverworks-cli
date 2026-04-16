@@ -1,0 +1,12 @@
+{
+  "users": [
+    {
+      "userId": "u1",
+      "userName": "User One",
+      "email": "user1@example.com"
+    }
+  ],
+  "responseMetaData": {
+    "nextCursor": ""
+  }
+}

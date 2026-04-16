@@ -19,8 +19,13 @@ jobs:
       - name: Reuse Guardrails
         run: scripts/check-reuse-guardrails.sh .
 
-      - name: Test
-        run: go test ./... -v -count=1
+      - name: Fast Test
+        if: github.event_name == 'pull_request'
+        run: make test-fast
+
+      - name: Full Test
+        if: github.event_name == 'push'
+        run: make test-full
 
       - name: Build
         run: go build -o naverworks .

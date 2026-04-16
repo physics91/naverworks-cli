@@ -1,17 +1,15 @@
 package cmd
 
 import (
-	"bytes"
 	"encoding/json"
-	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/physics91/naverworks-cli/internal/auth"
 	"github.com/physics91/naverworks-cli/internal/config"
+	clitest "github.com/physics91/naverworks-cli/internal/testkit/cli"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -27,46 +25,18 @@ func containsCommand(helpOutput, cmdName string) bool {
 		strings.Contains(helpOutput, "\t"+cmdName+"\n")
 }
 
-func captureStdout(t *testing.T, fn func()) string {
-	t.Helper()
-	oldStdout := os.Stdout
-	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatalf("pipe failed: %v", err)
-	}
-	os.Stdout = w
-
-	fn()
-
-	w.Close()
-	os.Stdout = oldStdout
-	var buf bytes.Buffer
-	io.Copy(&buf, r)
-	r.Close()
-	return buf.String()
-}
-
 func setupTestEnv(t *testing.T) string {
 	t.Helper()
-	tmpDir := t.TempDir()
-	t.Setenv("HOME", tmpDir)
-	if runtime.GOOS == "windows" {
-		t.Setenv("APPDATA", tmpDir)
-	}
-	t.Setenv("NW_PROFILE", "")
-	t.Setenv("NW_CLIENT_ID", "")
-	t.Setenv("NW_CLIENT_SECRET", "")
-	t.Setenv("NW_SERVICE_ACCOUNT_ID", "")
-	t.Setenv("NW_PRIVATE_KEY_PATH", "")
-	t.Setenv("NW_DOMAIN_ID", "")
-	t.Setenv("NW_BOT_ID", "")
-	t.Setenv("NW_SCOPE", "")
-	t.Setenv("NW_DEFAULT_CALENDAR_USER_ID", "")
-	t.Setenv("NW_SCIM_ACCESS_TOKEN", "")
+	homeDir := clitest.NewHarness(t).HomeDir()
 
-	// apiBaseURL and scimBaseURL are constants; no seam restore needed
+	origAPIBaseURL := apiBaseURL
+	origSCIMBaseURL := scimBaseURL
+	t.Cleanup(func() {
+		apiBaseURL = origAPIBaseURL
+		scimBaseURL = origSCIMBaseURL
+	})
 
-	return tmpDir
+	return homeDir
 }
 
 func writeTestConfig(t *testing.T, tmpDir string) {
@@ -88,16 +58,8 @@ func writeTestConfig(t *testing.T, tmpDir string) {
 
 func runCLI(t *testing.T, args ...string) (string, error) {
 	t.Helper()
-	var stdout string
-	var cmdErr error
-	resetCommandTreeFlags(rootCmd)
-	stdout = captureStdout(t, func() {
-		rootCmd.SetArgs(args)
-		cmdErr = rootCmd.Execute()
-		rootCmd.SetArgs(nil)
-		resetCommandTreeFlags(rootCmd)
-	})
-	return stdout, cmdErr
+	result, err := clitest.FromCurrentEnv(t).Run(args, newRootCommandRunner(t))
+	return result.Stdout, err
 }
 
 func resetFlagSet(fs *pflag.FlagSet) {
@@ -113,6 +75,26 @@ func resetCommandTreeFlags(cmd *cobra.Command) {
 	for _, child := range cmd.Commands() {
 		resetCommandTreeFlags(child)
 	}
+}
+
+func setAPIBaseURL(t *testing.T, url string) {
+	t.Helper()
+
+	orig := apiBaseURL
+	apiBaseURL = url
+	t.Cleanup(func() {
+		apiBaseURL = orig
+	})
+}
+
+func setSCIMBaseURL(t *testing.T, url string) {
+	t.Helper()
+
+	orig := scimBaseURL
+	scimBaseURL = url
+	t.Cleanup(func() {
+		scimBaseURL = orig
+	})
 }
 
 func TestSmoke_Version(t *testing.T) {

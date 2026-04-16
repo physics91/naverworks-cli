@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
+var (
 	apiBaseURL  = "https://www.worksapis.com/v1.0"
 	scimBaseURL = "https://www.worksapis.com/scim/v2"
 )

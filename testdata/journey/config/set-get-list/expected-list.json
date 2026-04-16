@@ -1,0 +1,11 @@
+{
+  "bot_id": "bot-updated",
+  "client_id": "client-from-fixture",
+  "client_secret": "****",
+  "default_calendar_user_id": "",
+  "domain_id": "",
+  "private_key_path": "",
+  "scim_access_token": "",
+  "scope": "bot directory",
+  "service_account_id": ""
+}

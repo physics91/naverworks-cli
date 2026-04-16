@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"os"
 	"strconv"
@@ -26,6 +27,15 @@ const maxRateLimitRetries = 3
 const maxAPIResponseSize = 10 << 20 // 10MB
 
 var errRateLimitExceeded = &APIError{StatusCode: 429, Code: "RATE_LIMIT_EXCEEDED", Description: "최대 재시도 횟수 초과"}
+
+var defaultAllowedPresignedUploadHostSuffixes = []string{
+	"worksapis.com",
+	"worksmobile.com",
+	"ncloudstorage.com",
+	"amazonaws.com",
+	"amazonaws.com.cn",
+	"cloudfront.net",
+}
 
 type RefreshFunc func(token *auth.Token) error
 
@@ -233,12 +243,16 @@ func (c *Client) getDownloadURLWithRetry(path string, retried401 bool) (string, 
 // UploadFile uploads a file to a pre-signed URL using PUT.
 // No Authorization header is sent (the URL is pre-signed).
 func (c *Client) UploadFile(uploadURL string, filePath string) error {
-	parsedURL, err := url.Parse(uploadURL)
-	if err != nil {
-		return fmt.Errorf("업로드 URL 파싱 실패: %w", err)
+	if _, err := validatePresignedUploadURL(uploadURL); err != nil {
+		return err
 	}
-	if parsedURL.Scheme != "https" {
-		return fmt.Errorf("업로드 URL이 HTTPS가 아닙니다: %s", parsedURL.Scheme)
+
+	stat, err := os.Stat(filePath)
+	if err != nil {
+		return fmt.Errorf("파일 정보 조회 실패: %w", err)
+	}
+	if !stat.Mode().IsRegular() {
+		return fmt.Errorf("일반 파일만 허용합니다: %s", filePath)
 	}
 
 	f, err := os.Open(filePath)
@@ -246,11 +260,6 @@ func (c *Client) UploadFile(uploadURL string, filePath string) error {
 		return fmt.Errorf("파일 열기 실패: %w", err)
 	}
 	defer f.Close()
-
-	stat, err := f.Stat()
-	if err != nil {
-		return fmt.Errorf("파일 정보 조회 실패: %w", err)
-	}
 
 	req, err := http.NewRequest("PUT", uploadURL, f)
 	if err != nil {
@@ -431,4 +440,61 @@ func (c *Client) downloadFileWithRetry(path string, retried401 bool) ([]byte, ht
 	}
 
 	return nil, nil, errRateLimitExceeded
+}
+
+func validatePresignedUploadURL(uploadURL string) (*url.URL, error) {
+	parsedURL, err := url.Parse(uploadURL)
+	if err != nil {
+		return nil, fmt.Errorf("업로드 URL 파싱 실패: %w", err)
+	}
+	if parsedURL.Scheme != "https" {
+		return nil, fmt.Errorf("업로드 URL이 HTTPS가 아닙니다: %s", parsedURL.Scheme)
+	}
+	if parsedURL.Host == "" || parsedURL.Hostname() == "" {
+		return nil, fmt.Errorf("업로드 URL 호스트가 비어 있습니다")
+	}
+	if parsedURL.User != nil {
+		return nil, fmt.Errorf("업로드 URL에 사용자 정보가 포함되어 있습니다")
+	}
+
+	host := strings.ToLower(parsedURL.Hostname())
+	if _, err := netip.ParseAddr(host); err == nil {
+		return nil, fmt.Errorf("허용되지 않는 업로드 호스트: %s", host)
+	}
+
+	if !isAllowedPresignedUploadHost(host) {
+		return nil, fmt.Errorf("허용되지 않는 업로드 호스트: %s", host)
+	}
+
+	return parsedURL, nil
+}
+
+func isAllowedPresignedUploadHost(host string) bool {
+	for _, suffix := range allowedPresignedUploadHostSuffixes() {
+		if host == suffix || strings.HasSuffix(host, "."+suffix) {
+			return true
+		}
+	}
+	return false
+}
+
+func allowedPresignedUploadHostSuffixes() []string {
+	raw := os.Getenv("NW_UPLOAD_ALLOWED_HOSTS")
+	if strings.TrimSpace(raw) == "" {
+		return defaultAllowedPresignedUploadHostSuffixes
+	}
+
+	parts := strings.Split(raw, ",")
+	allowed := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.ToLower(strings.TrimSpace(part))
+		if part == "" {
+			continue
+		}
+		allowed = append(allowed, part)
+	}
+	if len(allowed) == 0 {
+		return defaultAllowedPresignedUploadHostSuffixes
+	}
+	return allowed
 }

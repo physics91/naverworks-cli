@@ -368,6 +368,9 @@ func statFileForUpload(localPath string) (fileName string, fileSize int64, err e
 	if err != nil {
 		return "", 0, fmt.Errorf("파일 정보 조회 실패: %w", err)
 	}
+	if !stat.Mode().IsRegular() {
+		return "", 0, fmt.Errorf("일반 파일만 허용합니다: %s", localPath)
+	}
 	return filepath.Base(localPath), stat.Size(), nil
 }
 

@@ -198,3 +198,17 @@ func TestReadFileFlagWithLimit_NonRegularFile(t *testing.T) {
 		t.Errorf("error should mention regular files only: %v", err)
 	}
 }
+
+func TestStatFileForUpload_NonRegularFile(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix-only device file test")
+	}
+
+	_, _, err := statFileForUpload(os.DevNull)
+	if err == nil {
+		t.Fatal("expected error for non-regular upload file")
+	}
+	if !strings.Contains(err.Error(), "일반 파일만 허용합니다") {
+		t.Errorf("error should mention regular files only: %v", err)
+	}
+}

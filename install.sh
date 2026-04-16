@@ -68,7 +68,8 @@ if [ -n "$EXPECTED" ]; then
   fi
   echo "체크섬 확인 완료"
 else
-  echo "경고: 체크섬을 확인할 수 없습니다" >&2
+  echo "체크섬을 확인할 수 없습니다: ${FILENAME}" >&2
+  exit 1
 fi
 
 BIN_EXT=""

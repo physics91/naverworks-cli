@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -372,6 +373,56 @@ func TestClient_GetDownloadURL_301(t *testing.T) {
 	}
 	if url != expectedLocation {
 		t.Errorf("expected %q, got %q", expectedLocation, url)
+	}
+}
+
+func TestValidatePresignedUploadURL_AllowsKnownStorageHost(t *testing.T) {
+	_, err := validatePresignedUploadURL("https://kr.object.ncloudstorage.com/upload?signature=test")
+	if err != nil {
+		t.Fatalf("known storage host should pass: %v", err)
+	}
+}
+
+func TestValidatePresignedUploadURL_RejectsLoopbackHost(t *testing.T) {
+	_, err := validatePresignedUploadURL("https://127.0.0.1:8443/upload")
+	if err == nil {
+		t.Fatal("loopback upload host should be rejected")
+	}
+	if !strings.Contains(err.Error(), "허용되지 않는 업로드 호스트") {
+		t.Fatalf("expected disallowed upload host error, got: %v", err)
+	}
+}
+
+func TestValidatePresignedUploadURL_RejectsUnknownHost(t *testing.T) {
+	_, err := validatePresignedUploadURL("https://evil.example.com/upload")
+	if err == nil {
+		t.Fatal("unknown upload host should be rejected")
+	}
+	if !strings.Contains(err.Error(), "허용되지 않는 업로드 호스트") {
+		t.Fatalf("expected disallowed upload host error, got: %v", err)
+	}
+}
+
+func TestClient_UploadFile_RejectsLoopbackUploadURL(t *testing.T) {
+	tmp, err := os.CreateTemp("", "upload-file-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmp.Name())
+	if _, err := tmp.WriteString("hello"); err != nil {
+		t.Fatal(err)
+	}
+	if err := tmp.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	client := NewClient("https://www.worksapis.com/v1.0", &auth.Token{AccessToken: "t", ExpiresAt: time.Now().Add(time.Hour)}, nil)
+	err = client.UploadFile("https://127.0.0.1:8443/upload", tmp.Name())
+	if err == nil {
+		t.Fatal("expected loopback upload URL to be rejected")
+	}
+	if !strings.Contains(err.Error(), "허용되지 않는 업로드 호스트") {
+		t.Fatalf("expected disallowed upload host error, got: %v", err)
 	}
 }
 

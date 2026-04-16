@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
+	"strings"
 
 	"github.com/physics91/naverworks-cli/internal/fileutil"
 )
@@ -58,11 +58,31 @@ func IsValidKey(key string) bool {
 }
 
 func DefaultPath() string {
-	if runtime.GOOS == "windows" {
-		return filepath.Join(os.Getenv("APPDATA"), "naverworks", "config.json")
+	path, _ := DefaultPathOrError()
+	return path
+}
+
+func DefaultPathOrError() (string, error) {
+	return defaultPathOrError(os.UserConfigDir)
+}
+
+func defaultPathOrError(configDirFn func() (string, error)) (string, error) {
+	configDir, err := configDirFn()
+	if err != nil {
+		return "", fmt.Errorf("설정 디렉토리 조회 실패: %w", err)
 	}
-	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".config", "naverworks", "config.json")
+	return configPathFromDir(configDir)
+}
+
+func configPathFromDir(configDir string) (string, error) {
+	configDir = strings.TrimSpace(configDir)
+	if configDir == "" {
+		return "", fmt.Errorf("설정 디렉토리가 비어 있습니다")
+	}
+	if !filepath.IsAbs(configDir) {
+		return "", fmt.Errorf("설정 디렉토리가 절대 경로가 아닙니다: %s", configDir)
+	}
+	return filepath.Join(configDir, "naverworks", "config.json"), nil
 }
 
 func Load(path string) (*Config, error) {

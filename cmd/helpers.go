@@ -27,7 +27,11 @@ func loadConfigAndToken() (*config.Config, *auth.Token, string, error) {
 		return nil, nil, "", err
 	}
 
-	store := auth.NewProfileTokenStore(auth.DefaultTokenPath(), name)
+	tokenPath, err := auth.DefaultTokenPathOrError()
+	if err != nil {
+		return nil, nil, "", err
+	}
+	store := auth.NewProfileTokenStore(tokenPath, name)
 	token, err := store.Load()
 	if err != nil {
 		return nil, nil, "", err
@@ -59,7 +63,11 @@ func refreshJWTTokenFromAssertion(cfg *config.Config, t *auth.Token, store *auth
 
 func buildAPIClient(cfg *config.Config, token *auth.Token, activeProfileName string) *api.Client {
 	refreshFn := func(t *auth.Token) error {
-		store := auth.NewProfileTokenStore(auth.DefaultTokenPath(), activeProfileName)
+		tokenPath, err := auth.DefaultTokenPathOrError()
+		if err != nil {
+			return err
+		}
+		store := auth.NewProfileTokenStore(tokenPath, activeProfileName)
 
 		if t.RefreshToken != "" {
 			if err := auth.RefreshAccessToken(authBaseURL, cfg.ClientID, cfg.ClientSecret, t); err == nil {
@@ -191,16 +199,59 @@ func runListCmd(cmd *cobra.Command, columns []string, itemKey string, fetch func
 }
 
 func loadActiveConfig() (*config.Config, string, error) {
-	pc, err := config.LoadProfileConfig(config.DefaultPath())
+	configPath, err := config.DefaultPathOrError()
+	if err != nil {
+		return nil, "", err
+	}
+	pc, err := config.LoadProfileConfig(configPath)
 	if err != nil {
 		return nil, "", err
 	}
 	profile, name, err := pc.ActiveProfile(profileName)
 	if err != nil {
-		return nil, "", err
+		selectedName, explicit := selectedProfileName(pc)
+		if explicit {
+			envProfile := &config.Config{}
+			envProfile.ApplyEnvOverrides()
+			if hasConfigValues(envProfile) {
+				return envProfile, selectedName, nil
+			}
+			return nil, selectedName, err
+		}
+		return nil, name, err
 	}
 	profile.ApplyEnvOverrides()
 	return profile, name, nil
+}
+
+func selectedProfileName(pc *config.ProfileConfig) (string, bool) {
+	name := pc.CurrentProfile
+	explicit := false
+	if name == "" {
+		name = "default"
+	}
+	if envProfile := strings.TrimSpace(os.Getenv("NW_PROFILE")); envProfile != "" {
+		name = envProfile
+		explicit = true
+	}
+	if flagProfile := strings.TrimSpace(profileName); flagProfile != "" {
+		name = flagProfile
+		explicit = true
+	}
+	return name, explicit
+}
+
+func hasConfigValues(cfg *config.Config) bool {
+	for _, key := range config.AllKeys {
+		value, err := cfg.Get(key)
+		if err != nil {
+			continue
+		}
+		if strings.TrimSpace(value) != "" {
+			return true
+		}
+	}
+	return false
 }
 
 func requireTitleBodyPost(cmd *cobra.Command) (map[string]interface{}, error) {

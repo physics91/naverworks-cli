@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -164,6 +165,51 @@ func TestProfileConfig_EnvOverride(t *testing.T) {
 	}
 	if p.ClientID != "env-id" {
 		t.Errorf("expected env-id, got %q", p.ClientID)
+	}
+}
+
+func TestConfigPathFromDir(t *testing.T) {
+	t.Run("absolute config dir", func(t *testing.T) {
+		got, err := configPathFromDir("/tmp/naverworks-test")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		want := filepath.Join("/tmp/naverworks-test", "naverworks", "config.json")
+		if got != want {
+			t.Fatalf("path = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("empty config dir rejected", func(t *testing.T) {
+		_, err := configPathFromDir("")
+		if err == nil {
+			t.Fatal("expected error for empty config dir")
+		}
+		if !strings.Contains(err.Error(), "비어") {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("relative config dir rejected", func(t *testing.T) {
+		_, err := configPathFromDir(".config")
+		if err == nil {
+			t.Fatal("expected error for relative config dir")
+		}
+		if !strings.Contains(err.Error(), "절대 경로") {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+}
+
+func TestDefaultPathOrError_PropagatesLookupFailure(t *testing.T) {
+	_, err := defaultPathOrError(func() (string, error) {
+		return "", errors.New("boom")
+	})
+	if err == nil {
+		t.Fatal("expected lookup error")
+	}
+	if !strings.Contains(err.Error(), "설정 디렉토리 조회 실패") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 

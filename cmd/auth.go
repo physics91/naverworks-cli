@@ -36,7 +36,11 @@ var authLoginCmd = &cobra.Command{
 			return err
 		}
 
-		store := auth.NewProfileTokenStore(auth.DefaultTokenPath(), name)
+		tokenPath, err := auth.DefaultTokenPathOrError()
+		if err != nil {
+			return err
+		}
+		store := auth.NewProfileTokenStore(tokenPath, name)
 
 		if useJWT {
 			return loginJWT(cfg, store)
@@ -152,10 +156,16 @@ var authStatusCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		_, name, err := loadActiveConfig()
 		if err != nil {
-			// If no config exists, still try to load token with default profile
-			name = "default"
+			// If no config exists, still try the selected/default profile name.
+			if name == "" {
+				name = "default"
+			}
 		}
-		store := auth.NewProfileTokenStore(auth.DefaultTokenPath(), name)
+		tokenPath, pathErr := auth.DefaultTokenPathOrError()
+		if pathErr != nil {
+			return pathErr
+		}
+		store := auth.NewProfileTokenStore(tokenPath, name)
 		token, err := store.Load()
 		if err != nil {
 			return err
@@ -194,10 +204,16 @@ var authLogoutCmd = &cobra.Command{
 		cfg, name, err := loadActiveConfig()
 		if err != nil {
 			cfg = &config.Config{}
-			name = "default"
+			if name == "" {
+				name = "default"
+			}
 		}
 
-		store := auth.NewProfileTokenStore(auth.DefaultTokenPath(), name)
+		tokenPath, pathErr := auth.DefaultTokenPathOrError()
+		if pathErr != nil {
+			return pathErr
+		}
+		store := auth.NewProfileTokenStore(tokenPath, name)
 		token, err := store.Load()
 		if err != nil {
 			return err
@@ -230,7 +246,11 @@ var authRefreshCmd = &cobra.Command{
 			return err
 		}
 
-		store := auth.NewProfileTokenStore(auth.DefaultTokenPath(), name)
+		tokenPath, err := auth.DefaultTokenPathOrError()
+		if err != nil {
+			return err
+		}
+		store := auth.NewProfileTokenStore(tokenPath, name)
 		token, err := store.Load()
 		if err != nil {
 			return err

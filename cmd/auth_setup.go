@@ -80,7 +80,10 @@ var authSetupCmd = &cobra.Command{
 		}
 
 		reader := bufio.NewReader(os.Stdin)
-		path := config.DefaultPath()
+		path, err := config.DefaultPathOrError()
+		if err != nil {
+			return err
+		}
 		pc, err := config.LoadProfileConfig(path)
 		if err != nil {
 			pc = config.NewProfileConfig()
@@ -168,7 +171,11 @@ var authSetupCmd = &cobra.Command{
 		doLogin = strings.ToLower(strings.TrimSpace(doLogin))
 		if doLogin == "" || doLogin == "y" || doLogin == "yes" {
 			fmt.Println()
-			store := auth.NewProfileTokenStore(auth.DefaultTokenPath(), name)
+			tokenPath, err := auth.DefaultTokenPathOrError()
+			if err != nil {
+				return err
+			}
+			store := auth.NewProfileTokenStore(tokenPath, name)
 			if authMethod == "jwt" {
 				fmt.Println("JWT 인증을 시작합니다...")
 				if err := loginJWT(cfg, store); err != nil {

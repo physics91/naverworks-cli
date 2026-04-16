@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
+	"strings"
 
 	"github.com/physics91/naverworks-cli/internal/config"
 	"github.com/spf13/cobra"
@@ -20,7 +22,10 @@ var configSetCmd = &cobra.Command{
 	Short: "설정값 저장",
 	Args:  cobra.RangeArgs(1, 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		path := config.DefaultPath()
+		path, err := config.DefaultPathOrError()
+		if err != nil {
+			return err
+		}
 		pc, err := config.LoadProfileConfig(path)
 		if err != nil {
 			return err
@@ -36,10 +41,11 @@ var configSetCmd = &cobra.Command{
 		var value string
 		useStdin, _ := cmd.Flags().GetBool("stdin")
 		if useStdin {
-			scanner := bufio.NewScanner(os.Stdin)
-			if scanner.Scan() {
-				value = scanner.Text()
+			data, err := io.ReadAll(bufio.NewReader(os.Stdin))
+			if err != nil {
+				return fmt.Errorf("stdin 읽기 실패: %w", err)
 			}
+			value = strings.TrimRight(string(data), "\r\n")
 		} else if len(args) == 2 {
 			value = args[1]
 		} else {

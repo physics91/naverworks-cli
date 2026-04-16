@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -186,6 +187,51 @@ func TestProfileTokenStore_DeleteNonDefault_PreservesLegacy(t *testing.T) {
 	loaded, _ := defaultStore.Load()
 	if loaded == nil || loaded.AccessToken != "default-tk" {
 		t.Error("default token should be preserved after deleting non-default profile")
+	}
+}
+
+func TestTokenPathFromConfigDir(t *testing.T) {
+	t.Run("absolute config dir", func(t *testing.T) {
+		got, err := tokenPathFromConfigDir("/tmp/naverworks-test")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		want := filepath.Join("/tmp/naverworks-test", "naverworks", "token.json")
+		if got != want {
+			t.Fatalf("path = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("empty config dir rejected", func(t *testing.T) {
+		_, err := tokenPathFromConfigDir("")
+		if err == nil {
+			t.Fatal("expected error for empty config dir")
+		}
+		if !strings.Contains(err.Error(), "비어") {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("relative config dir rejected", func(t *testing.T) {
+		_, err := tokenPathFromConfigDir(".config")
+		if err == nil {
+			t.Fatal("expected error for relative config dir")
+		}
+		if !strings.Contains(err.Error(), "절대 경로") {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+}
+
+func TestDefaultTokenPathOrError_PropagatesLookupFailure(t *testing.T) {
+	_, err := defaultTokenPathOrError(func() (string, error) {
+		return "", errors.New("boom")
+	})
+	if err == nil {
+		t.Fatal("expected lookup error")
+	}
+	if !strings.Contains(err.Error(), "설정 디렉토리 조회 실패") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 

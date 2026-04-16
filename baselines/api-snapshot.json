@@ -1,6 +1,6 @@
 {
   "_bootstrap": false,
-  "last_checked": "2026-04-15T00:00:00Z",
+  "last_checked": "2026-04-16T00:00:00Z",
   "known_announcements": [
     {
       "url": "https://naver.worksmobile.com/whats-new/workplace-user-notice/change-in-screen/sso/",
@@ -106,6 +106,13 @@
       "date": "2026-04-09",
       "summary": "Audit API: Developers 감사 섹션에서 '조직 연동 팝업 URL' 이벤트 대상 항목 제거. Provisioning: 앱 등록/수정/삭제 작업이 감사 이벤트 대상에 추가. GitHub Issue #5 생성.",
       "affected_domains": ["audit", "scim"]
+    },
+    {
+      "url": "https://naver.worksmobile.com/release-notes/drive_20260409/",
+      "title": "웍스 드라이브 정기 업데이트 (2026-04-09)",
+      "date": "2026-04-09",
+      "summary": "WORKS Drive 애플리케이션 정기 업데이트. API 변경사항 없음 (403 접근 제한으로 상세 내용 미확인; Drive 클라이언트 업데이트로 API 변경 아님).",
+      "affected_domains": []
     }
   ]
 }

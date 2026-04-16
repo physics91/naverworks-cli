@@ -1,0 +1,11 @@
+helpers:
+  - id: example-helper
+    path: cmd/helpers.go
+    symbol: exampleHelper
+    lifecycle: experimental
+    owner: Code Reuse Agent
+    use_when:
+      - replace this with concrete guidance
+    avoid_when:
+      - replace this with known false-positive conditions
+    replacement: ""

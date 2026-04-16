@@ -45,6 +45,7 @@ In Claude Code, when a trigger condition below is matched, the corresponding ski
 | `deploy` | "배포", "릴리스", "deploy", "release", `/deploy` | Preflight checks → release tag → GitHub Actions verification |
 | `release` | "릴리스 관리", "release manage", "release edit", "release delete", "release rollback" | View, edit, delete, rollback GitHub Releases |
 | `naverworks-profile` | "프로필", "인증", "NW_PROFILE", "auth setup" | Multi-profile setup, auth, and troubleshooting |
+| `reuse-governor-local` | "재사용", "중복", "공통화", "헬퍼", "보일러플레이트", "reuse cleanup", "duplication" | Review helper reuse, decide extract/keep-local/waive, and maintain reuse catalog/waivers |
 | `commit-work` | Any commit request | Create commits (never run `git commit` directly) |
 
 ## Skill Invocation Order

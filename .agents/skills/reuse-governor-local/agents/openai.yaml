@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reuse Governor"
+  short_description: "Govern naverworks-cli helper reuse, waivers, and lifecycle"
+  default_prompt: "Review this naverworks-cli change for helper reuse, extraction, waiver, and lifecycle decisions."

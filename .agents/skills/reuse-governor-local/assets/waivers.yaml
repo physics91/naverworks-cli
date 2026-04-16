@@ -1,0 +1,9 @@
+waivers:
+  - id: example-waiver
+    path: cmd/example.go
+    helper: exampleHelper
+    reason: replace this with the concrete divergence reason
+    owner: Code Reuse Agent
+    created_on: 2026-04-16
+    review_after: 2026-05-16
+    expires_on: 2026-06-16

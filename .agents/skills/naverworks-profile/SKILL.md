@@ -1,68 +1,57 @@
 ---
 name: naverworks-profile
-description: Use when setting up or troubleshooting naverworks CLI multi-profile authentication. Covers profile creation, OAuth/JWT login, and auth configuration for CI/CD environments. Triggers on "naverworks 프로필", "naverworks 인증", "NW_PROFILE". If the task is build or release automation, use the build or deploy skill. If only running API commands, refer to naverworks --help instead.
+description: Use when setting up or troubleshooting naverworks CLI multi-profile authentication, including profile creation, OAuth/JWT login, and CI/CD auth configuration. Triggers on "naverworks 프로필", "naverworks 인증", "NW_PROFILE". If the task is executing NAVER WORKS API commands, use the naverworks-cli skill. If the task is build or release automation, use the build or deploy skill.
 ---
 
 # 네이버웍스 CLI 멀티 프로필
 
-여러 네이버웍스 환경(개발/스테이징/운영)을 프로필로 분리하여 관리한다.
+인증이랑 프로필 전용 스킬임. 여러 네이버웍스 환경(개발/스테이징/운영)을 프로필로 분리하고 OAuth/JWT 로그인 문제를 다룸
 
 > **부작용 있는 명령어** (`auth setup`, `config set`, `auth login`, `auth refresh`, `auth logout`)는 사용자 확인 후 실행한다.
 
+## 이 스킬을 쓸 때
+
+- 새 프로필 만들기, 기존 프로필 재설정
+- `auth setup`, `auth login`, `auth status`, `auth refresh` 흐름 점검
+- `NW_PROFILE` 기반 CI/CD 인증 구성
+- OAuth/JWT 인증 오류 트러블슈팅
+
+## 이 스킬을 쓰지 말아야 할 때
+
+- 메일/드라이브/디렉토리 같은 API 명령 실행은 `naverworks-cli`
+- 이 저장소의 빌드/테스트/배포는 `build`, `test`, `deploy`, `version`
+
 ## 입출력 계약
 
-### 입력 (시나리오별)
+### 입력
 
-**프로필 생성/재설정 시 (OAuth):**
-
-| 입력 | 필수 여부 | 설명 |
-|------|----------|------|
-| `profile` | 필수 | 생성할 프로필명 (예: `dev`, `prod`) |
-| `client_id` | 필수 | 네이버웍스 Developer Console에서 발급 |
-| `client_secret` | 필수 | 네이버웍스 Developer Console에서 발급 |
-| `bot_id` | 선택 | 메시지 전송 시 필요 |
-| `domain_id` | 선택 | 도메인 ID |
-| `scope` | 선택 | 기본값: `openid profile bot directory calendar` |
-
-**프로필 생성/재설정 시 (JWT) — OAuth 항목에 추가:**
-
-| 입력 | 필수 여부 | 설명 |
-|------|----------|------|
-| `service_account_id` | 필수 | JWT Service Account ID |
-| `private_key_path` | 필수 | Private Key 파일 경로 (권한 600) |
-| `scope` | 선택 | 기본값: `bot directory calendar` |
-
-**트러블슈팅/검증 시:**
-
-| 입력 | 필수 여부 | 설명 |
-|------|----------|------|
-| `profile` | 선택 | 대상 프로필. 생략 시 활성 프로필 사용 |
-| 증상 | 필수 | 에러 메시지 또는 문제 설명 |
+- 공통: `profile`(생략 시 활성 프로필), 문제 증상 또는 목표
+- 프로필 생성/로그인: `auth_mode` (`oauth`/`jwt`), `client_id`, `client_secret`
+- JWT 설정: `service_account_id`, `private_key_path` 추가
+- 선택 입력: `bot_id`, `domain_id`, `scope`
+- 상태 점검/갱신/로그아웃: 기존 프로필이나 환경변수만 있어도 진행 가능
 
 ### 성공 기준
 
-`naverworks --profile <name> auth status` 실행 시:
-- 종료 코드 0 반환
+- `naverworks --profile <name> auth status` 종료 코드 0
 - `auth_method`가 의도한 인증 방식(`oauth` 또는 `jwt`)과 일치
 - `expires_at`이 현재 시각 이후
 
 ### 출력 형식
 
-스킬 완료 시 다음을 사용자에게 보고한다:
+다음 5개를 사용자에게 보고한다
 
-| 필드 | 예시 |
-|------|------|
-| `profile` | `prod` |
-| `auth_mode` | `jwt` |
-| `config_source` | `interactive` 또는 `manual` 또는 `env` |
-| `verification` | `auth_method: jwt, expires_at: 2026-03-25T12:00:00Z` |
-| `next_action` | 없음 (성공) 또는 트러블슈팅 항목 |
+- `profile`
+- `auth_mode`
+- `config_source` (`interactive` / `manual` / `env`)
+- `verification` (`auth_method`, `expires_at`, 필요 시 `scopes`)
+- `next_action` (없으면 성공)
 
 ### 실패 시 대응
 
 아래 트러블슈팅 참조. 해결 불가 시 `auth setup`으로 재설정.
 
-## 프로필 설정 절차
+## 기본 절차
 
 ### OAuth 설정
 
@@ -141,36 +130,10 @@ naverworks --profile <name> config get <key> # 개별 조회
 | JWT 로그인 실패 | private key 경로/권한 오류 | `private_key_path` 확인, 파일 권한 600 |
 | 환경변수가 무시됨 | `--profile` 플래그가 우선 | 플래그 제거 또는 값 변경 |
 
-## references/
+## 참고
 
-<details>
-<summary>설정 키 & 환경변수 전체 목록</summary>
-
-| 키 | 환경변수 |
-|----|---------|
-| `client_id` | `NW_CLIENT_ID` |
-| `client_secret` | `NW_CLIENT_SECRET` |
-| `service_account_id` | `NW_SERVICE_ACCOUNT_ID` |
-| `private_key_path` | `NW_PRIVATE_KEY_PATH` |
-| `domain_id` | `NW_DOMAIN_ID` |
-| `bot_id` | `NW_BOT_ID` |
-| `scope` | `NW_SCOPE` |
-| `default_calendar_user_id` | `NW_DEFAULT_CALENDAR_USER_ID` |
-| `scim_access_token` | `NW_SCIM_ACCESS_TOKEN` |
-
-환경변수는 config.json보다 우선한다.
-
-</details>
-
-<details>
-<summary>파일 위치</summary>
-
-| 파일 | Linux/macOS | Windows |
-|------|------------|---------|
-| 설정 | `~/.config/naverworks/config.json` | `%APPDATA%\naverworks\config.json` |
-| 토큰 | `~/.config/naverworks/token.json` | `%APPDATA%\naverworks\token.json` |
-
-레거시 형식(profiles 키 없는 단일 설정)은 자동으로 `"default"` 프로필로 마이그레이션된다.
-토큰은 `token.json` 내 `tokens.<profile>` 구조로 프로필별 저장된다.
-
-</details>
+- 주요 설정 키는 `client_id`, `client_secret`, `service_account_id`, `private_key_path`, `domain_id`, `bot_id`, `scope`, `default_calendar_user_id`, `scim_access_token`
+- 환경변수는 `NW_CLIENT_ID`, `NW_CLIENT_SECRET`, `NW_SERVICE_ACCOUNT_ID`, `NW_PRIVATE_KEY_PATH`, `NW_DOMAIN_ID`, `NW_BOT_ID`, `NW_SCOPE`, `NW_DEFAULT_CALENDAR_USER_ID`, `NW_SCIM_ACCESS_TOKEN`
+- 설정 파일은 Linux/macOS에서 `~/.config/naverworks/config.json`, Windows에서 `%APPDATA%\\naverworks\\config.json`
+- 토큰 파일은 Linux/macOS에서 `~/.config/naverworks/token.json`, Windows에서 `%APPDATA%\\naverworks\\token.json`
+- 레거시 단일 설정은 자동으로 `default` 프로필로 마이그레이션됨

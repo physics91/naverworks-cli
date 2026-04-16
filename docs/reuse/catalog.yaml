@@ -1,0 +1,158 @@
+helpers:
+  - id: new-svc
+    path: cmd/helpers.go
+    symbol: newSvc
+    lifecycle: default
+    owner: Code Reuse Agent
+    use_when:
+      - command only needs an API service built from a standard constructor
+      - command does not need custom user-id resolution or direct client reuse
+    avoid_when:
+      - command must reuse an already-created client
+      - command requires extra client construction state beyond the service constructor
+    replacement: ""
+  - id: run-list-cmd
+    path: cmd/helpers.go
+    symbol: runListCmd
+    lifecycle: default
+    owner: Code Reuse Agent
+    use_when:
+      - list command follows cursor/count/all pagination
+      - fetch callback shape is `(cursor string, count int) -> (*api.Response, error)`
+    avoid_when:
+      - list flow branches by folder, drive type, or other domain state before fetch
+      - response key or call shape needs a materially different contract
+    replacement: ""
+  - id: add-list-flags
+    path: cmd/helpers.go
+    symbol: addListFlags
+    lifecycle: default
+    owner: Code Reuse Agent
+    use_when:
+      - command uses `runListCmd` or compatible cursor/count/all pagination
+    avoid_when:
+      - command intentionally exposes a different flag contract
+    replacement: ""
+  - id: fetch-and-print
+    path: cmd/helpers.go
+    symbol: fetchAndPrint
+    lifecycle: default
+    owner: Code Reuse Agent
+    use_when:
+      - command makes a single API call and prints the raw body without extra shaping
+    avoid_when:
+      - command needs table formatting, extra validation, or multi-step orchestration
+    replacement: ""
+  - id: read-json-flag-raw
+    path: cmd/helpers.go
+    symbol: readJSONFlagRaw
+    lifecycle: default
+    owner: Code Reuse Agent
+    use_when:
+      - command reads JSON request bodies from flags or stdin
+      - command should preserve the raw payload for API methods
+    avoid_when:
+      - command builds a structured payload from individual typed flags
+    replacement: ""
+  - id: read-stdin-limited
+    path: cmd/helpers.go
+    symbol: readStdinLimited
+    lifecycle: approved
+    owner: Code Reuse Agent
+    use_when:
+      - command consumes bounded stdin input and must fail clearly on oversize payloads
+    avoid_when:
+      - command streams large content intentionally
+    replacement: ""
+  - id: validate-from-until
+    path: cmd/helpers.go
+    symbol: validateFromUntil
+    lifecycle: approved
+    owner: Code Reuse Agent
+    use_when:
+      - command validates RFC3339 `from`/`until` ranges with the standard interval limits
+    avoid_when:
+      - API contract uses a different time format or range policy
+    replacement: ""
+  - id: write-secure-json
+    path: internal/fileutil/write.go
+    symbol: WriteSecureJSON
+    lifecycle: approved
+    owner: Code Reuse Agent
+    use_when:
+      - package persists config-like JSON data and needs secure permissions with atomic write semantics
+    avoid_when:
+      - caller writes non-JSON data or needs streaming output
+    replacement: ""
+  - id: list-files-with-optional-folder
+    path: cmd/drive.go
+    symbol: listFilesWithOptionalFolder
+    lifecycle: approved
+    owner: Code Reuse Agent
+    use_when:
+      - drive-family list commands switch between root listing and folder-child listing through the same cursor/count contract
+      - command only needs folder-aware fetch selection before printing the raw body
+    avoid_when:
+      - command needs `--all` pagination semantics that already fit `runListCmd`
+      - branch logic changes the response shape or adds non-folder decision branches
+    replacement: ""
+  - id: directory-run-e-family
+    path: cmd/directory.go
+    symbol: directoryRunE/directoryBodyRunE/directoryIDRunE/directoryIDBodyRunE/directoryTwoIDRunE/directoryTwoIDBodyRunE
+    lifecycle: approved
+    owner: Code Reuse Agent
+    use_when:
+      - directory command only differs by service method, raw JSON body handling, and response printer choice
+      - command stays inside the DirectoryService command family and follows one of the local wrapper signatures
+    avoid_when:
+      - command needs list pagination, upload/download flows, or custom result shaping beyond raw body/response printing
+      - extracting another global helper family into `cmd/helpers.go` would only duplicate the directory-local wrapper set
+    replacement: ""
+  - id: board-run-e-family
+    path: cmd/board.go
+    symbol: boardIDRunE/boardTwoIDRunE/boardThreeIDRunE/boardFourIDRunE/boardListRunListE/boardIDRunListE/boardTwoIDRunListE/boardBodyRunE/boardIDBodyRunE/boardTwoIDBodyRunE/boardThreeIDBodyRunE
+    lifecycle: approved
+    owner: Code Reuse Agent
+    use_when:
+      - board command only differs by board/post/comment id arity, map body reader choice, and response printer choice
+      - command stays inside the BoardService command family and fits the local CRUD or paginated list wrapper signatures
+    avoid_when:
+      - command needs upload orchestration, title/body-specific validation outside the current readers, or other multi-step flows
+      - extracting another repo-wide helper tier into `cmd/helpers.go` would only mirror board-specific argument shapes
+    replacement: ""
+  - id: approval-run-e-family
+    path: cmd/approval.go
+    symbol: approvalIDRunE/approvalTwoIDRunE/approvalBodyRunE/approvalIDBodyRunE/approvalTwoIDBodyRunE/approvalListRunListE/approvalIDRunListE/approvalUserBodyRunE/approvalUserRunListE
+    lifecycle: approved
+    owner: Code Reuse Agent
+    use_when:
+      - approval command only differs by document/category/linkage-code id arity, raw JSON body handling, user-context resolution, and response printer choice
+      - command stays inside the ApprovalService command family and fits the local CRUD or paginated list wrapper signatures
+    avoid_when:
+      - command needs file upload orchestration or other multi-step flows around attachment pre-registration and upload completion
+      - extracting another repo-wide helper tier into `cmd/helpers.go` would only mirror approval-specific user-context and raw JSON argument shapes
+    replacement: ""
+  - id: contact-run-e-family
+    path: cmd/contact.go
+    symbol: buildContactCreateBody/buildContactUpdateBody/contactIDRunE/contactBodyRunE/contactIDBodyRunE/contactListRunListE/contactUserRunListE/contactUserBodyRunE
+    lifecycle: approved
+    owner: Code Reuse Agent
+    use_when:
+      - contact command only differs by contact/tag/custom-property id arity, map body reader choice, user-context resolution, and response printer choice
+      - command stays inside the ContactService command family and fits the local CRUD or paginated list wrapper signatures
+    avoid_when:
+      - command needs photo upload orchestration, download URL handling, or other multi-step flows outside the current local wrappers
+      - extracting another repo-wide helper tier into `cmd/helpers.go` would only mirror contact-specific user-context and optional body builder shapes
+    replacement: ""
+  - id: bot-run-e-family
+    path: cmd/bot.go
+    symbol: botServiceIDRunE/botServiceBodyRunE/botServiceIDBodyRunE/botServiceListRunListE/botScopedRunE/botScopedIDRunE/botScopedTwoIDRunE/botScopedBodyRunE/botScopedIDBodyRunE/botScopedListRunListE/botScopedIDRunListE
+    lifecycle: approved
+    owner: Code Reuse Agent
+    use_when:
+      - bot command only differs by top-level bot resource id arity, resolved bot-id scope, raw JSON body handling, and response printer choice
+      - command stays inside the BotService command family and fits the local CRUD or paginated list wrapper signatures
+    avoid_when:
+      - command needs send validation, attachment upload/download orchestration, file reads, or other multi-step flows outside the current local wrappers
+      - extracting another repo-wide helper tier into `cmd/helpers.go` would only mirror bot-specific scoped-id and raw JSON argument shapes
+    replacement: ""

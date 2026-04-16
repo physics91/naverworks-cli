@@ -12,174 +12,215 @@ var contactCmd = &cobra.Command{
 	Short: "연락처 관리",
 }
 
-var contactListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "연락처 목록 조회",
-	RunE: func(cmd *cobra.Command, args []string) error {
+type contactIDCall func(*api.ContactService, string) (*api.Response, error)
+type contactBodyReader func(*cobra.Command) (map[string]interface{}, error)
+type contactBodyCall func(*api.ContactService, map[string]interface{}) (*api.Response, error)
+type contactIDBodyCall func(*api.ContactService, string, map[string]interface{}) (*api.Response, error)
+type contactListCall func(*api.ContactService, string, int) (*api.Response, error)
+type contactUserListCall func(*api.ContactService, string, string, int) (*api.Response, error)
+type contactUserBodyCall func(*api.ContactService, string, map[string]interface{}) (*api.Response, error)
+
+// Keep these wrappers local so cmd/helpers.go does not grow a contact-only helper family.
+func printContactBody(resp *api.Response) {
+	printBody(resp.Body)
+}
+
+func buildContactCreateBody(cmd *cobra.Command) (map[string]interface{}, error) {
+	body, err := parseOptionalJSONData(cmd)
+	if err != nil {
+		return nil, err
+	}
+	if body != nil {
+		return body, nil
+	}
+
+	contactName, _ := cmd.Flags().GetString("name")
+	email, _ := cmd.Flags().GetString("email")
+	phone, _ := cmd.Flags().GetString("phone")
+	if contactName == "" {
+		return nil, fmt.Errorf("--name은 필수입니다")
+	}
+
+	body = map[string]interface{}{"name": contactName}
+	if email != "" {
+		body["email"] = email
+	}
+	if phone != "" {
+		body["phone"] = phone
+	}
+	return body, nil
+}
+
+func buildContactUpdateBody(cmd *cobra.Command) (map[string]interface{}, error) {
+	body, err := parseOptionalJSONData(cmd)
+	if err != nil {
+		return nil, err
+	}
+	if body != nil {
+		return body, nil
+	}
+
+	body = map[string]interface{}{}
+	if contactName, _ := cmd.Flags().GetString("name"); contactName != "" {
+		body["name"] = contactName
+	}
+	if email, _ := cmd.Flags().GetString("email"); email != "" {
+		body["email"] = email
+	}
+	if phone, _ := cmd.Flags().GetString("phone"); phone != "" {
+		body["phone"] = phone
+	}
+	return body, nil
+}
+
+func contactIDRunE(call contactIDCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
 		svc, err := newSvc(api.NewContactService)
 		if err != nil {
 			return err
 		}
-		return runListCmd(cmd, []string{"contactId", "name", "email"}, "contacts", svc.ListContacts)
-	},
+		resp, err := call(svc, args[0])
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
 }
 
-var contactListUserCmd = &cobra.Command{
-	Use:   "list-user",
-	Short: "사용자별 연락처 목록 조회",
-	RunE: func(cmd *cobra.Command, args []string) error {
+func contactBodyRunE(readBody contactBodyReader, call contactBodyCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewContactService)
+		if err != nil {
+			return err
+		}
+		body, err := readBody(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := call(svc, body)
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+func contactIDBodyRunE(readBody contactBodyReader, call contactIDBodyCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewContactService)
+		if err != nil {
+			return err
+		}
+		body, err := readBody(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := call(svc, args[0], body)
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+func contactListRunListE(columns []string, itemKey string, call contactListCall) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewContactService)
+		if err != nil {
+			return err
+		}
+		return runListCmd(cmd, columns, itemKey, func(cursor string, count int) (*api.Response, error) {
+			return call(svc, cursor, count)
+		})
+	}
+}
+
+func contactUserRunListE(columns []string, itemKey string, call contactUserListCall) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
 		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
 		svc := api.NewContactService(client)
-		return runListCmd(cmd, []string{"contactId", "name", "email"}, "contacts", func(c string, n int) (*api.Response, error) {
-			return svc.ListUserContacts(userID, c, n)
+		return runListCmd(cmd, columns, itemKey, func(cursor string, count int) (*api.Response, error) {
+			return call(svc, userID, cursor, count)
 		})
-	},
+	}
+}
+
+func contactUserBodyRunE(readBody contactBodyReader, call contactUserBodyCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		body, err := readBody(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := call(api.NewContactService(client), userID, body)
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+var contactListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "연락처 목록 조회",
+	RunE:  contactListRunListE([]string{"contactId", "name", "email"}, "contacts", (*api.ContactService).ListContacts),
+}
+
+var contactListUserCmd = &cobra.Command{
+	Use:   "list-user",
+	Short: "사용자별 연락처 목록 조회",
+	RunE:  contactUserRunListE([]string{"contactId", "name", "email"}, "contacts", (*api.ContactService).ListUserContacts),
 }
 
 var contactGetCmd = &cobra.Command{
 	Use:   "get <contactId>",
 	Short: "연락처 상세 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewContactService(client).GetContact(args[0])
-		})
-	},
+	RunE:  contactIDRunE((*api.ContactService).GetContact, printContactBody),
 }
 
 var contactCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "연락처 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewContactService)
-		if err != nil {
-			return err
-		}
-
-		body, err := parseOptionalJSONData(cmd)
-		if err != nil {
-			return err
-		}
-		if body == nil {
-			contactName, _ := cmd.Flags().GetString("name")
-			email, _ := cmd.Flags().GetString("email")
-			phone, _ := cmd.Flags().GetString("phone")
-			if contactName == "" {
-				return fmt.Errorf("--name은 필수입니다")
-			}
-			body = map[string]interface{}{"name": contactName}
-			if email != "" {
-				body["email"] = email
-			}
-			if phone != "" {
-				body["phone"] = phone
-			}
-		}
-
-		resp, err := svc.CreateContact(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  contactBodyRunE(buildContactCreateBody, (*api.ContactService).CreateContact, printContactBody),
 }
 
 var contactUpdateCmd = &cobra.Command{
 	Use:   "update <contactId>",
 	Short: "연락처 수정",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewContactService)
-		if err != nil {
-			return err
-		}
-
-		body, err := parseOptionalJSONData(cmd)
-		if err != nil {
-			return err
-		}
-		if body == nil {
-			body = map[string]interface{}{}
-			if contactName, _ := cmd.Flags().GetString("name"); contactName != "" {
-				body["name"] = contactName
-			}
-			if email, _ := cmd.Flags().GetString("email"); email != "" {
-				body["email"] = email
-			}
-			if phone, _ := cmd.Flags().GetString("phone"); phone != "" {
-				body["phone"] = phone
-			}
-		}
-
-		resp, err := svc.UpdateContact(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  contactIDBodyRunE(buildContactUpdateBody, (*api.ContactService).UpdateContact, printContactBody),
 }
 
 var contactFullUpdateCmd = &cobra.Command{
 	Use:   "full-update <contactId>",
 	Short: "연락처 전체 수정 (PUT)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewContactService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlag(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.FullUpdateContact(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  contactIDBodyRunE(readJSONFlag, (*api.ContactService).FullUpdateContact, printContactBody),
 }
 
 var contactDeleteCmd = &cobra.Command{
 	Use:   "delete <contactId>",
 	Short: "연락처 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewContactService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeleteContact(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  contactIDRunE((*api.ContactService).DeleteContact, printResponse),
 }
 
 var contactForceDeleteCmd = &cobra.Command{
 	Use:   "force-delete <contactId>",
 	Short: "연락처 강제 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewContactService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.ForceDeleteContact(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  contactIDRunE((*api.ContactService).ForceDeleteContact, printResponse),
 }
 
 // ─── Photo ───
@@ -243,18 +284,7 @@ var contactDeletePhotoCmd = &cobra.Command{
 	Use:   "delete-photo <contactId>",
 	Short: "연락처 사진 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewContactService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeletePhoto(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  contactIDRunE((*api.ContactService).DeletePhoto, printResponse),
 }
 
 // ─── Custom Property ───
@@ -267,112 +297,46 @@ var contactCustomPropertyCmd = &cobra.Command{
 var contactCustomPropertyListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "커스텀 속성 목록 조회",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewContactService)
-		if err != nil {
-			return err
-		}
-		return runListCmd(cmd, nil, "customProperties", svc.ListCustomProperties)
-	},
+	RunE:  contactListRunListE(nil, "customProperties", (*api.ContactService).ListCustomProperties),
 }
 
 var contactCustomPropertyGetCmd = &cobra.Command{
 	Use:   "get <id>",
 	Short: "커스텀 속성 상세 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewContactService(client).GetCustomProperty(args[0])
-		})
-	},
+	RunE:  contactIDRunE((*api.ContactService).GetCustomProperty, printContactBody),
 }
 
 var contactCustomPropertyCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "커스텀 속성 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewContactService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlag(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreateCustomProperty(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  contactBodyRunE(readJSONFlag, (*api.ContactService).CreateCustomProperty, printContactBody),
 }
 
 var contactCustomPropertyUpdateCmd = &cobra.Command{
 	Use:   "update <id>",
 	Short: "커스텀 속성 수정",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewContactService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlag(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.PatchCustomProperty(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  contactIDBodyRunE(readJSONFlag, (*api.ContactService).PatchCustomProperty, printContactBody),
 }
 
 var contactCustomPropertyDeleteCmd = &cobra.Command{
 	Use:   "delete <id>",
 	Short: "커스텀 속성 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewContactService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeleteCustomProperty(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  contactIDRunE((*api.ContactService).DeleteCustomProperty, printResponse),
 }
 
 var contactListTagsCmd = &cobra.Command{
 	Use:   "list-tags",
 	Short: "연락처 태그 목록 조회",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewContactService)
-		if err != nil {
-			return err
-		}
-		return runListCmd(cmd, []string{"tagId", "tagName"}, "contactTags", svc.ListTags)
-	},
+	RunE:  contactListRunListE([]string{"tagId", "tagName"}, "contactTags", (*api.ContactService).ListTags),
 }
 
 var contactListUserTagsCmd = &cobra.Command{
 	Use:   "list-user-tags",
 	Short: "사용자별 연락처 태그 목록 조회",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		client, userID, err := newAPIClientWithUser(cmd)
-		if err != nil {
-			return err
-		}
-		svc := api.NewContactService(client)
-		return runListCmd(cmd, []string{"tagId", "tagName"}, "contactTags", func(c string, n int) (*api.Response, error) {
-			return svc.ListUserTags(userID, c, n)
-		})
-	},
+	RunE:  contactUserRunListE([]string{"tagId", "tagName"}, "contactTags", (*api.ContactService).ListUserTags),
 }
 
 // ─── Tag Subcommands ───
@@ -385,117 +349,41 @@ var contactTagCmd = &cobra.Command{
 var contactTagCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "태그 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewContactService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlag(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreateTag(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  contactBodyRunE(readJSONFlag, (*api.ContactService).CreateTag, printContactBody),
 }
 
 var contactTagGetCmd = &cobra.Command{
 	Use:   "get <tagId>",
 	Short: "태그 상세 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewContactService(client).GetTag(args[0])
-		})
-	},
+	RunE:  contactIDRunE((*api.ContactService).GetTag, printContactBody),
 }
 
 var contactTagUpdateCmd = &cobra.Command{
 	Use:   "update <tagId>",
 	Short: "태그 전체 수정 (PUT)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewContactService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlag(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UpdateTag(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  contactIDBodyRunE(readJSONFlag, (*api.ContactService).UpdateTag, printContactBody),
 }
 
 var contactTagPatchCmd = &cobra.Command{
 	Use:   "patch <tagId>",
 	Short: "태그 부분 수정 (PATCH)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewContactService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlag(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.PatchTag(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  contactIDBodyRunE(readJSONFlag, (*api.ContactService).PatchTag, printContactBody),
 }
 
 var contactTagDeleteCmd = &cobra.Command{
 	Use:   "delete <tagId>",
 	Short: "태그 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewContactService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeleteTag(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  contactIDRunE((*api.ContactService).DeleteTag, printResponse),
 }
 
 var contactTagCreateUserTagsCmd = &cobra.Command{
 	Use:   "create-user-tags",
 	Short: "사용자별 연락처 태그 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		client, userID, err := newAPIClientWithUser(cmd)
-		if err != nil {
-			return err
-		}
-		svc := api.NewContactService(client)
-		body, err := readJSONFlag(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreateUserTags(userID, body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  contactUserBodyRunE(readJSONFlag, (*api.ContactService).CreateUserTags, printContactBody),
 }
 
 func init() {

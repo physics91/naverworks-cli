@@ -14,139 +14,242 @@ var botCmd = &cobra.Command{
 	Short: "Bot 메시지 관리",
 }
 
+type botServiceIDCall func(*api.BotService, string) (*api.Response, error)
+type botServiceBodyCall func(*api.BotService, []byte) (*api.Response, error)
+type botServiceIDBodyCall func(*api.BotService, string, []byte) (*api.Response, error)
+type botServiceListCall func(*api.BotService, string, int) (*api.Response, error)
+type botScopedCall func(*api.BotService, string) (*api.Response, error)
+type botScopedIDCall func(*api.BotService, string, string) (*api.Response, error)
+type botScopedTwoIDCall func(*api.BotService, string, string, string) (*api.Response, error)
+type botScopedBodyCall func(*api.BotService, string, []byte) (*api.Response, error)
+type botScopedIDBodyCall func(*api.BotService, string, string, []byte) (*api.Response, error)
+type botScopedListCall func(*api.BotService, string, string, int) (*api.Response, error)
+type botScopedIDListCall func(*api.BotService, string, string, string, int) (*api.Response, error)
+
+// Keep these wrappers local so cmd/helpers.go does not grow a bot-only helper family.
+func printBotBody(resp *api.Response) {
+	printBody(resp.Body)
+}
+
+func botServiceIDRunE(call botServiceIDCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewBotService)
+		if err != nil {
+			return err
+		}
+		resp, err := call(svc, args[0])
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+func botServiceBodyRunE(call botServiceBodyCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewBotService)
+		if err != nil {
+			return err
+		}
+		data, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := call(svc, data)
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+func botServiceIDBodyRunE(call botServiceIDBodyCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewBotService)
+		if err != nil {
+			return err
+		}
+		data, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := call(svc, args[0], data)
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+func botServiceListRunListE(columns []string, itemKey string, call botServiceListCall) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewBotService)
+		if err != nil {
+			return err
+		}
+		return runListCmd(cmd, columns, itemKey, func(cursor string, count int) (*api.Response, error) {
+			return call(svc, cursor, count)
+		})
+	}
+}
+
+func botScopedRunE(call botScopedCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		bot, botID, err := newBotSvc(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := call(bot, botID)
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+func botScopedIDRunE(call botScopedIDCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		bot, botID, err := newBotSvc(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := call(bot, botID, args[0])
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+func botScopedTwoIDRunE(call botScopedTwoIDCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		bot, botID, err := newBotSvc(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := call(bot, botID, args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+func botScopedBodyRunE(call botScopedBodyCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		bot, botID, err := newBotSvc(cmd)
+		if err != nil {
+			return err
+		}
+		data, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := call(bot, botID, data)
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+func botScopedIDBodyRunE(call botScopedIDBodyCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		bot, botID, err := newBotSvc(cmd)
+		if err != nil {
+			return err
+		}
+		data, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := call(bot, botID, args[0], data)
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+func botScopedListRunListE(columns []string, itemKey string, call botScopedListCall) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		bot, botID, err := newBotSvc(cmd)
+		if err != nil {
+			return err
+		}
+		return runListCmd(cmd, columns, itemKey, func(cursor string, count int) (*api.Response, error) {
+			return call(bot, botID, cursor, count)
+		})
+	}
+}
+
+func botScopedIDRunListE(columns []string, itemKey string, call botScopedIDListCall) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		bot, botID, err := newBotSvc(cmd)
+		if err != nil {
+			return err
+		}
+		return runListCmd(cmd, columns, itemKey, func(cursor string, count int) (*api.Response, error) {
+			return call(bot, botID, args[0], cursor, count)
+		})
+	}
+}
+
 // ─── Bot CRUD (Task 3-1) ───
 
 var botListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "Bot 목록 조회",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewBotService)
-		if err != nil {
-			return err
-		}
-		return runListCmd(cmd, []string{"botId", "botName"}, "bots", func(c string, n int) (*api.Response, error) {
-			return svc.ListBots(c, n)
-		})
-	},
+	RunE:  botServiceListRunListE([]string{"botId", "botName"}, "bots", (*api.BotService).ListBots),
 }
 
 var botGetCmd = &cobra.Command{
 	Use:   "get <botId>",
 	Short: "Bot 상세 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewBotService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.GetBot(args[0])
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  botServiceIDRunE((*api.BotService).GetBot, printBotBody),
 }
 
 var botCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Bot 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewBotService)
-		if err != nil {
-			return err
-		}
-		data, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreateBot(data)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  botServiceBodyRunE((*api.BotService).CreateBot, printResponse),
 }
 
 var botUpdateCmd = &cobra.Command{
 	Use:   "update <botId>",
 	Short: "Bot 수정 (전체)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewBotService)
-		if err != nil {
-			return err
-		}
-		data, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UpdateBot(args[0], data)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  botServiceIDBodyRunE((*api.BotService).UpdateBot, printResponse),
 }
 
 var botPatchCmd = &cobra.Command{
 	Use:   "patch <botId>",
 	Short: "Bot 수정 (부분)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewBotService)
-		if err != nil {
-			return err
-		}
-		data, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.PatchBot(args[0], data)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  botServiceIDBodyRunE((*api.BotService).PatchBot, printResponse),
 }
 
 var botDeleteCmd = &cobra.Command{
 	Use:   "delete <botId>",
 	Short: "Bot 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewBotService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeleteBot(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  botServiceIDRunE((*api.BotService).DeleteBot, printResponse),
 }
 
 var botRegenerateSecretCmd = &cobra.Command{
 	Use:   "regenerate-secret <botId>",
 	Short: "Bot Secret 재생성",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewBotService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.RegenerateSecret(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  botServiceIDRunE((*api.BotService).RegenerateSecret, printResponse),
 }
 
 // ─── Messages (Task 3-2) ───
@@ -274,73 +377,27 @@ var botGetChannelCmd = &cobra.Command{
 	Use:   "get-channel <channelId>",
 	Short: "채널 상세 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-
-		resp, err := bot.GetChannel(botID, args[0])
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  botScopedIDRunE((*api.BotService).GetChannel, printBotBody),
 }
 
 var botChannelMembersCmd = &cobra.Command{
 	Use:   "channel-members <channelId>",
 	Short: "채널 멤버 목록",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		return runListCmd(cmd, []string{"userId"}, "members", func(c string, n int) (*api.Response, error) {
-			return bot.ListChannelMembers(botID, args[0], c, n)
-		})
-	},
+	RunE:  botScopedIDRunListE([]string{"userId"}, "members", (*api.BotService).ListChannelMembers),
 }
 
 var botCreateChannelCmd = &cobra.Command{
 	Use:   "create-channel",
 	Short: "채널 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		data, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := bot.CreateChannel(botID, data)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  botScopedBodyRunE((*api.BotService).CreateChannel, printResponse),
 }
 
 var botLeaveChannelCmd = &cobra.Command{
 	Use:   "leave-channel <channelId>",
 	Short: "채널 나가기",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := bot.LeaveChannel(botID, args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  botScopedIDRunE((*api.BotService).LeaveChannel, printResponse),
 }
 
 // ─── Domain (Task 3-4) ───
@@ -354,153 +411,55 @@ var botDomainRegisterCmd = &cobra.Command{
 	Use:   "register <domainId>",
 	Short: "도메인 등록",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		data, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := bot.RegisterDomain(botID, args[0], data)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  botScopedIDBodyRunE((*api.BotService).RegisterDomain, printResponse),
 }
 
 var botDomainListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "도메인 목록 조회",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		return runListCmd(cmd, []string{"domainId"}, "domains", func(c string, n int) (*api.Response, error) {
-			return bot.ListDomains(botID, c, n)
-		})
-	},
+	RunE:  botScopedListRunListE([]string{"domainId"}, "domains", (*api.BotService).ListDomains),
 }
 
 var botDomainUpdateCmd = &cobra.Command{
 	Use:   "update <domainId>",
 	Short: "도메인 수정 (전체)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		data, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := bot.UpdateDomain(botID, args[0], data)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  botScopedIDBodyRunE((*api.BotService).UpdateDomain, printResponse),
 }
 
 var botDomainPatchCmd = &cobra.Command{
 	Use:   "patch <domainId>",
 	Short: "도메인 수정 (부분)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		data, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := bot.PatchDomain(botID, args[0], data)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  botScopedIDBodyRunE((*api.BotService).PatchDomain, printResponse),
 }
 
 var botDomainDeleteCmd = &cobra.Command{
 	Use:   "delete <domainId>",
 	Short: "도메인 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := bot.DeleteDomain(botID, args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  botScopedIDRunE((*api.BotService).DeleteDomain, printResponse),
 }
 
 var botDomainAddMembersCmd = &cobra.Command{
 	Use:   "add-members <domainId>",
 	Short: "도메인 멤버 추가",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		data, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := bot.AddDomainMembers(botID, args[0], data)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  botScopedIDBodyRunE((*api.BotService).AddDomainMembers, printResponse),
 }
 
 var botDomainListMembersCmd = &cobra.Command{
 	Use:   "list-members <domainId>",
 	Short: "도메인 멤버 목록",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		return runListCmd(cmd, []string{"userId"}, "members", func(c string, n int) (*api.Response, error) {
-			return bot.ListDomainMembers(botID, args[0], c, n)
-		})
-	},
+	RunE:  botScopedIDRunListE([]string{"userId"}, "members", (*api.BotService).ListDomainMembers),
 }
 
 var botDomainRemoveMemberCmd = &cobra.Command{
 	Use:   "remove-member <domainId> <userId>",
 	Short: "도메인 멤버 삭제",
 	Args:  cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := bot.RemoveDomainMember(botID, args[0], args[1])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  botScopedTwoIDRunE((*api.BotService).RemoveDomainMember, printResponse),
 }
 
 // ─── Persistent Menu (Task 3-5) ───
@@ -513,56 +472,19 @@ var botPersistentMenuCmd = &cobra.Command{
 var botPersistentMenuSetCmd = &cobra.Command{
 	Use:   "set",
 	Short: "고정메뉴 설정",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		data, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := bot.UpsertPersistentMenu(botID, data)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  botScopedBodyRunE((*api.BotService).UpsertPersistentMenu, printResponse),
 }
 
 var botPersistentMenuGetCmd = &cobra.Command{
 	Use:   "get",
 	Short: "고정메뉴 조회",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := bot.GetPersistentMenu(botID)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  botScopedRunE((*api.BotService).GetPersistentMenu, printBotBody),
 }
 
 var botPersistentMenuDeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "고정메뉴 삭제",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := bot.DeletePersistentMenu(botID)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  botScopedRunE((*api.BotService).DeletePersistentMenu, printResponse),
 }
 
 // ─── Rich Menu (Task 3-6) ───
@@ -575,72 +497,27 @@ var botRichMenuCmd = &cobra.Command{
 var botRichMenuCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "리치메뉴 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		data, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := bot.CreateRichMenu(botID, data)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  botScopedBodyRunE((*api.BotService).CreateRichMenu, printResponse),
 }
 
 var botRichMenuListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "리치메뉴 목록 조회",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		return runListCmd(cmd, []string{"richMenuId"}, "richmenus", func(c string, n int) (*api.Response, error) {
-			return bot.ListRichMenus(botID, c, n)
-		})
-	},
+	RunE:  botScopedListRunListE([]string{"richMenuId"}, "richmenus", (*api.BotService).ListRichMenus),
 }
 
 var botRichMenuGetCmd = &cobra.Command{
 	Use:   "get <richmenuId>",
 	Short: "리치메뉴 상세 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := bot.GetRichMenu(botID, args[0])
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  botScopedIDRunE((*api.BotService).GetRichMenu, printBotBody),
 }
 
 var botRichMenuDeleteCmd = &cobra.Command{
 	Use:   "delete <richmenuId>",
 	Short: "리치메뉴 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := bot.DeleteRichMenu(botID, args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  botScopedIDRunE((*api.BotService).DeleteRichMenu, printResponse),
 }
 
 var botRichMenuSetImageCmd = &cobra.Command{
@@ -687,106 +564,40 @@ var botRichMenuSetUserCmd = &cobra.Command{
 	Use:   "set-user <richmenuId> <userId>",
 	Short: "사용자에게 리치메뉴 설정",
 	Args:  cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := bot.SetUserRichMenu(botID, args[0], args[1])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  botScopedTwoIDRunE((*api.BotService).SetUserRichMenu, printResponse),
 }
 
 var botRichMenuGetUserCmd = &cobra.Command{
 	Use:   "get-user <userId>",
 	Short: "사용자 리치메뉴 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := bot.GetUserRichMenu(botID, args[0])
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  botScopedIDRunE((*api.BotService).GetUserRichMenu, printBotBody),
 }
 
 var botRichMenuDeleteUserCmd = &cobra.Command{
 	Use:   "delete-user <userId>",
 	Short: "사용자 리치메뉴 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := bot.DeleteUserRichMenu(botID, args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  botScopedIDRunE((*api.BotService).DeleteUserRichMenu, printResponse),
 }
 
 var botRichMenuSetDefaultCmd = &cobra.Command{
 	Use:   "set-default <richmenuId>",
 	Short: "기본 리치메뉴 설정",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := bot.SetDefaultRichMenu(botID, args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  botScopedIDRunE((*api.BotService).SetDefaultRichMenu, printResponse),
 }
 
 var botRichMenuGetDefaultCmd = &cobra.Command{
 	Use:   "get-default",
 	Short: "기본 리치메뉴 조회",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := bot.GetDefaultRichMenu(botID)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  botScopedRunE((*api.BotService).GetDefaultRichMenu, printBotBody),
 }
 
 var botRichMenuDeleteDefaultCmd = &cobra.Command{
 	Use:   "delete-default",
 	Short: "기본 리치메뉴 삭제",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		bot, botID, err := newBotSvc(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := bot.DeleteDefaultRichMenu(botID)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  botScopedRunE((*api.BotService).DeleteDefaultRichMenu, printResponse),
 }
 
 // ─── Helpers ───

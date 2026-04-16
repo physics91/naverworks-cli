@@ -12,6 +12,120 @@ var directoryCmd = &cobra.Command{
 	Short: "디렉토리 관리 (사용자, 그룹, 조직)",
 }
 
+type directoryCall func(*api.DirectoryService) (*api.Response, error)
+type directoryBodyCall func(*api.DirectoryService, []byte) (*api.Response, error)
+type directoryIDCall func(*api.DirectoryService, string) (*api.Response, error)
+type directoryIDBodyCall func(*api.DirectoryService, string, []byte) (*api.Response, error)
+type directoryTwoIDCall func(*api.DirectoryService, string, string) (*api.Response, error)
+type directoryTwoIDBodyCall func(*api.DirectoryService, string, string, []byte) (*api.Response, error)
+
+// Keep these wrappers local so cmd/helpers.go does not grow a directory-only helper family.
+func printDirectoryBody(resp *api.Response) {
+	printBody(resp.Body)
+}
+
+func directoryRunE(call directoryCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		resp, err := call(svc)
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+func directoryBodyRunE(call directoryBodyCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := call(svc, body)
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+func directoryIDRunE(call directoryIDCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		resp, err := call(svc, args[0])
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+func directoryIDBodyRunE(call directoryIDBodyCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := call(svc, args[0], body)
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+func directoryTwoIDRunE(call directoryTwoIDCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		resp, err := call(svc, args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+func directoryTwoIDBodyRunE(call directoryTwoIDBodyCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := call(svc, args[0], args[1], body)
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
 // ─── Existing Read Commands ───
 
 var dirListUsersCmd = &cobra.Command{
@@ -136,236 +250,84 @@ var dirListEmploymentTypesCmd = &cobra.Command{
 var dirCreateUserCmd = &cobra.Command{
 	Use:   "create-user",
 	Short: "사용자 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreateUser(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryBodyRunE((*api.DirectoryService).CreateUser, printDirectoryBody),
 }
 
 var dirUpdateUserCmd = &cobra.Command{
 	Use:   "update-user <userId>",
 	Short: "사용자 전체 수정 (PUT)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UpdateUser(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).UpdateUser, printDirectoryBody),
 }
 
 var dirPatchUserCmd = &cobra.Command{
 	Use:   "patch-user <userId>",
 	Short: "사용자 부분 수정 (PATCH)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.PatchUser(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).PatchUser, printDirectoryBody),
 }
 
 var dirDeleteUserCmd = &cobra.Command{
 	Use:   "delete-user <userId>",
 	Short: "사용자 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeleteUser(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).DeleteUser, printResponse),
 }
 
 var dirForceDeleteUserCmd = &cobra.Command{
 	Use:   "force-delete-user <userId>",
 	Short: "사용자 강제 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.ForceDeleteUser(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).ForceDeleteUser, printResponse),
 }
 
 var dirUndeleteUserCmd = &cobra.Command{
 	Use:   "undelete-user <userId>",
 	Short: "사용자 삭제 취소",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UndeleteUser(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).UndeleteUser, printResponse),
 }
 
 var dirSuspendUserCmd = &cobra.Command{
 	Use:   "suspend-user <userId>",
 	Short: "사용자 정지",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.SuspendUser(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).SuspendUser, printResponse),
 }
 
 var dirUnsuspendUserCmd = &cobra.Command{
 	Use:   "unsuspend-user <userId>",
 	Short: "사용자 정지 해제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UnsuspendUser(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).UnsuspendUser, printResponse),
 }
 
 var dirForceLogoutUserCmd = &cobra.Command{
 	Use:   "force-logout-user <userId>",
 	Short: "사용자 강제 로그아웃",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.ForceLogoutUser(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).ForceLogoutUser, printResponse),
 }
 
 var dirMoveUserCmd = &cobra.Command{
 	Use:   "move-user <userId>",
 	Short: "사용자 이동",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.MoveUser(args[0], body)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).MoveUser, printResponse),
 }
 
 var dirSetLeaveCmd = &cobra.Command{
 	Use:   "set-leave <userId>",
 	Short: "사용자 휴직 설정",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.SetLeaveOfAbsence(args[0], body)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).SetLeaveOfAbsence, printResponse),
 }
 
 var dirClearLeaveCmd = &cobra.Command{
 	Use:   "clear-leave <userId>",
 	Short: "사용자 휴직 해제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.ClearLeaveOfAbsence(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).ClearLeaveOfAbsence, printResponse),
 }
 
 // ─── Task 4-2: User Profile ───
@@ -429,18 +391,7 @@ var dirDeletePhotoCmd = &cobra.Command{
 	Use:   "delete-photo <userId>",
 	Short: "사용자 사진 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeleteUserPhoto(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).DeleteUserPhoto, printResponse),
 }
 
 // ─── Profile Status Subcommand Group ───
@@ -469,95 +420,35 @@ var dirProfileStatusGetCmd = &cobra.Command{
 	Use:   "get <userId> <id>",
 	Short: "프로필 상태 상세 조회",
 	Args:  cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewDirectoryService(client).GetProfileStatus(args[0], args[1])
-		})
-	},
+	RunE:  directoryTwoIDRunE((*api.DirectoryService).GetProfileStatus, printDirectoryBody),
 }
 
 var dirProfileStatusCreateCmd = &cobra.Command{
 	Use:   "create <userId>",
 	Short: "프로필 상태 생성",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreateProfileStatus(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).CreateProfileStatus, printDirectoryBody),
 }
 
 var dirProfileStatusUpdateCmd = &cobra.Command{
 	Use:   "update <userId> <id>",
 	Short: "프로필 상태 전체 수정 (PUT)",
 	Args:  cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UpdateProfileStatus(args[0], args[1], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryTwoIDBodyRunE((*api.DirectoryService).UpdateProfileStatus, printDirectoryBody),
 }
 
 var dirProfileStatusPatchCmd = &cobra.Command{
 	Use:   "patch <userId> <id>",
 	Short: "프로필 상태 부분 수정 (PATCH)",
 	Args:  cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.PatchProfileStatus(args[0], args[1], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryTwoIDBodyRunE((*api.DirectoryService).PatchProfileStatus, printDirectoryBody),
 }
 
 var dirProfileStatusDeleteCmd = &cobra.Command{
 	Use:   "delete <userId> <id>",
 	Short: "프로필 상태 삭제",
 	Args:  cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeleteProfileStatus(args[0], args[1])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryTwoIDRunE((*api.DirectoryService).DeleteProfileStatus, printResponse),
 }
 
 // ─── Task 4-3: Email + Invitations + Links ───
@@ -566,206 +457,81 @@ var dirAddAliasEmailCmd = &cobra.Command{
 	Use:   "add-alias-email <userId> <email>",
 	Short: "별칭 이메일 추가",
 	Args:  cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.AddAliasEmail(args[0], args[1])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryTwoIDRunE((*api.DirectoryService).AddAliasEmail, printResponse),
 }
 
 var dirDeleteAliasEmailCmd = &cobra.Command{
 	Use:   "delete-alias-email <userId> <email>",
 	Short: "별칭 이메일 삭제",
 	Args:  cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeleteAliasEmail(args[0], args[1])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryTwoIDRunE((*api.DirectoryService).DeleteAliasEmail, printResponse),
 }
 
 var dirSendInvitationCmd = &cobra.Command{
 	Use:   "send-invitation <userId>",
 	Short: "초대 이메일 발송",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.SendInvitationEmail(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).SendInvitationEmail, printResponse),
 }
 
 var dirSendInvitationAllCmd = &cobra.Command{
 	Use:   "send-invitation-all",
 	Short: "전체 사용자 초대 이메일 발송",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.SendInvitationEmailToAll()
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryRunE((*api.DirectoryService).SendInvitationEmailToAll, printResponse),
 }
 
 var dirLinkToWorksCmd = &cobra.Command{
 	Use:   "link-to-works <userId>",
 	Short: "사용자 WORKS 연동",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.LinkUserToWorks(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).LinkUserToWorks, printResponse),
 }
 
 var dirLinkAllToWorksCmd = &cobra.Command{
 	Use:   "link-all-to-works",
 	Short: "전체 사용자 WORKS 연동",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.LinkAllUsersToWorks()
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryRunE((*api.DirectoryService).LinkAllUsersToWorks, printResponse),
 }
 
 var dirUnlinkToWorksCmd = &cobra.Command{
 	Use:   "unlink-to-works <userId>",
 	Short: "사용자 WORKS 연동 해제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UnlinkUserToWorks(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).UnlinkUserToWorks, printResponse),
 }
 
 var dirLinkToLineCmd = &cobra.Command{
 	Use:   "link-to-line <userId>",
 	Short: "사용자 LINE 연동",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.LinkUserToLine(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).LinkUserToLine, printResponse),
 }
 
 var dirLinkAllToLineCmd = &cobra.Command{
 	Use:   "link-all-to-line",
 	Short: "전체 사용자 LINE 연동",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.LinkAllUsersToLine()
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryRunE((*api.DirectoryService).LinkAllUsersToLine, printResponse),
 }
 
 var dirUnlinkToLineCmd = &cobra.Command{
 	Use:   "unlink-to-line <userId>",
 	Short: "사용자 LINE 연동 해제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UnlinkUserToLine(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).UnlinkUserToLine, printResponse),
 }
 
 var dirGetLinkUrlCmd = &cobra.Command{
 	Use:   "get-link-url <userId>",
 	Short: "사용자 연동 URL 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewDirectoryService(client).GetLinkUrl(args[0])
-		})
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).GetLinkUrl, printDirectoryBody),
 }
 
 var dirResetLinkUrlCmd = &cobra.Command{
 	Use:   "reset-link-url <userId>",
 	Short: "사용자 연동 URL 재설정",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.ResetLinkUrl(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).ResetLinkUrl, printResponse),
 }
 
 // ─── Task 4-4: External Keys + Custom Properties ───
@@ -773,22 +539,7 @@ var dirResetLinkUrlCmd = &cobra.Command{
 var dirUpsertExternalKeysCmd = &cobra.Command{
 	Use:   "upsert-external-keys",
 	Short: "사용자 외부 키 업서트",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UpsertUserExternalKeys(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryBodyRunE((*api.DirectoryService).UpsertUserExternalKeys, printDirectoryBody),
 }
 
 var dirListExternalKeysCmd = &cobra.Command{
@@ -826,72 +577,27 @@ var dirUserCustomPropertyGetCmd = &cobra.Command{
 	Use:   "get <id>",
 	Short: "사용자 커스텀 속성 상세 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewDirectoryService(client).GetUserCustomProperty(args[0])
-		})
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).GetUserCustomProperty, printDirectoryBody),
 }
 
 var dirUserCustomPropertyCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "사용자 커스텀 속성 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreateUserCustomProperty(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryBodyRunE((*api.DirectoryService).CreateUserCustomProperty, printDirectoryBody),
 }
 
 var dirUserCustomPropertyUpdateCmd = &cobra.Command{
 	Use:   "update <id>",
 	Short: "사용자 커스텀 속성 수정 (PATCH)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.PatchUserCustomProperty(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).PatchUserCustomProperty, printDirectoryBody),
 }
 
 var dirUserCustomPropertyDeleteCmd = &cobra.Command{
 	Use:   "delete <id>",
 	Short: "사용자 커스텀 속성 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeleteUserCustomProperty(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).DeleteUserCustomProperty, printResponse),
 }
 
 // ─── Task 4-5: Group CUD + Members + Admins + External Keys ───
@@ -899,84 +605,28 @@ var dirUserCustomPropertyDeleteCmd = &cobra.Command{
 var dirCreateGroupCmd = &cobra.Command{
 	Use:   "create-group",
 	Short: "그룹 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreateGroup(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryBodyRunE((*api.DirectoryService).CreateGroup, printDirectoryBody),
 }
 
 var dirUpdateGroupCmd = &cobra.Command{
 	Use:   "update-group <groupId>",
 	Short: "그룹 전체 수정 (PUT)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UpdateGroup(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).UpdateGroup, printDirectoryBody),
 }
 
 var dirPatchGroupCmd = &cobra.Command{
 	Use:   "patch-group <groupId>",
 	Short: "그룹 부분 수정 (PATCH)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.PatchGroup(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).PatchGroup, printDirectoryBody),
 }
 
 var dirDeleteGroupCmd = &cobra.Command{
 	Use:   "delete-group <groupId>",
 	Short: "그룹 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeleteGroup(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).DeleteGroup, printResponse),
 }
 
 var dirListGroupMembersCmd = &cobra.Command{
@@ -998,40 +648,14 @@ var dirAddGroupMembersCmd = &cobra.Command{
 	Use:   "add-group-members <groupId>",
 	Short: "그룹 멤버 추가",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.AddGroupMembers(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).AddGroupMembers, printDirectoryBody),
 }
 
 var dirRemoveGroupMemberCmd = &cobra.Command{
 	Use:   "remove-group-member <groupId> <memberId>",
 	Short: "그룹 멤버 삭제",
 	Args:  cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.RemoveGroupMember(args[0], args[1])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryTwoIDRunE((*api.DirectoryService).RemoveGroupMember, printResponse),
 }
 
 var dirListGroupAdminsCmd = &cobra.Command{
@@ -1053,61 +677,20 @@ var dirAddGroupAdminCmd = &cobra.Command{
 	Use:   "add-group-admin <groupId>",
 	Short: "그룹 관리자 추가",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.AddGroupAdministrator(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).AddGroupAdministrator, printDirectoryBody),
 }
 
 var dirRemoveGroupAdminCmd = &cobra.Command{
 	Use:   "remove-group-admin <groupId> <userId>",
 	Short: "그룹 관리자 삭제",
 	Args:  cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.RemoveGroupAdministrator(args[0], args[1])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryTwoIDRunE((*api.DirectoryService).RemoveGroupAdministrator, printResponse),
 }
 
 var dirUpsertGroupExternalKeysCmd = &cobra.Command{
 	Use:   "upsert-group-external-keys",
 	Short: "그룹 외부 키 업서트",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UpsertGroupExternalKeys(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryBodyRunE((*api.DirectoryService).UpsertGroupExternalKeys, printDirectoryBody),
 }
 
 var dirListGroupExternalKeysCmd = &cobra.Command{
@@ -1127,106 +710,35 @@ var dirListGroupExternalKeysCmd = &cobra.Command{
 var dirCreateOrgUnitCmd = &cobra.Command{
 	Use:   "create-orgunit",
 	Short: "조직 단위 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreateOrgUnit(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryBodyRunE((*api.DirectoryService).CreateOrgUnit, printDirectoryBody),
 }
 
 var dirUpdateOrgUnitCmd = &cobra.Command{
 	Use:   "update-orgunit <orgUnitId>",
 	Short: "조직 단위 전체 수정 (PUT)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UpdateOrgUnit(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).UpdateOrgUnit, printDirectoryBody),
 }
 
 var dirPatchOrgUnitCmd = &cobra.Command{
 	Use:   "patch-orgunit <orgUnitId>",
 	Short: "조직 단위 부분 수정 (PATCH)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.PatchOrgUnit(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).PatchOrgUnit, printDirectoryBody),
 }
 
 var dirDeleteOrgUnitCmd = &cobra.Command{
 	Use:   "delete-orgunit <orgUnitId>",
 	Short: "조직 단위 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeleteOrgUnit(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).DeleteOrgUnit, printResponse),
 }
 
 var dirMoveOrgUnitCmd = &cobra.Command{
 	Use:   "move-orgunit <orgUnitId>",
 	Short: "조직 단위 이동",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.MoveOrgUnit(args[0], body)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).MoveOrgUnit, printResponse),
 }
 
 var dirListOrgUnitMembersCmd = &cobra.Command{
@@ -1255,94 +767,34 @@ var dirOrgUnitAccessRestrictCreateCmd = &cobra.Command{
 	Use:   "create <orgUnitId>",
 	Short: "조직 단위 접근 제한 생성",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreateOrgUnitAccessRestrict(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).CreateOrgUnitAccessRestrict, printDirectoryBody),
 }
 
 var dirOrgUnitAccessRestrictGetCmd = &cobra.Command{
 	Use:   "get <orgUnitId>",
 	Short: "조직 단위 접근 제한 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewDirectoryService(client).GetOrgUnitAccessRestrict(args[0])
-		})
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).GetOrgUnitAccessRestrict, printDirectoryBody),
 }
 
 var dirOrgUnitAccessRestrictUpdateCmd = &cobra.Command{
 	Use:   "update <orgUnitId>",
 	Short: "조직 단위 접근 제한 수정 (PUT)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UpdateOrgUnitAccessRestrict(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).UpdateOrgUnitAccessRestrict, printDirectoryBody),
 }
 
 var dirOrgUnitAccessRestrictDeleteCmd = &cobra.Command{
 	Use:   "delete <orgUnitId>",
 	Short: "조직 단위 접근 제한 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeleteOrgUnitAccessRestrict(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).DeleteOrgUnitAccessRestrict, printResponse),
 }
 
 var dirUpsertOrgUnitExternalKeysCmd = &cobra.Command{
 	Use:   "upsert-orgunit-external-keys",
 	Short: "조직 단위 외부 키 업서트",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UpsertOrgUnitExternalKeys(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryBodyRunE((*api.DirectoryService).UpsertOrgUnitExternalKeys, printDirectoryBody),
 }
 
 var dirListOrgUnitExternalKeysCmd = &cobra.Command{
@@ -1363,159 +815,58 @@ var dirGetPositionCmd = &cobra.Command{
 	Use:   "get-position <positionId>",
 	Short: "직책 상세 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewDirectoryService(client).GetPosition(args[0])
-		})
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).GetPosition, printDirectoryBody),
 }
 
 var dirCreatePositionCmd = &cobra.Command{
 	Use:   "create-position",
 	Short: "직책 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreatePosition(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryBodyRunE((*api.DirectoryService).CreatePosition, printDirectoryBody),
 }
 
 var dirUpdatePositionCmd = &cobra.Command{
 	Use:   "update-position <positionId>",
 	Short: "직책 전체 수정 (PUT)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UpdatePosition(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).UpdatePosition, printDirectoryBody),
 }
 
 var dirPatchPositionCmd = &cobra.Command{
 	Use:   "patch-position <positionId>",
 	Short: "직책 부분 수정 (PATCH)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.PatchPosition(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).PatchPosition, printDirectoryBody),
 }
 
 var dirDeletePositionCmd = &cobra.Command{
 	Use:   "delete-position <positionId>",
 	Short: "직책 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeletePosition(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).DeletePosition, printResponse),
 }
 
 var dirEnablePositionsCmd = &cobra.Command{
 	Use:   "enable-positions",
 	Short: "직책 활성화",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.EnablePositions()
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryRunE((*api.DirectoryService).EnablePositions, printResponse),
 }
 
 var dirDisablePositionsCmd = &cobra.Command{
 	Use:   "disable-positions",
 	Short: "직책 비활성화",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DisablePositions()
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryRunE((*api.DirectoryService).DisablePositions, printResponse),
 }
 
 var dirUpsertPositionExternalKeysCmd = &cobra.Command{
 	Use:   "upsert-position-external-keys",
 	Short: "직책 외부 키 업서트",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UpsertPositionExternalKeys(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryBodyRunE((*api.DirectoryService).UpsertPositionExternalKeys, printDirectoryBody),
 }
 
 var dirListPositionExternalKeysCmd = &cobra.Command{
 	Use:   "list-position-external-keys",
 	Short: "직책 외부 키 목록 조회",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewDirectoryService(client).ListPositionExternalKeys()
-		})
-	},
+	RunE:  directoryRunE((*api.DirectoryService).ListPositionExternalKeys, printDirectoryBody),
 }
 
 // ─── Task 4-8: Levels CRUD + External Keys ───
@@ -1524,159 +875,58 @@ var dirGetLevelCmd = &cobra.Command{
 	Use:   "get-level <levelId>",
 	Short: "직급 상세 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewDirectoryService(client).GetLevel(args[0])
-		})
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).GetLevel, printDirectoryBody),
 }
 
 var dirCreateLevelCmd = &cobra.Command{
 	Use:   "create-level",
 	Short: "직급 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreateLevel(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryBodyRunE((*api.DirectoryService).CreateLevel, printDirectoryBody),
 }
 
 var dirUpdateLevelCmd = &cobra.Command{
 	Use:   "update-level <levelId>",
 	Short: "직급 전체 수정 (PUT)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UpdateLevel(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).UpdateLevel, printDirectoryBody),
 }
 
 var dirPatchLevelCmd = &cobra.Command{
 	Use:   "patch-level <levelId>",
 	Short: "직급 부분 수정 (PATCH)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.PatchLevel(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).PatchLevel, printDirectoryBody),
 }
 
 var dirDeleteLevelCmd = &cobra.Command{
 	Use:   "delete-level <levelId>",
 	Short: "직급 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeleteLevel(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).DeleteLevel, printResponse),
 }
 
 var dirEnableLevelsCmd = &cobra.Command{
 	Use:   "enable-levels",
 	Short: "직급 활성화",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.EnableLevels()
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryRunE((*api.DirectoryService).EnableLevels, printResponse),
 }
 
 var dirDisableLevelsCmd = &cobra.Command{
 	Use:   "disable-levels",
 	Short: "직급 비활성화",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DisableLevels()
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryRunE((*api.DirectoryService).DisableLevels, printResponse),
 }
 
 var dirUpsertLevelExternalKeysCmd = &cobra.Command{
 	Use:   "upsert-level-external-keys",
 	Short: "직급 외부 키 업서트",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UpsertLevelExternalKeys(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryBodyRunE((*api.DirectoryService).UpsertLevelExternalKeys, printDirectoryBody),
 }
 
 var dirListLevelExternalKeysCmd = &cobra.Command{
 	Use:   "list-level-external-keys",
 	Short: "직급 외부 키 목록 조회",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewDirectoryService(client).ListLevelExternalKeys()
-		})
-	},
+	RunE:  directoryRunE((*api.DirectoryService).ListLevelExternalKeys, printDirectoryBody),
 }
 
 // ─── Task 4-9: Employment Types CRUD + External Keys + Access Restrict ───
@@ -1685,159 +935,58 @@ var dirGetEmploymentTypeCmd = &cobra.Command{
 	Use:   "get-employment-type <id>",
 	Short: "고용 유형 상세 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewDirectoryService(client).GetEmploymentType(args[0])
-		})
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).GetEmploymentType, printDirectoryBody),
 }
 
 var dirCreateEmploymentTypeCmd = &cobra.Command{
 	Use:   "create-employment-type",
 	Short: "고용 유형 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreateEmploymentType(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryBodyRunE((*api.DirectoryService).CreateEmploymentType, printDirectoryBody),
 }
 
 var dirUpdateEmploymentTypeCmd = &cobra.Command{
 	Use:   "update-employment-type <id>",
 	Short: "고용 유형 전체 수정 (PUT)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UpdateEmploymentType(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).UpdateEmploymentType, printDirectoryBody),
 }
 
 var dirPatchEmploymentTypeCmd = &cobra.Command{
 	Use:   "patch-employment-type <id>",
 	Short: "고용 유형 부분 수정 (PATCH)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.PatchEmploymentType(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).PatchEmploymentType, printDirectoryBody),
 }
 
 var dirDeleteEmploymentTypeCmd = &cobra.Command{
 	Use:   "delete-employment-type <id>",
 	Short: "고용 유형 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeleteEmploymentType(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).DeleteEmploymentType, printResponse),
 }
 
 var dirEnableEmploymentTypesCmd = &cobra.Command{
 	Use:   "enable-employment-types",
 	Short: "고용 유형 활성화",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.EnableEmploymentTypes()
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryRunE((*api.DirectoryService).EnableEmploymentTypes, printResponse),
 }
 
 var dirDisableEmploymentTypesCmd = &cobra.Command{
 	Use:   "disable-employment-types",
 	Short: "고용 유형 비활성화",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DisableEmploymentTypes()
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryRunE((*api.DirectoryService).DisableEmploymentTypes, printResponse),
 }
 
 var dirUpsertEmploymentTypeExternalKeysCmd = &cobra.Command{
 	Use:   "upsert-employment-type-external-keys",
 	Short: "고용 유형 외부 키 업서트",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UpsertEmploymentTypeExternalKeys(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryBodyRunE((*api.DirectoryService).UpsertEmploymentTypeExternalKeys, printDirectoryBody),
 }
 
 var dirListEmploymentTypeExternalKeysCmd = &cobra.Command{
 	Use:   "list-employment-type-external-keys",
 	Short: "고용 유형 외부 키 목록 조회",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewDirectoryService(client).ListEmploymentTypeExternalKeys()
-		})
-	},
+	RunE:  directoryRunE((*api.DirectoryService).ListEmploymentTypeExternalKeys, printDirectoryBody),
 }
 
 // ─── Employment Type Access Restrict Subcommand Group ───
@@ -1851,73 +1000,28 @@ var dirEmploymentTypeAccessRestrictCreateCmd = &cobra.Command{
 	Use:   "create <id>",
 	Short: "고용 유형 접근 제한 생성",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreateEmploymentTypeAccessRestrict(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).CreateEmploymentTypeAccessRestrict, printDirectoryBody),
 }
 
 var dirEmploymentTypeAccessRestrictGetCmd = &cobra.Command{
 	Use:   "get <id>",
 	Short: "고용 유형 접근 제한 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewDirectoryService(client).GetEmploymentTypeAccessRestrict(args[0])
-		})
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).GetEmploymentTypeAccessRestrict, printDirectoryBody),
 }
 
 var dirEmploymentTypeAccessRestrictUpdateCmd = &cobra.Command{
 	Use:   "update <id>",
 	Short: "고용 유형 접근 제한 수정 (PUT)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UpdateEmploymentTypeAccessRestrict(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).UpdateEmploymentTypeAccessRestrict, printDirectoryBody),
 }
 
 var dirEmploymentTypeAccessRestrictDeleteCmd = &cobra.Command{
 	Use:   "delete <id>",
 	Short: "고용 유형 접근 제한 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeleteEmploymentTypeAccessRestrict(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).DeleteEmploymentTypeAccessRestrict, printResponse),
 }
 
 // ─── Task 4-10: User Types CRUD + External Keys + Access Restrict ───
@@ -1926,159 +1030,58 @@ var dirGetUserTypeCmd = &cobra.Command{
 	Use:   "get-user-type <id>",
 	Short: "사용자 유형 상세 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewDirectoryService(client).GetUserType(args[0])
-		})
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).GetUserType, printDirectoryBody),
 }
 
 var dirCreateUserTypeCmd = &cobra.Command{
 	Use:   "create-user-type",
 	Short: "사용자 유형 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreateUserType(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryBodyRunE((*api.DirectoryService).CreateUserType, printDirectoryBody),
 }
 
 var dirUpdateUserTypeCmd = &cobra.Command{
 	Use:   "update-user-type <id>",
 	Short: "사용자 유형 전체 수정 (PUT)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UpdateUserType(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).UpdateUserType, printDirectoryBody),
 }
 
 var dirPatchUserTypeCmd = &cobra.Command{
 	Use:   "patch-user-type <id>",
 	Short: "사용자 유형 부분 수정 (PATCH)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.PatchUserType(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).PatchUserType, printDirectoryBody),
 }
 
 var dirDeleteUserTypeCmd = &cobra.Command{
 	Use:   "delete-user-type <id>",
 	Short: "사용자 유형 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeleteUserType(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).DeleteUserType, printResponse),
 }
 
 var dirEnableUserTypesCmd = &cobra.Command{
 	Use:   "enable-user-types",
 	Short: "사용자 유형 활성화",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.EnableUserTypes()
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryRunE((*api.DirectoryService).EnableUserTypes, printResponse),
 }
 
 var dirDisableUserTypesCmd = &cobra.Command{
 	Use:   "disable-user-types",
 	Short: "사용자 유형 비활성화",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DisableUserTypes()
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryRunE((*api.DirectoryService).DisableUserTypes, printResponse),
 }
 
 var dirUpsertUserTypeExternalKeysCmd = &cobra.Command{
 	Use:   "upsert-user-type-external-keys",
 	Short: "사용자 유형 외부 키 업서트",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UpsertUserTypeExternalKeys(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryBodyRunE((*api.DirectoryService).UpsertUserTypeExternalKeys, printDirectoryBody),
 }
 
 var dirListUserTypeExternalKeysCmd = &cobra.Command{
 	Use:   "list-user-type-external-keys",
 	Short: "사용자 유형 외부 키 목록 조회",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewDirectoryService(client).ListUserTypeExternalKeys()
-		})
-	},
+	RunE:  directoryRunE((*api.DirectoryService).ListUserTypeExternalKeys, printDirectoryBody),
 }
 
 // ─── User Type Access Restrict Subcommand Group ───
@@ -2092,73 +1095,28 @@ var dirUserTypeAccessRestrictCreateCmd = &cobra.Command{
 	Use:   "create <id>",
 	Short: "사용자 유형 접근 제한 생성",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreateUserTypeAccessRestrict(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).CreateUserTypeAccessRestrict, printDirectoryBody),
 }
 
 var dirUserTypeAccessRestrictGetCmd = &cobra.Command{
 	Use:   "get <id>",
 	Short: "사용자 유형 접근 제한 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewDirectoryService(client).GetUserTypeAccessRestrict(args[0])
-		})
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).GetUserTypeAccessRestrict, printDirectoryBody),
 }
 
 var dirUserTypeAccessRestrictUpdateCmd = &cobra.Command{
 	Use:   "update <id>",
 	Short: "사용자 유형 접근 제한 수정 (PUT)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UpdateUserTypeAccessRestrict(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).UpdateUserTypeAccessRestrict, printDirectoryBody),
 }
 
 var dirUserTypeAccessRestrictDeleteCmd = &cobra.Command{
 	Use:   "delete <id>",
 	Short: "사용자 유형 접근 제한 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeleteUserTypeAccessRestrict(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).DeleteUserTypeAccessRestrict, printResponse),
 }
 
 // ─── Task 4-11: Profile Statuses Definition CRUD ───
@@ -2184,128 +1142,46 @@ var dirProfileStatusDefGetCmd = &cobra.Command{
 	Use:   "get <id>",
 	Short: "프로필 상태 정의 상세 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewDirectoryService(client).GetDirectoryProfileStatus(args[0])
-		})
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).GetDirectoryProfileStatus, printDirectoryBody),
 }
 
 var dirProfileStatusDefCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "프로필 상태 정의 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreateDirectoryProfileStatus(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryBodyRunE((*api.DirectoryService).CreateDirectoryProfileStatus, printDirectoryBody),
 }
 
 var dirProfileStatusDefUpdateCmd = &cobra.Command{
 	Use:   "update <id>",
 	Short: "프로필 상태 정의 전체 수정 (PUT)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.UpdateDirectoryProfileStatus(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).UpdateDirectoryProfileStatus, printDirectoryBody),
 }
 
 var dirProfileStatusDefPatchCmd = &cobra.Command{
 	Use:   "patch <id>",
 	Short: "프로필 상태 정의 부분 수정 (PATCH)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.PatchDirectoryProfileStatus(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).PatchDirectoryProfileStatus, printDirectoryBody),
 }
 
 var dirProfileStatusDefDeleteCmd = &cobra.Command{
 	Use:   "delete <id>",
 	Short: "프로필 상태 정의 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeleteDirectoryProfileStatus(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).DeleteDirectoryProfileStatus, printResponse),
 }
 
 var dirProfileStatusDefEnableCmd = &cobra.Command{
 	Use:   "enable",
 	Short: "프로필 상태 정의 활성화",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.EnableDirectoryProfileStatuses()
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryRunE((*api.DirectoryService).EnableDirectoryProfileStatuses, printResponse),
 }
 
 var dirProfileStatusDefDisableCmd = &cobra.Command{
 	Use:   "disable",
 	Short: "프로필 상태 정의 비활성화",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DisableDirectoryProfileStatuses()
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryRunE((*api.DirectoryService).DisableDirectoryProfileStatuses, printResponse),
 }
 
 // ─── Task 4-12: Custom Fields CRUD ───
@@ -2331,72 +1207,27 @@ var dirCustomFieldGetCmd = &cobra.Command{
 	Use:   "get <id>",
 	Short: "커스텀 필드 상세 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewDirectoryService(client).GetCustomField(args[0])
-		})
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).GetCustomField, printDirectoryBody),
 }
 
 var dirCustomFieldCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "커스텀 필드 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreateCustomField(body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryBodyRunE((*api.DirectoryService).CreateCustomField, printDirectoryBody),
 }
 
 var dirCustomFieldUpdateCmd = &cobra.Command{
 	Use:   "update <id>",
 	Short: "커스텀 필드 수정 (PATCH)",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.PatchCustomField(args[0], body)
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
-	},
+	RunE:  directoryIDBodyRunE((*api.DirectoryService).PatchCustomField, printDirectoryBody),
 }
 
 var dirCustomFieldDeleteCmd = &cobra.Command{
 	Use:   "delete <id>",
 	Short: "커스텀 필드 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewDirectoryService)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.DeleteCustomField(args[0])
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  directoryIDRunE((*api.DirectoryService).DeleteCustomField, printResponse),
 }
 
 func init() {

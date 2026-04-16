@@ -2263,20 +2263,12 @@ var driveSFListFilesCmd = &cobra.Command{
 			return err
 		}
 		svc := api.NewSharedFolderService(client)
-		folder, _ := cmd.Flags().GetString("folder")
-		cursor, _ := cmd.Flags().GetString("cursor")
-		count, _ := cmd.Flags().GetInt("count")
-		var resp *api.Response
-		if folder != "" {
-			resp, err = svc.ListFolderChildren(userID, args[0], folder, cursor, count)
-		} else {
-			resp, err = svc.ListFiles(userID, args[0], cursor, count)
-		}
-		if err != nil {
-			return err
-		}
-		printBody(resp.Body)
-		return nil
+		return listFilesWithOptionalFolder(cmd, func(folder, cursor string, count int) (*api.Response, error) {
+			if folder != "" {
+				return svc.ListFolderChildren(userID, args[0], folder, cursor, count)
+			}
+			return svc.ListFiles(userID, args[0], cursor, count)
+		})
 	},
 }
 
@@ -2734,22 +2726,32 @@ type driveLister interface {
 	ListFolderChildren(id, folder, cursor string, count int) (*api.Response, error)
 }
 
-func listFilesWithFolder(cmd *cobra.Command, id string, svc driveLister) error {
+type folderListFetcher func(folder, cursor string, count int) (*api.Response, error)
+
+func fetchFilesWithOptionalFolder(cmd *cobra.Command, fetch folderListFetcher) (*api.Response, error) {
+	// reuse-guardrail: allow-manual-pagination folder-aware branch helper
 	cursor, _ := cmd.Flags().GetString("cursor")
 	count, _ := cmd.Flags().GetInt("count")
 	folder, _ := cmd.Flags().GetString("folder")
-	var resp *api.Response
-	var err error
-	if folder != "" {
-		resp, err = svc.ListFolderChildren(id, folder, cursor, count)
-	} else {
-		resp, err = svc.ListFiles(id, cursor, count)
-	}
+	return fetch(folder, cursor, count)
+}
+
+func listFilesWithOptionalFolder(cmd *cobra.Command, fetch folderListFetcher) error {
+	resp, err := fetchFilesWithOptionalFolder(cmd, fetch)
 	if err != nil {
 		return err
 	}
 	printBody(resp.Body)
 	return nil
+}
+
+func listFilesWithFolder(cmd *cobra.Command, id string, svc driveLister) error {
+	return listFilesWithOptionalFolder(cmd, func(folder, cursor string, count int) (*api.Response, error) {
+		if folder != "" {
+			return svc.ListFolderChildren(id, folder, cursor, count)
+		}
+		return svc.ListFiles(id, cursor, count)
+	})
 }
 
 func init() {

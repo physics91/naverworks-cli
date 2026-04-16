@@ -13,207 +13,245 @@ var approvalCmd = &cobra.Command{
 	Short: "결재 관리",
 }
 
-var approvalListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "사용자별 결재 문서 목록 조회",
-	RunE: func(cmd *cobra.Command, args []string) error {
+type approvalIDCall func(*api.ApprovalService, string) (*api.Response, error)
+type approvalTwoIDCall func(*api.ApprovalService, string, string) (*api.Response, error)
+type approvalBodyCall func(*api.ApprovalService, []byte) (*api.Response, error)
+type approvalIDBodyCall func(*api.ApprovalService, string, []byte) (*api.Response, error)
+type approvalTwoIDBodyCall func(*api.ApprovalService, string, string, []byte) (*api.Response, error)
+type approvalListCall func(*api.ApprovalService, string, int) (*api.Response, error)
+type approvalIDListCall func(*api.ApprovalService, string, string, int) (*api.Response, error)
+type approvalUserBodyCall func(*api.ApprovalService, string, []byte) (*api.Response, error)
+type approvalUserListCall func(*api.ApprovalService, string, string, int) (*api.Response, error)
+
+// Keep these wrappers local so cmd/helpers.go does not grow an approval-only helper family.
+func printApprovalBody(resp *api.Response) {
+	printBody(resp.Body)
+}
+
+func approvalIDRunE(call approvalIDCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewApprovalService)
+		if err != nil {
+			return err
+		}
+		resp, err := call(svc, args[0])
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+func approvalTwoIDRunE(call approvalTwoIDCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewApprovalService)
+		if err != nil {
+			return err
+		}
+		resp, err := call(svc, args[0], args[1])
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+func approvalBodyRunE(call approvalBodyCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewApprovalService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := call(svc, body)
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+func approvalIDBodyRunE(call approvalIDBodyCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewApprovalService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := call(svc, args[0], body)
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+func approvalTwoIDBodyRunE(call approvalTwoIDBodyCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewApprovalService)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := call(svc, args[0], args[1], body)
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+func approvalListRunListE(columns []string, itemKey string, call approvalListCall) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewApprovalService)
+		if err != nil {
+			return err
+		}
+		return runListCmd(cmd, columns, itemKey, func(cursor string, count int) (*api.Response, error) {
+			return call(svc, cursor, count)
+		})
+	}
+}
+
+func approvalIDRunListE(columns []string, itemKey string, call approvalIDListCall) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewApprovalService)
+		if err != nil {
+			return err
+		}
+		return runListCmd(cmd, columns, itemKey, func(cursor string, count int) (*api.Response, error) {
+			return call(svc, args[0], cursor, count)
+		})
+	}
+}
+
+func approvalUserBodyRunE(call approvalUserBodyCall, printer func(*api.Response)) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		body, err := readJSONFlagRaw(cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := call(api.NewApprovalService(client), userID, body)
+		if err != nil {
+			return err
+		}
+		printer(resp)
+		return nil
+	}
+}
+
+func approvalUserRunListE(columns []string, itemKey string, call approvalUserListCall) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
 		client, userID, err := newAPIClientWithUser(cmd)
 		if err != nil {
 			return err
 		}
 		svc := api.NewApprovalService(client)
-		return runListCmd(cmd, []string{"approvalDocumentId", "title"}, "documents", func(c string, n int) (*api.Response, error) {
-			return svc.ListUserDocuments(userID, c, n)
+		return runListCmd(cmd, columns, itemKey, func(cursor string, count int) (*api.Response, error) {
+			return call(svc, userID, cursor, count)
 		})
-	},
+	}
+}
+
+var approvalListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "사용자별 결재 문서 목록 조회",
+	RunE:  approvalUserRunListE([]string{"approvalDocumentId", "title"}, "documents", (*api.ApprovalService).ListUserDocuments),
 }
 
 var approvalListAllCmd = &cobra.Command{
 	Use:   "list-all",
 	Short: "전체 결재 문서 목록 조회",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewApprovalService)
-		if err != nil {
-			return err
-		}
-		return runListCmd(cmd, []string{"approvalDocumentId", "title"}, "documents", svc.ListDocuments)
-	},
+	RunE:  approvalListRunListE([]string{"approvalDocumentId", "title"}, "documents", (*api.ApprovalService).ListDocuments),
 }
 
 var approvalGetCmd = &cobra.Command{
 	Use:   "get <documentId>",
 	Short: "결재 문서 상세 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewApprovalService(client).GetDocument(args[0])
-		})
-	},
+	RunE:  approvalIDRunE((*api.ApprovalService).GetDocument, printApprovalBody),
 }
 
 var approvalListCategoriesCmd = &cobra.Command{
 	Use:   "list-categories",
 	Short: "결재 카테고리 목록 조회",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewApprovalService)
-		if err != nil {
-			return err
-		}
-		return runListCmd(cmd, []string{"categoryId", "categoryName"}, "categories", svc.ListCategories)
-	},
+	RunE:  approvalListRunListE([]string{"categoryId", "categoryName"}, "categories", (*api.ApprovalService).ListCategories),
 }
 
 var approvalGetCategoryCmd = &cobra.Command{
 	Use:   "get-category <categoryId>",
 	Short: "결재 카테고리 상세 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewApprovalService(client).GetCategory(args[0])
-		})
-	},
+	RunE:  approvalIDRunE((*api.ApprovalService).GetCategory, printApprovalBody),
 }
 
 var approvalListFormsCmd = &cobra.Command{
 	Use:   "list-forms",
 	Short: "결재 양식 목록 조회",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewApprovalService)
-		if err != nil {
-			return err
-		}
-		return runListCmd(cmd, []string{"documentFormId", "documentFormName"}, "documentForms", svc.ListDocumentForms)
-	},
+	RunE:  approvalListRunListE([]string{"documentFormId", "documentFormName"}, "documentForms", (*api.ApprovalService).ListDocumentForms),
 }
 
 var approvalCreateCategoryCmd = &cobra.Command{
 	Use:   "create-category",
 	Short: "결재 카테고리 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewApprovalService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreateCategory(body)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  approvalBodyRunE((*api.ApprovalService).CreateCategory, printResponse),
 }
 
 var approvalUpdateCategoryCmd = &cobra.Command{
 	Use:   "update-category <categoryId>",
 	Short: "결재 카테고리 수정",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewApprovalService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.PatchCategory(args[0], body)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  approvalIDBodyRunE((*api.ApprovalService).PatchCategory, printResponse),
 }
 
 var approvalDeleteCategoryCmd = &cobra.Command{
 	Use:   "delete-category <categoryId>",
 	Short: "결재 카테고리 삭제",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewApprovalService(client).DeleteCategory(args[0])
-		})
-	},
+	RunE:  approvalIDRunE((*api.ApprovalService).DeleteCategory, printApprovalBody),
 }
 
 var approvalCreateDocumentCmd = &cobra.Command{
 	Use:   "create-document",
 	Short: "결재 문서 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		client, userID, err := newAPIClientWithUser(cmd)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		svc := api.NewApprovalService(client)
-		resp, err := svc.CreateUserDocument(userID, body)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  approvalUserBodyRunE((*api.ApprovalService).CreateUserDocument, printResponse),
 }
 
 var approvalCreateImportedDocumentCmd = &cobra.Command{
 	Use:   "create-imported-document",
 	Short: "결재 외부 문서 가져오기",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewApprovalService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreateImportedDocument(body)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  approvalBodyRunE((*api.ApprovalService).CreateImportedDocument, printResponse),
 }
 
 var approvalCreateDocumentLinkCmd = &cobra.Command{
 	Use:   "create-document-link",
 	Short: "결재 문서 링크 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		client, userID, err := newAPIClientWithUser(cmd)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		svc := api.NewApprovalService(client)
-		resp, err := svc.CreateDocumentLink(userID, body)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  approvalUserBodyRunE((*api.ApprovalService).CreateDocumentLink, printResponse),
 }
 
 var approvalGetFormCmd = &cobra.Command{
 	Use:   "get-form <documentFormId>",
 	Short: "결재 양식 상세 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewApprovalService(client).GetDocumentForm(args[0])
-		})
-	},
+	RunE:  approvalIDRunE((*api.ApprovalService).GetDocumentForm, printApprovalBody),
 }
 
 var approvalUploadAttachmentCmd = &cobra.Command{
@@ -300,67 +338,27 @@ var approvalLinkageCodeCmd = &cobra.Command{
 var approvalLinkageCodeListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "연동 코드 목록 조회",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewApprovalService)
-		if err != nil {
-			return err
-		}
-		return runListCmd(cmd, []string{"key", "name"}, "linkageCodes", svc.ListLinkageCodes)
-	},
+	RunE:  approvalListRunListE([]string{"key", "name"}, "linkageCodes", (*api.ApprovalService).ListLinkageCodes),
 }
 
 var approvalLinkageCodeGetCmd = &cobra.Command{
 	Use:   "get <key>",
 	Short: "연동 코드 상세 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewApprovalService(client).GetLinkageCode(args[0])
-		})
-	},
+	RunE:  approvalIDRunE((*api.ApprovalService).GetLinkageCode, printApprovalBody),
 }
 
 var approvalLinkageCodeCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "연동 코드 생성",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewApprovalService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreateLinkageCode(body)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  approvalBodyRunE((*api.ApprovalService).CreateLinkageCode, printResponse),
 }
 
 var approvalLinkageCodeUpdateCmd = &cobra.Command{
 	Use:   "update <key>",
 	Short: "연동 코드 수정",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewApprovalService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.PatchLinkageCode(args[0], body)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  approvalIDBodyRunE((*api.ApprovalService).PatchLinkageCode, printResponse),
 }
 
 // ─── Linkage Code Item subcommand group ───
@@ -374,81 +372,35 @@ var approvalLinkageCodeItemListCmd = &cobra.Command{
 	Use:   "list <key>",
 	Short: "연동 코드 항목 목록 조회",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewApprovalService)
-		if err != nil {
-			return err
-		}
-		return runListCmd(cmd, []string{"id", "name"}, "linkageCodeItems", func(c string, n int) (*api.Response, error) {
-			return svc.ListLinkageCodeItems(args[0], c, n)
-		})
-	},
+	RunE:  approvalIDRunListE([]string{"id", "name"}, "linkageCodeItems", (*api.ApprovalService).ListLinkageCodeItems),
 }
 
 var approvalLinkageCodeItemGetCmd = &cobra.Command{
 	Use:   "get <key> <id>",
 	Short: "연동 코드 항목 상세 조회",
 	Args:  cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewApprovalService(client).GetLinkageCodeItem(args[0], args[1])
-		})
-	},
+	RunE:  approvalTwoIDRunE((*api.ApprovalService).GetLinkageCodeItem, printApprovalBody),
 }
 
 var approvalLinkageCodeItemCreateCmd = &cobra.Command{
 	Use:   "create <key>",
 	Short: "연동 코드 항목 생성",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewApprovalService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.CreateLinkageCodeItem(args[0], body)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  approvalIDBodyRunE((*api.ApprovalService).CreateLinkageCodeItem, printResponse),
 }
 
 var approvalLinkageCodeItemUpdateCmd = &cobra.Command{
 	Use:   "update <key> <id>",
 	Short: "연동 코드 항목 수정",
 	Args:  cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewApprovalService)
-		if err != nil {
-			return err
-		}
-		body, err := readJSONFlagRaw(cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := svc.PatchLinkageCodeItem(args[0], args[1], body)
-		if err != nil {
-			return err
-		}
-		printResponse(resp)
-		return nil
-	},
+	RunE:  approvalTwoIDBodyRunE((*api.ApprovalService).PatchLinkageCodeItem, printResponse),
 }
 
 var approvalLinkageCodeItemDeleteCmd = &cobra.Command{
 	Use:   "delete <key> <id>",
 	Short: "연동 코드 항목 삭제",
 	Args:  cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fetchAndPrint(func(client *api.Client) (*api.Response, error) {
-			return api.NewApprovalService(client).DeleteLinkageCodeItem(args[0], args[1])
-		})
-	},
+	RunE:  approvalTwoIDRunE((*api.ApprovalService).DeleteLinkageCodeItem, printApprovalBody),
 }
 
 func init() {

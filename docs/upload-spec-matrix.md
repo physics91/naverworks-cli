@@ -97,7 +97,7 @@ Bot Rich Menu Image는 예외적으로 파일을 직접 업로드하지 않고, 
 - **Request Model**: `DriveFileUploadUrlRequest(fileName, fileSize, modifiedTime?, overwrite?, resume?, suffixOnDuplicate?)`
 - **Response Model**: `DriveFileUploadUrlResponse(uploadUrl, offset)`
 - **제약**: fileName ≤ 200자, 0 ≤ fileSize ≤ 10,737,418,240 (10GB)
-- **참고**: `resume=true` body 파라미터 전달은 `drive upload --resume` 플래그로 지원 (4개 upload 커맨드 공통, Core v4.2 #4). 응답의 `offset` 기반 Content-Range 재전송 로직은 아직 미구현
+- **참고**: `drive upload --resume` 플래그가 `resume=true` body 파라미터 전달과 응답 `offset` 기반 Content-Range 재전송을 지원함 (4개 upload 커맨드 공통, Core v4.2 #4 / 이슈 #7)
 - **Drive 종류별 경로**:
   - 내 드라이브: `POST /users/{userId}/drive/files` 또는 `POST /users/{userId}/drive/files/{folderId}`
   - 공용 드라이브: `POST /drives/{driveId}/files` 또는 `POST /drives/{driveId}/files/{folderId}`

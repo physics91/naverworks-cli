@@ -1,7 +1,10 @@
 package api
 
 import (
+	"context"
 	"fmt"
+	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -423,6 +426,158 @@ func TestClient_UploadFile_RejectsLoopbackUploadURL(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "허용되지 않는 업로드 호스트") {
 		t.Fatalf("expected disallowed upload host error, got: %v", err)
+	}
+}
+
+func newUploadTestClient(t *testing.T, handler http.HandlerFunc) (*Client, string) {
+	t.Helper()
+
+	server := httptest.NewTLSServer(handler)
+	t.Cleanup(server.Close)
+	t.Setenv("NW_UPLOAD_ALLOWED_HOSTS", "example.com")
+
+	client := NewClient("https://www.worksapis.com/v1.0", &auth.Token{
+		AccessToken: "test-token",
+		ExpiresAt:   time.Now().Add(time.Hour),
+	}, nil)
+
+	transport := server.Client().Transport.(*http.Transport).Clone()
+	dialer := &net.Dialer{}
+	targetAddr := server.Listener.Addr().String()
+	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		if addr == "example.com:443" {
+			addr = targetAddr
+		}
+		return dialer.DialContext(ctx, network, addr)
+	}
+	client.uploadClient = &http.Client{
+		Timeout:   10 * time.Minute,
+		Transport: transport,
+	}
+
+	return client, "https://example.com/upload"
+}
+
+func TestClient_UploadFileFromOffset_SendsContentRange(t *testing.T) {
+	var contentRange string
+	var contentLength int64
+	var body []byte
+	client, uploadURL := newUploadTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			t.Fatalf("expected PUT, got %s", r.Method)
+		}
+		contentRange = r.Header.Get("Content-Range")
+		contentLength = r.ContentLength
+		body, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusOK)
+	})
+
+	tmp, err := os.CreateTemp("", "upload-offset-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmp.Name())
+	if _, err := tmp.WriteString("hello world"); err != nil {
+		t.Fatal(err)
+	}
+	if err := tmp.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := client.UploadFileFromOffset(uploadURL, tmp.Name(), 6); err != nil {
+		t.Fatalf("UploadFileFromOffset failed: %v", err)
+	}
+
+	if contentRange != "bytes 6-10/11" {
+		t.Fatalf("expected Content-Range bytes 6-10/11, got %q", contentRange)
+	}
+	if contentLength != 5 {
+		t.Fatalf("expected Content-Length 5, got %d", contentLength)
+	}
+	if string(body) != "world" {
+		t.Fatalf("expected resumed body 'world', got %q", string(body))
+	}
+}
+
+func TestClient_UploadFileFromOffset_ZeroOffsetOmitsContentRange(t *testing.T) {
+	var contentRange string
+	var contentLength int64
+	var body []byte
+	client, uploadURL := newUploadTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		contentRange = r.Header.Get("Content-Range")
+		contentLength = r.ContentLength
+		body, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusOK)
+	})
+
+	tmp, err := os.CreateTemp("", "upload-zero-offset-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmp.Name())
+	if _, err := tmp.WriteString("hello"); err != nil {
+		t.Fatal(err)
+	}
+	if err := tmp.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := client.UploadFileFromOffset(uploadURL, tmp.Name(), 0); err != nil {
+		t.Fatalf("UploadFileFromOffset failed: %v", err)
+	}
+
+	if contentRange != "" {
+		t.Fatalf("expected empty Content-Range, got %q", contentRange)
+	}
+	if contentLength != 5 {
+		t.Fatalf("expected Content-Length 5, got %d", contentLength)
+	}
+	if string(body) != "hello" {
+		t.Fatalf("expected full body 'hello', got %q", string(body))
+	}
+}
+
+func TestClient_UploadFileFromOffset_RejectsInvalidOffset(t *testing.T) {
+	tmp, err := os.CreateTemp("", "upload-invalid-offset-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmp.Name())
+	if _, err := tmp.WriteString("hello"); err != nil {
+		t.Fatal(err)
+	}
+	if err := tmp.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name   string
+		offset int64
+	}{
+		{name: "negative", offset: -1},
+		{name: "equal to file size", offset: 5},
+		{name: "greater than file size", offset: 6},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var requestCount int32
+			client, uploadURL := newUploadTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				atomic.AddInt32(&requestCount, 1)
+				w.WriteHeader(http.StatusOK)
+			})
+
+			err := client.UploadFileFromOffset(uploadURL, tmp.Name(), tc.offset)
+			if err == nil {
+				t.Fatal("expected invalid offset error")
+			}
+			if !strings.Contains(err.Error(), "offset") {
+				t.Fatalf("expected offset error, got %v", err)
+			}
+			if atomic.LoadInt32(&requestCount) != 0 {
+				t.Fatalf("expected no upload request, got %d", requestCount)
+			}
+		})
 	}
 }
 

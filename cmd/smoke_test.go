@@ -13,6 +13,7 @@ import (
 	"github.com/physics91/naverworks-cli/internal/auth"
 	"github.com/physics91/naverworks-cli/internal/config"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // containsCommand checks if helpOutput contains cmdName as an actual Cobra
@@ -89,12 +90,29 @@ func runCLI(t *testing.T, args ...string) (string, error) {
 	t.Helper()
 	var stdout string
 	var cmdErr error
+	resetCommandTreeFlags(rootCmd)
 	stdout = captureStdout(t, func() {
 		rootCmd.SetArgs(args)
 		cmdErr = rootCmd.Execute()
 		rootCmd.SetArgs(nil)
+		resetCommandTreeFlags(rootCmd)
 	})
 	return stdout, cmdErr
+}
+
+func resetFlagSet(fs *pflag.FlagSet) {
+	fs.VisitAll(func(f *pflag.Flag) {
+		_ = fs.Set(f.Name, f.DefValue)
+		f.Changed = false
+	})
+}
+
+func resetCommandTreeFlags(cmd *cobra.Command) {
+	resetFlagSet(cmd.Flags())
+	resetFlagSet(cmd.PersistentFlags())
+	for _, child := range cmd.Commands() {
+		resetCommandTreeFlags(child)
+	}
 }
 
 func TestSmoke_Version(t *testing.T) {

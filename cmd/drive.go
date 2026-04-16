@@ -2878,13 +2878,12 @@ func init() {
 	driveGroupUploadCmd.Flags().String("file", "", "업로드할 파일 경로 (필수)")
 	driveGroupUploadCmd.Flags().String("folder", "", "업로드 대상 폴더 ID (미지정 시 루트)")
 
-	// --resume flag for all upload commands (Core v4.2 #4).
+	// --resume flag for all upload commands (Core v4.2 #4/#7).
 	// NOTE: requests a resumable upload session from the server by sending
-	// "resume": true in the body. The offset-based re-transmission path
-	// (Content-Range PUT from the server-returned offset) is not yet
-	// implemented in the CLI; this flag only forwards the v4.2 body field.
+	// "resume": true in the body, then resumes the PUT upload from the
+	// server-returned offset using Content-Range when provided.
 	for _, c := range []*cobra.Command{driveUploadCmd, driveSharedUploadCmd, driveGroupUploadCmd, driveSFUploadCmd} {
-		c.Flags().Bool("resume", false, "서버 resumable 업로드 세션 요청 (실제 재전송은 미구현)")
+		c.Flags().Bool("resume", false, "서버 resumable 업로드 세션 요청 및 이어올리기")
 	}
 
 	driveCmd.AddCommand(driveInfoCmd, driveListCmd, driveGetCmd, driveDownloadCmd,

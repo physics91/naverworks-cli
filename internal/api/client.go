@@ -243,6 +243,12 @@ func (c *Client) getDownloadURLWithRetry(path string, retried401 bool) (string, 
 // UploadFile uploads a file to a pre-signed URL using PUT.
 // No Authorization header is sent (the URL is pre-signed).
 func (c *Client) UploadFile(uploadURL string, filePath string) error {
+	return c.UploadFileFromOffset(uploadURL, filePath, 0)
+}
+
+// UploadFileFromOffset uploads a file to a pre-signed URL starting at the given offset.
+// When offset > 0, the request sends only the remaining bytes and includes Content-Range.
+func (c *Client) UploadFileFromOffset(uploadURL string, filePath string, offset int64) error {
 	if _, err := validatePresignedUploadURL(uploadURL); err != nil {
 		return err
 	}
@@ -254,19 +260,31 @@ func (c *Client) UploadFile(uploadURL string, filePath string) error {
 	if !stat.Mode().IsRegular() {
 		return fmt.Errorf("일반 파일만 허용합니다: %s", filePath)
 	}
+	size := stat.Size()
+	if offset < 0 || offset > size || (size > 0 && offset == size) {
+		return fmt.Errorf("유효하지 않은 업로드 offset: %d (file size: %d)", offset, size)
+	}
 
 	f, err := os.Open(filePath)
 	if err != nil {
 		return fmt.Errorf("파일 열기 실패: %w", err)
 	}
 	defer f.Close()
+	if offset > 0 {
+		if _, err := f.Seek(offset, io.SeekStart); err != nil {
+			return fmt.Errorf("업로드 offset 이동 실패: %w", err)
+		}
+	}
 
 	req, err := http.NewRequest("PUT", uploadURL, f)
 	if err != nil {
 		return fmt.Errorf("업로드 요청 생성 실패: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/octet-stream")
-	req.ContentLength = stat.Size()
+	req.ContentLength = size - offset
+	if offset > 0 {
+		req.Header.Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", offset, size-1, size))
+	}
 
 	resp, err := c.uploadClient.Do(req)
 	if err != nil {

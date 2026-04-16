@@ -379,6 +379,7 @@ func statFileForUpload(localPath string) (fileName string, fileSize int64, err e
 func doUploadFromResponse(client *api.Client, respBody []byte, localPath string) error {
 	var result struct {
 		UploadURL string `json:"uploadUrl"`
+		Offset    int64  `json:"offset"`
 	}
 	if err := json.Unmarshal(respBody, &result); err != nil {
 		return fmt.Errorf("업로드 URL 파싱 실패: %w", err)
@@ -386,7 +387,7 @@ func doUploadFromResponse(client *api.Client, respBody []byte, localPath string)
 	if result.UploadURL == "" {
 		return fmt.Errorf("업로드 URL을 받지 못했습니다")
 	}
-	return client.UploadFile(result.UploadURL, localPath)
+	return client.UploadFileFromOffset(result.UploadURL, localPath, result.Offset)
 }
 
 func resolveOrCreateProfile(pc *config.ProfileConfig) (*config.Config, string) {

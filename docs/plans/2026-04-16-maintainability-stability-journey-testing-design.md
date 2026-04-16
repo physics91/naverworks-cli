@@ -54,7 +54,7 @@ This layer should verify:
 - command tree registration
 - required metadata and command conventions
 - common flag policy such as pagination behavior
-- JSON error-envelope consistency
+- list-style command naming and registration conventions
 
 Its purpose is to prevent command-structure drift across domains.
 
@@ -91,6 +91,10 @@ The harness should provide four capabilities:
 - API stubbing and request recording
 - CLI execution helpers
 - reusable assertions for output, requests, and side effects
+
+To avoid import cycles, the harness must not import `cmd` directly. The `cmd`
+test package should own a thin runner adapter that passes `rootCmd` execution
+into the shared harness through function injection.
 
 The harness should extend the current ideas already visible in
 `cmd/smoke_test.go` rather than replacing them with a new framework.
@@ -157,6 +161,9 @@ Recommended tiers:
 - `full`: full journey suite after merge to `main`
 - `canary`: built-binary subprocess scenarios for release or nightly gates
 
+These tiers should be wired into real GitHub Actions workflow changes rather
+than remaining Makefile-only conventions.
+
 Supporting policy:
 
 - every new domain gets at least one journey test
@@ -182,6 +189,10 @@ The design is successful when the repository can support the following:
 - Risk: harness complexity grows faster than scenario coverage
   - Mitigation: keep the harness small and scenario-oriented; prefer extending
     the current `cmd/smoke_test.go` patterns
+
+- Risk: the shared harness introduces `cmd` import cycles
+  - Mitigation: keep `rootCmd` execution in `cmd` test adapters and inject the
+    runner into `internal/testkit/cli`
 
 - Risk: the suite becomes too slow for normal PR use
   - Mitigation: separate `fast`, `full`, and `canary` execution tiers

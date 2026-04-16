@@ -6,9 +6,13 @@
 user-flow regressions across config, auth, API, output, and side effects.
 
 **Architecture:** Extend the existing `cmd/smoke_test.go` patterns into a
-shared harness under `internal/testkit/cli`, add a command-meta test layer in
-`cmd`, then onboard high-value user journeys in priority order. Keep the suite
-split into fast/full/canary tiers so PR latency stays acceptable.
+shared harness under `internal/testkit/cli` for env setup, stdout/stderr
+capture, and scripted HTTP recording. Keep actual `rootCmd` execution inside
+`cmd` test helpers and inject it into the harness via callbacks so the test
+support code does not create import cycles. Add a command-meta test layer in
+`cmd`, onboard high-value user journeys in priority order, and wire
+`fast/full/canary` entry points into GitHub Actions so the CI strategy matches
+the design.
 
 **Tech Stack:** Go 1.25, `testing`, `net/http/httptest`, Cobra, repository
 fixtures under `testdata/`
@@ -21,7 +25,7 @@ fixtures under `testdata/`
 - Read: `cmd/smoke_test.go`
 - Read: `cmd/e2e_security_test.go`
 - Read: `internal/api/service_test.go`
-- Create: `docs/plans/2026-04-16-journey-testing-baseline-notes.md`
+- Create: `docs/2026-04-16-journey-testing-baseline-notes.md`
 
 **Step 1: Capture the current test-layer roles**
 
@@ -36,12 +40,12 @@ Expected: PASS with the current suite behavior recorded for reference
 **Step 3: Save baseline notes**
 
 Document the current gaps in
-`docs/plans/2026-04-16-journey-testing-baseline-notes.md`.
+`docs/2026-04-16-journey-testing-baseline-notes.md`.
 
 **Step 4: Commit**
 
 ```bash
-git add docs/plans/2026-04-16-journey-testing-baseline-notes.md
+git add docs/2026-04-16-journey-testing-baseline-notes.md
 git commit -m "docs(plan): 여정 테스트 베이스라인 정리"
 ```
 
@@ -143,7 +147,7 @@ policy is violated, including:
 
 - missing `Use` or `Short`
 - missing pagination flag policy on list-style commands
-- missing JSON error-envelope expectations for command execution failures
+- inconsistent list-style command naming or parent registration
 
 **Step 2: Run the new meta-contract test**
 
@@ -171,22 +175,25 @@ git commit -m "test(cmd): 커맨드 메타 계약 검사 추가"
 
 **Files:**
 - Modify: `internal/testkit/cli/harness.go`
+- Create: `cmd/test_runner_test.go`
 - Modify: `cmd/smoke_test.go`
 
 **Step 1: Write the failing integration test for shared execution**
 
-Add a test that runs a harmless command such as `version` through the shared
-harness and expects valid stdout capture without breaking current smoke tests.
+Add a new test in `cmd/test_runner_test.go` that passes a `rootCmd` runner
+callback into the shared harness, runs a harmless command such as `version`,
+and expects valid stdout capture without touching the existing smoke tests yet.
 
 **Step 2: Run the targeted command test**
 
-Run: `go test ./cmd -run TestSmoke_Version -v`
-Expected: FAIL or require refactor because the shared runner is not wired yet
+Run: `go test ./cmd -run TestSharedCLIRunnerVersion -v`
+Expected: FAIL because the harness does not yet accept a runner callback
 
 **Step 3: Refactor smoke execution onto the harness**
 
-Replace duplicated environment and output-capture logic in `cmd/smoke_test.go`
-with calls into `internal/testkit/cli`.
+Implement the callback-based runner wiring in `internal/testkit/cli`, then
+replace duplicated environment and output-capture logic in `cmd/smoke_test.go`
+with calls into the shared harness through `cmd/test_runner_test.go`.
 
 **Step 4: Re-run smoke tests**
 
@@ -196,7 +203,7 @@ Expected: PASS with behavior unchanged
 **Step 5: Commit**
 
 ```bash
-git add internal/testkit/cli/harness.go cmd/smoke_test.go
+git add internal/testkit/cli/harness.go cmd/test_runner_test.go cmd/smoke_test.go
 git commit -m "refactor(test): 공용 CLI 실행 하네스 연결"
 ```
 
@@ -343,39 +350,52 @@ git commit -m "test(journey): 실패 분류 헬퍼 추가"
 
 **Files:**
 - Modify: `Makefile`
+- Modify: `.github/workflows/ci.yml`
 - Modify: `README.md`
 - Modify: `docs/wiki/Troubleshooting.md`
 
 **Step 1: Write the failing workflow expectation**
 
-Document the expected command entry points:
+Document and codify the expected command entry points:
 
 - fast suite
-- full journey suite
-- existing full repository tests
+- full repository suite with all journey coverage
+- existing release-time canary hook
 
 **Step 2: Add Make targets**
 
 Introduce explicit targets such as:
 
 - `make test-fast`
-- `make test-journey`
+- `make test-full`
 
 while keeping existing commands intact.
 
-**Step 3: Run the new fast target**
+**Step 3: Update GitHub Actions to use the split**
+
+Modify `.github/workflows/ci.yml` so:
+
+- pull requests run `make test-fast`
+- pushes to `main` or `master` run `make test-full` plus existing build/vet
+
+**Step 4: Run the new fast target**
 
 Run: `make test-fast`
 Expected: PASS with unit/contract, meta, and the first journey subset
 
-**Step 4: Document the workflow**
+**Step 5: Run the new full target**
+
+Run: `make test-full`
+Expected: PASS with the full repository test suite, including all journey tests
+
+**Step 6: Document the workflow**
 
 Update user-facing or contributor-facing docs with the new verification split.
 
-**Step 5: Commit**
+**Step 7: Commit**
 
 ```bash
-git add Makefile README.md docs/wiki/Troubleshooting.md
+git add Makefile .github/workflows/ci.yml README.md docs/wiki/Troubleshooting.md
 git commit -m "docs(test): 빠른 검증과 여정 검증 진입점 추가"
 ```
 
@@ -384,6 +404,7 @@ git commit -m "docs(test): 빠른 검증과 여정 검증 진입점 추가"
 **Files:**
 - Create: `cmd/canary_binary_test.go`
 - Modify: `Makefile`
+- Modify: `.github/workflows/release.yml`
 - Read: build entry points in the repository
 
 **Step 1: Write the failing canary test**
@@ -405,14 +426,19 @@ Expected: FAIL until build-and-run scaffolding exists
 Add helper logic to build the binary once per test run and execute subprocess
 commands with controlled env and working directory.
 
-**Step 4: Re-run the canary test**
+**Step 4: Wire the canary into release verification**
+
+Modify `.github/workflows/release.yml` to run the binary canary test before the
+goreleaser step so release tags fail fast on process-level regressions.
+
+**Step 5: Re-run the canary test**
 
 Run: `go test ./cmd -run TestBinaryCanaryVersion -v`
 Expected: PASS
 
-**Step 5: Commit**
+**Step 6: Commit**
 
 ```bash
-git add cmd/canary_binary_test.go Makefile
+git add cmd/canary_binary_test.go Makefile .github/workflows/release.yml
 git commit -m "test(canary): 바이너리 검증 뼈대 추가"
 ```

@@ -1,6 +1,6 @@
 {
   "name": "naverworks",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "네이버웍스(NAVER WORKS) REST API CLI",
   "bin": {
     "naverworks": "bin/naverworks"
@@ -9,11 +9,11 @@
     "postinstall": "node install.js"
   },
   "optionalDependencies": {
-    "@physics91org/linux-x64": "0.1.0",
-    "@physics91org/linux-arm64": "0.1.0",
-    "@physics91org/darwin-x64": "0.1.0",
-    "@physics91org/darwin-arm64": "0.1.0",
-    "@physics91org/win32-x64": "0.1.0"
+    "@physics91org/linux-x64": "0.3.0",
+    "@physics91org/linux-arm64": "0.3.0",
+    "@physics91org/darwin-x64": "0.3.0",
+    "@physics91org/darwin-arm64": "0.3.0",
+    "@physics91org/win32-x64": "0.3.0"
   },
   "keywords": [
     "naverworks",

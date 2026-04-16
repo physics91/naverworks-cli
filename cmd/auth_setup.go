@@ -2,18 +2,29 @@ package cmd
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 
+	"github.com/physics91/naverworks-cli/internal/api"
 	"github.com/physics91/naverworks-cli/internal/auth"
 	"github.com/physics91/naverworks-cli/internal/config"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
+
+const setupBotListCount = 100
+
+type setupBotOption struct {
+	BotID string
+	Label string
+}
 
 // nonTTYErrorMessage returns the error message shown when auth setup
 // is run in a non-interactive environment.
@@ -160,10 +171,26 @@ var authSetupCmd = &cobra.Command{
 			store := auth.NewProfileTokenStore(auth.DefaultTokenPath(), name)
 			if authMethod == "jwt" {
 				fmt.Println("JWT 인증을 시작합니다...")
-				return loginJWT(cfg, store)
+				if err := loginJWT(cfg, store); err != nil {
+					return err
+				}
+			} else {
+				fmt.Println("OAuth 인증을 시작합니다. 브라우저가 열립니다...")
+				if err := loginOAuth(cfg, store); err != nil {
+					return err
+				}
 			}
-			fmt.Println("OAuth 인증을 시작합니다. 브라우저가 열립니다...")
-			return loginOAuth(cfg, store)
+			return runPostLoginBotSelection(
+				reader,
+				os.Stdout,
+				cfg,
+				func() ([]setupBotOption, error) {
+					return fetchSetupBotsForProfile(cfg, name, store)
+				},
+				func() error {
+					return pc.Save(path)
+				},
+			)
 		}
 
 		fmt.Println()
@@ -173,10 +200,14 @@ var authSetupCmd = &cobra.Command{
 }
 
 func prompt(reader *bufio.Reader, question string, defaultVal string) string {
+	return promptWithWriter(reader, os.Stdout, question, defaultVal)
+}
+
+func promptWithWriter(reader *bufio.Reader, out io.Writer, question string, defaultVal string) string {
 	if defaultVal != "" {
-		fmt.Printf("  %s [%s]: ", question, defaultVal)
+		fmt.Fprintf(out, "  %s [%s]: ", question, defaultVal)
 	} else {
-		fmt.Printf("  %s: ", question)
+		fmt.Fprintf(out, "  %s: ", question)
 	}
 	input, _ := reader.ReadString('\n')
 	input = strings.TrimSpace(input)
@@ -184,6 +215,170 @@ func prompt(reader *bufio.Reader, question string, defaultVal string) string {
 		return defaultVal
 	}
 	return input
+}
+
+func shouldReselectBot(existingBotID string, answer string) bool {
+	if strings.TrimSpace(existingBotID) == "" {
+		return true
+	}
+
+	answer = strings.ToLower(strings.TrimSpace(answer))
+	return answer == "y" || answer == "yes"
+}
+
+func needsBotConfigSave(before string, after string) bool {
+	return strings.TrimSpace(before) != strings.TrimSpace(after)
+}
+
+func parseSetupBots(body []byte) ([]setupBotOption, error) {
+	var payload struct {
+		Bots []struct {
+			BotID   string `json:"botId"`
+			BotName string `json:"botName"`
+		} `json:"bots"`
+	}
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return nil, fmt.Errorf("bot 목록 파싱 실패: %w", err)
+	}
+
+	options := make([]setupBotOption, 0, len(payload.Bots))
+	for _, bot := range payload.Bots {
+		if strings.TrimSpace(bot.BotID) == "" {
+			continue
+		}
+		label := strings.TrimSpace(bot.BotName)
+		if label == "" {
+			label = bot.BotID
+		}
+		options = append(options, setupBotOption{
+			BotID: bot.BotID,
+			Label: label,
+		})
+	}
+
+	return options, nil
+}
+
+func fetchSetupBots(fetch func() (*api.Response, error)) ([]setupBotOption, error) {
+	resp, err := fetch()
+	if err != nil {
+		return nil, err
+	}
+	return parseSetupBots(resp.Body)
+}
+
+func fetchSetupBotsForProfile(cfg *config.Config, profileName string, store *auth.ProfileTokenStore) ([]setupBotOption, error) {
+	token, err := store.Load()
+	if err != nil {
+		return nil, err
+	}
+	if token == nil {
+		return nil, fmt.Errorf("로그인 토큰을 찾을 수 없습니다")
+	}
+
+	client := buildAPIClient(cfg, token, profileName)
+	botSvc := api.NewBotService(client)
+	return fetchSetupBots(func() (*api.Response, error) {
+		return botSvc.ListBots("", setupBotListCount)
+	})
+}
+
+func chooseSetupBot(reader *bufio.Reader, out io.Writer, bots []setupBotOption, existingBotID string) (string, bool, error) {
+	if len(bots) == 0 {
+		manualBotID := promptWithWriter(reader, out, "Bot ID 직접 입력 (엔터로 건너뛰기)", "")
+		if manualBotID == "" {
+			return existingBotID, false, nil
+		}
+		return manualBotID, needsBotConfigSave(existingBotID, manualBotID), nil
+	}
+
+	if len(bots) == 1 {
+		fmt.Fprintf(out, "Bot 자동 선택: %s (%s)\n", bots[0].Label, bots[0].BotID)
+		return bots[0].BotID, needsBotConfigSave(existingBotID, bots[0].BotID), nil
+	}
+
+	fmt.Fprintln(out, "조회된 Bot 목록:")
+	for idx, bot := range bots {
+		fmt.Fprintf(out, "  %d) %s (%s)\n", idx+1, bot.Label, bot.BotID)
+	}
+
+	for {
+		fmt.Fprint(out, "  번호 선택, m=직접 입력, Enter=건너뛰기: ")
+		input, err := reader.ReadString('\n')
+		if err != nil && !errors.Is(err, io.EOF) {
+			return "", false, fmt.Errorf("bot 선택 입력 실패: %w", err)
+		}
+		input = strings.TrimSpace(input)
+
+		switch {
+		case input == "":
+			return existingBotID, false, nil
+		case strings.EqualFold(input, "m"):
+			manualBotID := promptWithWriter(reader, out, "Bot ID 직접 입력 (엔터로 건너뛰기)", "")
+			if manualBotID == "" {
+				return existingBotID, false, nil
+			}
+			return manualBotID, needsBotConfigSave(existingBotID, manualBotID), nil
+		default:
+			choice, convErr := strconv.Atoi(input)
+			if convErr != nil || choice < 1 || choice > len(bots) {
+				fmt.Fprintln(out, "다시 입력하세요. 유효한 번호를 고르거나 m/Enter를 사용하면 됩니다")
+				continue
+			}
+			selected := bots[choice-1].BotID
+			return selected, needsBotConfigSave(existingBotID, selected), nil
+		}
+	}
+}
+
+func runPostLoginBotSelection(
+	reader *bufio.Reader,
+	out io.Writer,
+	cfg *config.Config,
+	fetch func() ([]setupBotOption, error),
+	save func() error,
+) error {
+	currentBotID := cfg.BotID
+	if strings.TrimSpace(currentBotID) != "" {
+		answer := promptWithWriter(reader, out, "현재 Bot ID가 설정되어 있음. 다시 선택할까? [y/N]", "N")
+		if !shouldReselectBot(currentBotID, answer) {
+			return nil
+		}
+	}
+
+	bots, err := fetch()
+	if err != nil {
+		fmt.Fprintf(out, "경고: Bot 목록 조회 실패: %v\n", err)
+		fmt.Fprintln(out, "bot scope가 포함됐는지 확인하고, 필요하면 Bot ID를 직접 입력하면 됨")
+		manualBotID := promptWithWriter(reader, out, "Bot ID 직접 입력 (엔터로 건너뛰기)", "")
+		if manualBotID == "" {
+			return nil
+		}
+		if !needsBotConfigSave(currentBotID, manualBotID) {
+			return nil
+		}
+		cfg.BotID = manualBotID
+		if err := save(); err != nil {
+			return fmt.Errorf("로그인은 성공했지만 bot_id 저장 실패: %w", err)
+		}
+		fmt.Fprintf(out, "Bot ID 저장됨: %s\n", cfg.BotID)
+		return nil
+	}
+
+	selectedBotID, changed, err := chooseSetupBot(reader, out, bots, currentBotID)
+	if err != nil {
+		return err
+	}
+	if !changed {
+		return nil
+	}
+
+	cfg.BotID = selectedBotID
+	if err := save(); err != nil {
+		return fmt.Errorf("로그인은 성공했지만 bot_id 저장 실패: %w", err)
+	}
+	fmt.Fprintf(out, "Bot ID 저장됨: %s\n", cfg.BotID)
+	return nil
 }
 
 func init() {

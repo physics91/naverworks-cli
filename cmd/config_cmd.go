@@ -1,10 +1,8 @@
 package cmd
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
@@ -41,7 +39,7 @@ var configSetCmd = &cobra.Command{
 		var value string
 		useStdin, _ := cmd.Flags().GetBool("stdin")
 		if useStdin {
-			data, err := io.ReadAll(bufio.NewReader(os.Stdin))
+			data, err := readStdinLimited(os.Stdin, maxStdinSize)
 			if err != nil {
 				return fmt.Errorf("stdin 읽기 실패: %w", err)
 			}

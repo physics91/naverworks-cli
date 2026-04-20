@@ -90,3 +90,32 @@ func TestJourneyConfigSet_StdinLargeValue(t *testing.T) {
 		t.Fatalf("saved client_id length = %d, want %d", len(profile.ClientID), len(largeValue))
 	}
 }
+
+func TestJourneyConfigSet_StdinOversizeRejected(t *testing.T) {
+	h := clitest.NewHarness(t)
+	tooLargeValue := strings.Repeat("a", int(maxStdinSize)+1)
+
+	oldStdin := os.Stdin
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("pipe failed: %v", err)
+	}
+	defer func() {
+		os.Stdin = oldStdin
+		_ = r.Close()
+	}()
+
+	go func() {
+		_, _ = io.WriteString(w, tooLargeValue)
+		_ = w.Close()
+	}()
+	os.Stdin = r
+
+	_, err = h.Run([]string{"config", "set", "client_id", "--stdin"}, newRootCommandRunner(t))
+	if err == nil {
+		t.Fatal("expected oversized stdin error")
+	}
+	if !strings.Contains(err.Error(), "stdin 읽기 실패") || !strings.Contains(err.Error(), "너무 큽니다") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

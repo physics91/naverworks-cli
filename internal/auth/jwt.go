@@ -79,27 +79,49 @@ func parsePrivateKey(data []byte) (*rsa.PrivateKey, error) {
 }
 
 func CheckKeyPermissions(path string) string {
+	issue, err := keyPermissionIssue(path)
+	if err != nil || issue == "" {
+		return ""
+	}
+	return fmt.Sprintf("경고: %s", issue)
+}
+
+func ValidateKeyPermissions(path string) error {
+	issue, err := keyPermissionIssue(path)
+	if err != nil {
+		return err
+	}
+	if issue == "" {
+		return nil
+	}
+	return fmt.Errorf("%s", issue)
+}
+
+func keyPermissionIssue(path string) (string, error) {
 	if runtime.GOOS == "windows" {
 		return checkWindowsKeyPermissions(path)
 	}
 	info, err := os.Stat(path)
 	if err != nil {
-		return ""
+		return "", nil
 	}
 	perm := info.Mode().Perm()
 	if perm != 0600 {
-		return fmt.Sprintf("경고: %s 파일 권한이 %04o입니다. 0600을 권장합니다", path, perm)
+		return fmt.Sprintf("%s 파일 권한이 %04o입니다. 0600이 필요합니다", path, perm), nil
 	}
-	return ""
+	return "", nil
 }
 
-func checkWindowsKeyPermissions(path string) string {
+func checkWindowsKeyPermissions(path string) (string, error) {
 	out, err := exec.Command("icacls", path).Output()
 	if err != nil {
-		return ""
+		return "", fmt.Errorf("private key ACL 확인 실패: %w", err)
 	}
 	lines := strings.Split(string(out), "\n")
-	user := os.Getenv("USERNAME")
+	user := currentWindowsUser()
+	if user == "" {
+		return "", fmt.Errorf("현재 Windows 사용자 확인 실패")
+	}
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 		if trimmed == "" || strings.HasPrefix(trimmed, "Successfully") {
@@ -109,8 +131,25 @@ func checkWindowsKeyPermissions(path string) string {
 			continue
 		}
 		if !strings.Contains(strings.ToLower(trimmed), strings.ToLower(user)) {
-			return fmt.Sprintf("경고: %s에 현재 사용자(%s) 외의 접근 권한이 설정되어 있습니다", path, user)
+			return fmt.Sprintf("%s에 현재 사용자(%s) 외의 접근 권한이 설정되어 있습니다", path, user), nil
 		}
 	}
-	return ""
+	return "", nil
+}
+
+func currentWindowsUser() string {
+	user := strings.TrimSpace(os.Getenv("USERNAME"))
+	if user == "" {
+		out, err := exec.Command("whoami").Output()
+		if err != nil {
+			return ""
+		}
+		return strings.TrimSpace(string(out))
+	}
+
+	domain := strings.TrimSpace(os.Getenv("USERDOMAIN"))
+	if domain == "" {
+		return user
+	}
+	return domain + `\` + user
 }

@@ -50,6 +50,35 @@ func TestMakeAuthURLValidator_RejectsFileScheme(t *testing.T) {
 	}
 }
 
+func TestSanitizeSensitiveOutput_RedactsUploadURL(t *testing.T) {
+	body := []byte(`{"uploadUrl":"https://example.com/upload?sig=secret","offset":7}`)
+
+	sanitized := sanitizeSensitiveOutput(body)
+
+	if strings.Contains(string(sanitized), "uploadUrl") {
+		t.Fatalf("uploadUrl should be redacted: %s", sanitized)
+	}
+	if strings.Contains(string(sanitized), "secret") {
+		t.Fatalf("signature-bearing URL should not remain: %s", sanitized)
+	}
+	if !strings.Contains(string(sanitized), `"uploaded":true`) {
+		t.Fatalf("expected uploaded marker: %s", sanitized)
+	}
+	if !strings.Contains(string(sanitized), `"offset":7`) {
+		t.Fatalf("expected safe fields to remain: %s", sanitized)
+	}
+}
+
+func TestSanitizeSensitiveOutput_PreservesOtherBodies(t *testing.T) {
+	body := []byte(`{"id":"123","name":"test"}`)
+
+	sanitized := sanitizeSensitiveOutput(body)
+
+	if string(sanitized) != string(body) {
+		t.Fatalf("non-upload payload should be unchanged: got %s want %s", sanitized, body)
+	}
+}
+
 // --- auth setup NonTTY Tests ---
 
 func TestNonTTYErrorMessage_SuggestsEnvVar(t *testing.T) {

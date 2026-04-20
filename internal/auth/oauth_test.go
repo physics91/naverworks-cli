@@ -130,7 +130,7 @@ func TestGenerateState(t *testing.T) {
 	}
 }
 
-func TestWaitForCallback_StateMismatch_NoExpectedValue(t *testing.T) {
+func TestWaitForCallback_IgnoresStateMismatchUntilValidCodeArrives(t *testing.T) {
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
@@ -143,14 +143,20 @@ func TestWaitForCallback_StateMismatch_NoExpectedValue(t *testing.T) {
 		if resp != nil {
 			resp.Body.Close()
 		}
+
+		time.Sleep(50 * time.Millisecond)
+		resp, _ = http.Get(fmt.Sprintf("http://127.0.0.1:%d/callback?state=expected-state&code=good", port))
+		if resp != nil {
+			resp.Body.Close()
+		}
 	}()
 
-	_, err = WaitForCallback(ln, "expected-state", 5*time.Second)
-	if err == nil {
-		t.Fatal("expected error for state mismatch")
+	code, err := WaitForCallback(ln, "expected-state", 5*time.Second)
+	if err != nil {
+		t.Fatalf("expected callback to continue waiting after state mismatch: %v", err)
 	}
-	if strings.Contains(err.Error(), "expected-state") {
-		t.Errorf("error message should not contain expected state value: %s", err.Error())
+	if code != "good" {
+		t.Fatalf("expected good code, got %q", code)
 	}
 }
 

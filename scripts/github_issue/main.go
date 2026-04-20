@@ -25,15 +25,20 @@ type searchResponse struct {
 func main() {
 	var (
 		repo     = flag.String("repo", os.Getenv("GITHUB_REPOSITORY"), "GitHub repository in owner/repo form")
-		token    = flag.String("token", os.Getenv("GITHUB_TOKEN"), "GitHub token")
+		token    = flag.String("token", "", "GitHub token (기본: GITHUB_TOKEN)")
 		title    = flag.String("title", "", "issue title")
 		bodyFile = flag.String("body-file", "", "path to issue body markdown")
 		labels   = flag.String("labels", "", "comma-separated labels")
 	)
 	flag.Parse()
 
-	if strings.TrimSpace(*repo) == "" || strings.TrimSpace(*token) == "" {
-		fatalf("--repo와 --token이 필요합니다")
+	resolvedToken := strings.TrimSpace(*token)
+	if resolvedToken == "" {
+		resolvedToken = strings.TrimSpace(os.Getenv("GITHUB_TOKEN"))
+	}
+
+	if strings.TrimSpace(*repo) == "" || resolvedToken == "" {
+		fatalf("--repo와 GITHUB_TOKEN(또는 --token)이 필요합니다")
 	}
 	if strings.TrimSpace(*title) == "" {
 		fatalf("--title이 필요합니다")
@@ -48,7 +53,7 @@ func main() {
 	}
 
 	client := &http.Client{Timeout: 30 * time.Second}
-	existing, err := findOpenIssueByExactTitle(client, *repo, *token, *title)
+	existing, err := findOpenIssueByExactTitle(client, *repo, resolvedToken, *title)
 	if err != nil {
 		fatalf("기존 이슈 조회 실패: %v", err)
 	}
@@ -57,7 +62,7 @@ func main() {
 		return
 	}
 
-	created, err := createIssue(client, *repo, *token, *title, string(body), splitLabels(*labels))
+	created, err := createIssue(client, *repo, resolvedToken, *title, string(body), splitLabels(*labels))
 	if err != nil {
 		fatalf("이슈 생성 실패: %v", err)
 	}

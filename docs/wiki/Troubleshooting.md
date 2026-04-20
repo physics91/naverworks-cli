@@ -13,6 +13,7 @@ naverworks auth status
 
 - `client_id`, `client_secret`가 현재 프로필에 들어가 있는지
 - JWT를 쓰는 경우 `service_account_id`, `private_key_path`가 맞는지
+- JWT를 쓰는 경우 개인키 파일 권한이 Linux/macOS에서는 `0600`, Windows에서는 현재 사용자 전용 ACL인지
 - 환경변수(`NW_CLIENT_ID`, `NW_CLIENT_SECRET`, `NW_PROFILE`)가 다른 값을 덮어쓰고 있지 않은지
 
 ## 엉뚱한 프로필로 호출됨

@@ -61,7 +61,7 @@ func TestBuildJWTAssertion_FileNotFound(t *testing.T) {
 	}
 }
 
-func TestCheckKeyPermissions_Unix(t *testing.T) {
+func TestValidateKeyPermissions_Unix(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Unix-only test")
 	}
@@ -69,14 +69,14 @@ func TestCheckKeyPermissions_Unix(t *testing.T) {
 	path := filepath.Join(dir, "key.pem")
 	os.WriteFile(path, []byte("test"), 0644)
 
-	warning := CheckKeyPermissions(path)
-	if warning == "" {
-		t.Error("expected warning for 0644 permissions")
+	err := ValidateKeyPermissions(path)
+	if err == nil {
+		t.Error("expected error for 0644 permissions")
 	}
 
 	os.Chmod(path, 0600)
-	warning = CheckKeyPermissions(path)
-	if warning != "" {
-		t.Errorf("expected no warning for 0600, got %q", warning)
+	err = ValidateKeyPermissions(path)
+	if err != nil {
+		t.Errorf("expected no error for 0600, got %v", err)
 	}
 }

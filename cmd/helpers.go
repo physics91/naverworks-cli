@@ -153,15 +153,45 @@ func paginateAndPrint(fetch api.FetchFunc, key string, formatter *output.Formatt
 }
 
 func printResponse(resp *api.Response) {
-	if len(resp.Body) == 0 || strings.TrimSpace(string(resp.Body)) == "" {
+	body := sanitizeSensitiveOutput(resp.Body)
+	if len(body) == 0 || strings.TrimSpace(string(body)) == "" {
 		fmt.Println("{}")
 	} else {
-		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(resp.Body)
+		output.NewFormatter(outputFormat, os.Stdout).PrintRaw(body)
 	}
 }
 
 func printBody(body []byte) {
-	output.NewFormatter(outputFormat, os.Stdout).PrintRaw(body)
+	output.NewFormatter(outputFormat, os.Stdout).PrintRaw(sanitizeSensitiveOutput(body))
+}
+
+func sanitizeSensitiveOutput(body []byte) []byte {
+	if len(body) == 0 || strings.TrimSpace(string(body)) == "" {
+		return body
+	}
+
+	var payload map[string]json.RawMessage
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return body
+	}
+
+	if _, ok := payload["uploadUrl"]; !ok {
+		if _, ok := payload["upload_url"]; !ok {
+			return body
+		}
+	}
+
+	delete(payload, "uploadUrl")
+	delete(payload, "upload_url")
+	if _, ok := payload["uploaded"]; !ok {
+		payload["uploaded"] = json.RawMessage("true")
+	}
+
+	sanitized, err := json.Marshal(payload)
+	if err != nil {
+		return body
+	}
+	return sanitized
 }
 
 func fetchAndPrint(fn func(*api.Client) (*api.Response, error)) error {

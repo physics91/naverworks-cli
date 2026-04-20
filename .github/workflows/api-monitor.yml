@@ -33,7 +33,6 @@ jobs:
           go run ./scripts/api_monitor \
             --baseline docs/baselines/api-monitor-baseline.json \
             --github-repo "$GITHUB_REPOSITORY" \
-            --github-token "$GITHUB_TOKEN" \
             --output-json api-monitor-report.json \
             --output-markdown api-monitor-issue.md 2>&1 | tee api-monitor.log
 
@@ -89,7 +88,6 @@ jobs:
         run: |
           go run ./scripts/github_issue \
             --repo "$GITHUB_REPOSITORY" \
-            --token "$GITHUB_TOKEN" \
             --title "${{ steps.report.outputs.title }}" \
             --labels "${{ steps.report.outputs.labels }}" \
             --body-file api-monitor-issue.md
@@ -102,7 +100,6 @@ jobs:
         run: |
           go run ./scripts/github_issue \
             --repo "$GITHUB_REPOSITORY" \
-            --token "$GITHUB_TOKEN" \
             --title "[Ops Error] API change monitor failed" \
             --labels "ops-error" \
             --body-file api-monitor-error.md

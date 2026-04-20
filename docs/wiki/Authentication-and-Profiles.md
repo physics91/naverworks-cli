@@ -31,6 +31,9 @@ naverworks config set bot_id YOUR_BOT_ID
 naverworks config set service_account_id YOUR_SERVICE_ACCOUNT_ID
 naverworks config set private_key_path /path/to/private.pem
 
+# Linux/macOS에서는 개인키 파일 권한을 0600으로 맞춰야 로그인됩니다.
+# Windows에서는 현재 사용자만 접근 가능한 ACL이어야 합니다.
+
 # Calendar에서 기본 user-id를 쓰고 싶을 때
 naverworks config set default_calendar_user_id me
 ```

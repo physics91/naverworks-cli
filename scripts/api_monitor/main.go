@@ -60,9 +60,14 @@ func main() {
 		outputJSON   = flag.String("output-json", "", "write JSON report to file")
 		outputMD     = flag.String("output-markdown", "", "write Markdown issue body to file")
 		githubRepo   = flag.String("github-repo", os.Getenv("GITHUB_REPOSITORY"), "GitHub repository in owner/repo form")
-		githubToken  = flag.String("github-token", os.Getenv("GITHUB_TOKEN"), "GitHub token used to suppress already-tracked entries")
+		githubToken  = flag.String("github-token", "", "GitHub token used to suppress already-tracked entries (기본: GITHUB_TOKEN)")
 	)
 	flag.Parse()
+
+	resolvedToken := strings.TrimSpace(*githubToken)
+	if resolvedToken == "" {
+		resolvedToken = strings.TrimSpace(os.Getenv("GITHUB_TOKEN"))
+	}
 
 	if strings.TrimSpace(*baselinePath) == "" {
 		fatalf("--baseline 플래그가 필요합니다")
@@ -98,8 +103,8 @@ func main() {
 			note.Title = title
 		}
 
-		if strings.TrimSpace(*githubRepo) != "" && strings.TrimSpace(*githubToken) != "" {
-			tracked, err := hasTrackedIssue(client, *githubRepo, *githubToken, note.URL)
+		if strings.TrimSpace(*githubRepo) != "" && resolvedToken != "" {
+			tracked, err := hasTrackedIssue(client, *githubRepo, resolvedToken, note.URL)
 			if err != nil {
 				fatalf("기존 이슈 조회 실패: %v", err)
 			}

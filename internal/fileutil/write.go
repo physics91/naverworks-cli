@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 )
 
 // WriteSecureJSON serializes v as indented JSON and writes it to path with
@@ -18,19 +17,20 @@ func WriteSecureJSON(path string, v interface{}) error {
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return fmt.Errorf("디렉토리 생성 실패: %w", err)
 	}
-	if runtime.GOOS != "windows" {
-		if err := os.Chmod(dir, 0700); err != nil {
-			return fmt.Errorf("디렉토리 권한 설정 실패: %w", err)
-		}
+	if err := hardenJSONDirPermissions(dir); err != nil {
+		return fmt.Errorf("디렉토리 권한 설정 실패: %w", err)
 	}
 	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return fmt.Errorf("직렬화 실패: %w", err)
 	}
 
-	if runtime.GOOS == "windows" {
+	if filepath.Separator == '\\' {
 		if err := os.WriteFile(path, data, 0600); err != nil {
 			return err
+		}
+		if err := hardenJSONFilePermissions(path); err != nil {
+			return fmt.Errorf("파일 권한 설정 실패: %w", err)
 		}
 		return nil
 	}
@@ -54,11 +54,14 @@ func WriteSecureJSON(path string, v interface{}) error {
 	if err := tmp.Close(); err != nil {
 		return fmt.Errorf("임시 파일 닫기 실패: %w", err)
 	}
-	if err := os.Chmod(tmpPath, 0600); err != nil {
+	if err := hardenJSONFilePermissions(tmpPath); err != nil {
 		return fmt.Errorf("파일 권한 설정 실패: %w", err)
 	}
 	if err := os.Rename(tmpPath, path); err != nil {
 		return fmt.Errorf("원자적 파일 교체 실패: %w", err)
+	}
+	if err := hardenJSONFilePermissions(path); err != nil {
+		return fmt.Errorf("파일 권한 설정 실패: %w", err)
 	}
 	return nil
 }

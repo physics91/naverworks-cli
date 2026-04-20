@@ -94,7 +94,6 @@ jobs:
         run: |
           go run ./scripts/github_issue \
             --repo "$GITHUB_REPOSITORY" \
-            --token "$GITHUB_TOKEN" \
             --title "${{ steps.report.outputs.title }}" \
             --labels "${{ steps.report.outputs.labels }}" \
             --body-file weekly-health-issue.md

@@ -24,6 +24,8 @@ JWT Service Account:
 naverworks auth login --jwt
 ```
 
+JWT 개인키는 Linux/macOS에서 `0600`, Windows에서 현재 사용자 전용 ACL이어야 합니다.
+
 현재 상태 확인:
 
 ```bash

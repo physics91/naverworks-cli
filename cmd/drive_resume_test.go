@@ -160,6 +160,12 @@ func TestDriveUploadResume_UsesServerOffsetAcrossCommands(t *testing.T) {
 			if err != nil {
 				t.Fatalf("command failed: %v\nstdout: %s", err, out)
 			}
+			if strings.Contains(out, "uploadUrl") || strings.Contains(out, "example.com/upload") {
+				t.Fatalf("upload URL should be redacted from command output: %s", out)
+			}
+			if !strings.Contains(out, `"uploaded": true`) && !strings.Contains(out, `"uploaded":true`) {
+				t.Fatalf("expected uploaded marker in command output: %s", out)
+			}
 
 			if !strings.Contains(createBody, `"resume":true`) {
 				t.Fatalf("expected resume=true in create body, got %s", createBody)

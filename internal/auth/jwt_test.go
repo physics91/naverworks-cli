@@ -80,3 +80,13 @@ func TestValidateKeyPermissions_Unix(t *testing.T) {
 		t.Errorf("expected no error for 0600, got %v", err)
 	}
 }
+
+func TestValidateKeyPermissions_MissingFile(t *testing.T) {
+	err := ValidateKeyPermissions(filepath.Join(t.TempDir(), "missing.pem"))
+	if err == nil {
+		t.Fatal("expected error for missing file")
+	}
+	if !strings.Contains(err.Error(), "private key 파일 접근 실패") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

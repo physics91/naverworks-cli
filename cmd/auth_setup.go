@@ -84,10 +84,9 @@ var authSetupCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		pc, err := config.LoadProfileConfig(path)
+		pc, err := loadProfileConfigForSetup(path)
 		if err != nil {
-			pc = config.NewProfileConfig()
-			pc.EnsureProfile("default")
+			return err
 		}
 
 		cfg, name := resolveOrCreateProfile(pc)
@@ -96,15 +95,13 @@ var authSetupCmd = &cobra.Command{
 		fmt.Println()
 
 		// Step 1: 인증 방식 선택
-		defaultAuthMethod := "oauth"
-		if cfg.ServiceAccountID != "" {
-			defaultAuthMethod = "jwt"
-		}
+		defaultAuthMethod := defaultSetupAuthMethod(cfg)
 		authMethod := prompt(reader, "인증 방식을 선택하세요 [oauth/jwt]", defaultAuthMethod)
 		authMethod = strings.ToLower(strings.TrimSpace(authMethod))
 		if authMethod != "oauth" && authMethod != "jwt" {
 			return fmt.Errorf("유효하지 않은 인증 방식: %s (oauth 또는 jwt)", authMethod)
 		}
+		applySetupAuthMethod(cfg, authMethod)
 
 		// Step 2: Client ID
 		cfg.ClientID = prompt(reader, "Client ID", cfg.ClientID)
@@ -204,6 +201,25 @@ var authSetupCmd = &cobra.Command{
 		fmt.Println("설정 완료. naverworks auth login 으로 로그인하세요.")
 		return nil
 	},
+}
+
+func loadProfileConfigForSetup(path string) (*config.ProfileConfig, error) {
+	return config.LoadProfileConfig(path)
+}
+
+func defaultSetupAuthMethod(cfg *config.Config) string {
+	if cfg != nil && (strings.TrimSpace(cfg.ServiceAccountID) != "" || strings.TrimSpace(cfg.PrivateKeyPath) != "") {
+		return "jwt"
+	}
+	return "oauth"
+}
+
+func applySetupAuthMethod(cfg *config.Config, authMethod string) {
+	if cfg == nil || authMethod == "jwt" {
+		return
+	}
+	cfg.ServiceAccountID = ""
+	cfg.PrivateKeyPath = ""
 }
 
 func prompt(reader *bufio.Reader, question string, defaultVal string) string {

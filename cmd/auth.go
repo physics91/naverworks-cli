@@ -15,8 +15,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var authBaseURL = "https://auth.worksmobile.com/oauth2/v2.0"
+
 const (
-	authBaseURL       = "https://auth.worksmobile.com/oauth2/v2.0"
 	defaultOAuthScope = "openid profile bot directory calendar"
 	defaultJWTScope   = "bot directory calendar"
 )

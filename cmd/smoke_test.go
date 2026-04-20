@@ -32,9 +32,11 @@ func setupTestEnv(t *testing.T) string {
 	homeDir := clitest.NewHarness(t).HomeDir()
 
 	origAPIBaseURL := apiBaseURL
+	origAuthBaseURL := authBaseURL
 	origSCIMBaseURL := scimBaseURL
 	t.Cleanup(func() {
 		apiBaseURL = origAPIBaseURL
+		authBaseURL = origAuthBaseURL
 		scimBaseURL = origSCIMBaseURL
 	})
 
@@ -86,6 +88,16 @@ func setAPIBaseURL(t *testing.T, url string) {
 	apiBaseURL = url
 	t.Cleanup(func() {
 		apiBaseURL = orig
+	})
+}
+
+func setAuthBaseURL(t *testing.T, url string) {
+	t.Helper()
+
+	orig := authBaseURL
+	authBaseURL = url
+	t.Cleanup(func() {
+		authBaseURL = orig
 	})
 }
 

@@ -103,7 +103,7 @@ func keyPermissionIssue(path string) (string, error) {
 	}
 	info, err := os.Stat(path)
 	if err != nil {
-		return "", nil
+		return "", fmt.Errorf("private key 파일 접근 실패: %w", err)
 	}
 	perm := info.Mode().Perm()
 	if perm != 0600 {

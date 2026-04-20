@@ -71,6 +71,22 @@ func refreshJWTTokenFromAssertion(cfg *config.Config, t *auth.Token, store *auth
 	return store.Save(t)
 }
 
+func refreshAPIClientToken(cfg *config.Config, t *auth.Token, store *auth.ProfileTokenStore) error {
+	if t.RefreshToken != "" {
+		if err := auth.RefreshAccessToken(authBaseURL, cfg.ClientID, cfg.ClientSecret, t); err == nil {
+			return store.Save(t)
+		} else if t.AuthMethod != auth.AuthMethodJWT {
+			return fmt.Errorf("OAuth 토큰 갱신 실패: %w", err)
+		}
+	}
+
+	if t.AuthMethod == auth.AuthMethodJWT {
+		return refreshJWTTokenFromAssertion(cfg, t, store)
+	}
+
+	return fmt.Errorf("토큰 갱신 불가")
+}
+
 func buildAPIClient(cfg *config.Config, token *auth.Token, activeProfileName string) *api.Client {
 	refreshFn := func(t *auth.Token) error {
 		tokenPath, err := auth.DefaultTokenPathOrError()
@@ -78,18 +94,7 @@ func buildAPIClient(cfg *config.Config, token *auth.Token, activeProfileName str
 			return err
 		}
 		store := auth.NewProfileTokenStore(tokenPath, activeProfileName)
-
-		if t.RefreshToken != "" {
-			if err := auth.RefreshAccessToken(authBaseURL, cfg.ClientID, cfg.ClientSecret, t); err == nil {
-				return store.Save(t)
-			}
-		}
-
-		if t.AuthMethod == auth.AuthMethodJWT {
-			return refreshJWTTokenFromAssertion(cfg, t, store)
-		}
-
-		return fmt.Errorf("토큰 갱신 불가")
+		return refreshAPIClientToken(cfg, t, store)
 	}
 	return api.NewClient(apiBaseURL, token, refreshFn).WithPreview(currentPreviewOptions(activeProfileName))
 }

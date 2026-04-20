@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -79,6 +80,49 @@ func TestBuildAPIClientUsesOverriddenBaseURL(t *testing.T) {
 	}
 	if gotPath != "/users" {
 		t.Fatalf("request path = %q, want %q", gotPath, "/users")
+	}
+}
+
+func TestBuildAPIClient_PreservesOAuthRefreshError(t *testing.T) {
+	var apiCalls int32
+	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&apiCalls, 1)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"users":[]}`))
+	}))
+	defer apiServer.Close()
+
+	authServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"invalid_grant","error_description":"refresh token expired"}`))
+	}))
+	defer authServer.Close()
+
+	setAPIBaseURL(t, apiServer.URL)
+	setAuthBaseURL(t, authServer.URL)
+
+	cfg := &config.Config{
+		ClientID:     "test-client",
+		ClientSecret: "test-secret",
+	}
+	token := &auth.Token{
+		AuthMethod:   auth.AuthMethodOAuth,
+		AccessToken:  "expired-access-token",
+		RefreshToken: "expired-refresh-token",
+		TokenType:    "Bearer",
+		ExpiresAt:    time.Now().Add(-time.Minute),
+	}
+
+	client := buildAPIClient(cfg, token, "default")
+	_, err := api.NewDirectoryService(client).ListUsers("", 20)
+	if err == nil {
+		t.Fatal("expected refresh error")
+	}
+	if !strings.Contains(err.Error(), "OAuth 토큰 갱신 실패") || !strings.Contains(err.Error(), "invalid_grant") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if atomic.LoadInt32(&apiCalls) != 0 {
+		t.Fatalf("expected no API call when refresh fails, got %d", apiCalls)
 	}
 }
 

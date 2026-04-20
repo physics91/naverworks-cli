@@ -3,6 +3,8 @@ package cmd
 import (
 	"bufio"
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -298,6 +300,37 @@ func TestRunPostLoginBotSelection(t *testing.T) {
 			t.Fatalf("cfg.BotID = %q, want %q", cfg.BotID, "keep-bot")
 		}
 	})
+}
+
+func TestLoadProfileConfigForSetup_ReturnsMalformedConfigError(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, []byte(`{bad-json`), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := loadProfileConfigForSetup(path)
+	if err == nil {
+		t.Fatal("expected malformed config error")
+	}
+	if !strings.Contains(err.Error(), "config 파싱 실패") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestApplySetupAuthMethod_ClearsJWTFieldsForOAuth(t *testing.T) {
+	cfg := &config.Config{
+		ServiceAccountID: "svc@example.com",
+		PrivateKeyPath:   "/tmp/private.pem",
+	}
+
+	applySetupAuthMethod(cfg, "oauth")
+
+	if cfg.ServiceAccountID != "" {
+		t.Fatalf("service_account_id = %q, want empty", cfg.ServiceAccountID)
+	}
+	if cfg.PrivateKeyPath != "" {
+		t.Fatalf("private_key_path = %q, want empty", cfg.PrivateKeyPath)
+	}
 }
 
 type assertiveError string

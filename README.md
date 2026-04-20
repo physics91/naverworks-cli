@@ -93,6 +93,13 @@ make build
 go vet ./...
 ```
 
+## 자동 점검
+
+GitHub Actions로 주기 점검을 돌립니다. 두 workflow 모두 `gh` CLI에 의존하지 않고 `${{ secrets.GITHUB_TOKEN }}` 기반 GitHub API 호출로 이슈를 생성합니다.
+
+- `API Change Monitor` (`.github/workflows/api-monitor.yml`): NAVER WORKS 릴리즈 노트를 매일 확인하고 `docs/baselines/api-monitor-baseline.json`에 없는 새 공지를 `api-monitor` 이슈로 등록
+- `Weekly Health` (`.github/workflows/weekly-health.yml`): `make test-full`, `go vet ./...`, `make build`, `go list -m -u -json all` 결과를 주간 점검하고 실패 시 `ops-error`, 업데이트 가능 모듈이 있으면 `health-check` 이슈로 등록
+
 ## 라이선스
 
 MIT

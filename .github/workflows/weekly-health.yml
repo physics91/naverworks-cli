@@ -1,0 +1,104 @@
+name: Weekly Health
+
+on:
+  schedule:
+    - cron: "0 1 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  weekly-health:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run tests
+        id: test
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          make test-full 2>&1 | tee weekly-health-test.log
+
+      - name: Run vet
+        id: vet
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          go vet ./... 2>&1 | tee weekly-health-vet.log
+
+      - name: Build binary
+        id: build
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          make build 2>&1 | tee weekly-health-build.log
+
+      - name: Collect module updates
+        id: modules
+        continue-on-error: true
+        run: |
+          go list -m -u -json all > weekly-health-modules.json
+
+      - name: Build weekly health report
+        id: report
+        if: always()
+        run: |
+          go run ./scripts/weekly_health \
+            --modules weekly-health-modules.json \
+            --test-status "${{ steps.test.outcome }}" \
+            --vet-status "${{ steps.vet.outcome }}" \
+            --build-status "${{ steps.build.outcome }}" \
+            --modules-status "${{ steps.modules.outcome }}" \
+            --output-json weekly-health-report.json \
+            --output-markdown weekly-health-issue.md
+          python - <<'PY'
+          import json
+          import os
+
+          with open("weekly-health-report.json", "r", encoding="utf-8") as fh:
+              report = json.load(fh)
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"has_issue={'true' if report.get('has_issue') else 'false'}\n")
+              out.write(f"should_fail={'true' if report.get('should_fail_workflow') else 'false'}\n")
+              out.write("title<<EOF\n" + report.get("issue_title", "") + "\nEOF\n")
+              out.write("labels<<EOF\n" + ",".join(report.get("issue_labels", [])) + "\nEOF\n")
+          PY
+
+      - name: Upload weekly health artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: weekly-health-artifacts
+          path: |
+            weekly-health-*.log
+            weekly-health-*.json
+            weekly-health-issue.md
+          if-no-files-found: ignore
+
+      - name: Create or reuse weekly health issue
+        if: steps.report.outputs.has_issue == 'true'
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          go run ./scripts/github_issue \
+            --repo "$GITHUB_REPOSITORY" \
+            --token "$GITHUB_TOKEN" \
+            --title "${{ steps.report.outputs.title }}" \
+            --labels "${{ steps.report.outputs.labels }}" \
+            --body-file weekly-health-issue.md
+
+      - name: Mark workflow failed on command errors
+        if: steps.report.outputs.should_fail == 'true'
+        run: exit 1

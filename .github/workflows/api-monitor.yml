@@ -1,0 +1,112 @@
+name: API Change Monitor
+
+on:
+  schedule:
+    - cron: "15 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  api-monitor:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run API monitor
+        id: monitor
+        continue-on-error: true
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -o pipefail
+          go run ./scripts/api_monitor \
+            --baseline docs/baselines/api-monitor-baseline.json \
+            --github-repo "$GITHUB_REPOSITORY" \
+            --github-token "$GITHUB_TOKEN" \
+            --output-json api-monitor-report.json \
+            --output-markdown api-monitor-issue.md 2>&1 | tee api-monitor.log
+
+      - name: Extract monitor outputs
+        id: report
+        if: steps.monitor.outcome == 'success'
+        run: |
+          python - <<'PY'
+          import json
+          import os
+
+          with open("api-monitor-report.json", "r", encoding="utf-8") as fh:
+              report = json.load(fh)
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"has_issue={'true' if report.get('has_issue') else 'false'}\n")
+              out.write(f"should_fail={'true' if report.get('should_fail_workflow') else 'false'}\n")
+              out.write("title<<EOF\n" + report.get("issue_title", "") + "\nEOF\n")
+              out.write("labels<<EOF\n" + ",".join(report.get("issue_labels", [])) + "\nEOF\n")
+          PY
+
+      - name: Write monitor ops issue body
+        if: steps.monitor.outcome != 'success'
+        run: |
+          cat > api-monitor-error.md <<'EOF'
+          ## API change monitor failure
+
+          예약된 API 변경 모니터가 릴리즈 노트 검사 전에 실패했습니다.
+
+          - workflow run: `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`
+          - step outcome: `${{ steps.monitor.outcome }}`
+
+          자세한 로그는 artifact의 `api-monitor-log`를 확인하세요.
+          EOF
+
+      - name: Upload monitor artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: api-monitor-log
+          path: |
+            api-monitor.log
+            api-monitor-report.json
+            api-monitor-issue.md
+            api-monitor-error.md
+          if-no-files-found: ignore
+
+      - name: Create or reuse API change issue
+        if: steps.monitor.outcome == 'success' && steps.report.outputs.has_issue == 'true'
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          go run ./scripts/github_issue \
+            --repo "$GITHUB_REPOSITORY" \
+            --token "$GITHUB_TOKEN" \
+            --title "${{ steps.report.outputs.title }}" \
+            --labels "${{ steps.report.outputs.labels }}" \
+            --body-file api-monitor-issue.md
+
+      - name: Create or reuse monitor ops issue
+        if: steps.monitor.outcome != 'success'
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          go run ./scripts/github_issue \
+            --repo "$GITHUB_REPOSITORY" \
+            --token "$GITHUB_TOKEN" \
+            --title "[Ops Error] API change monitor failed" \
+            --labels "ops-error" \
+            --body-file api-monitor-error.md
+
+      - name: Mark workflow failed on monitor errors
+        if: steps.monitor.outcome != 'success'
+        run: exit 1

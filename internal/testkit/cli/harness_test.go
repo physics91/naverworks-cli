@@ -30,6 +30,9 @@ func TestHarnessCreatesIsolatedEnv(t *testing.T) {
 	if got := os.Getenv("HOME"); got != tmpDir {
 		t.Fatalf("HOME = %q, want %q", got, tmpDir)
 	}
+	if got := os.Getenv("XDG_CONFIG_HOME"); got != filepath.Join(tmpDir, ".config") {
+		t.Fatalf("XDG_CONFIG_HOME = %q, want %q", got, filepath.Join(tmpDir, ".config"))
+	}
 	if runtime.GOOS == "windows" {
 		if got := os.Getenv("APPDATA"); got != tmpDir {
 			t.Fatalf("APPDATA = %q, want %q", got, tmpDir)

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"runtime"
 	"sync"
 	"testing"
@@ -70,6 +71,7 @@ func NewHarness(t *testing.T) *Harness {
 
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmpDir, ".config"))
 	if runtime.GOOS == "windows" {
 		t.Setenv("APPDATA", tmpDir)
 	}

@@ -53,6 +53,14 @@ var envMap = map[string]string{
 	"scim_access_token":        "NW_SCIM_ACCESS_TOKEN",
 }
 
+func EnvVarForKey(key string) string {
+	return envMap[key]
+}
+
+func IsSensitiveKey(key string) bool {
+	return sensitiveKeys[key]
+}
+
 func IsValidKey(key string) bool {
 	return validKeys[key]
 }

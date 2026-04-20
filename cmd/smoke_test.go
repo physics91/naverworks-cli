@@ -144,6 +144,34 @@ func TestSmoke_AuthStatus_NotLoggedIn(t *testing.T) {
 	}
 }
 
+func TestSmoke_AuthHelpIncludesDoctor(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "auth", "--help")
+	if err != nil {
+		t.Fatalf("auth --help failed: %v", err)
+	}
+	for _, sub := range []string{"login", "status", "logout", "refresh", "setup", "doctor"} {
+		if !containsCommand(out, sub) {
+			t.Errorf("auth --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_AuthDoctor_NoConfig(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "auth", "doctor")
+	if err != nil {
+		t.Fatalf("auth doctor failed: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &payload); err != nil {
+		t.Fatalf("auth doctor output is not valid JSON: %v\noutput: %q", err, out)
+	}
+	if _, ok := payload["checks"]; !ok {
+		t.Fatalf("auth doctor output missing checks: %v", payload)
+	}
+}
+
 func TestSmoke_BotSend_MissingTarget(t *testing.T) {
 	tmpDir := setupTestEnv(t)
 	writeTestConfig(t, tmpDir)

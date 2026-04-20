@@ -28,6 +28,7 @@ const maxRateLimitRetries = 3
 const maxAPIResponseSize = 10 << 20 // 10MB
 
 var errRateLimitExceeded = &APIError{StatusCode: 429, Code: "RATE_LIMIT_EXCEEDED", Description: "최대 재시도 횟수 초과"}
+var rateLimitSleep = time.Sleep
 
 var defaultAllowedPresignedUploadHostSuffixes = []string{
 	"worksapis.com",
@@ -178,9 +179,12 @@ func (c *Client) doWithRetryAndMaxResponseSize(method, path string, body []byte,
 			}
 			return c.doWithRetryAndMaxResponseSize(method, path, body, true, maxResponseSize)
 
-		case resp.StatusCode == 429 && attempt < maxRateLimitRetries:
+		case resp.StatusCode == 429:
+			if attempt == maxRateLimitRetries {
+				return nil, errRateLimitExceeded
+			}
 			waitDuration := parseRateLimitReset(resp.Header, attempt)
-			time.Sleep(waitDuration)
+			rateLimitSleep(waitDuration)
 			continue
 
 		case resp.StatusCode >= 400:
@@ -257,9 +261,12 @@ func (c *Client) getDownloadURLWithRetry(path string, retried401 bool) (string, 
 			}
 			return c.getDownloadURLWithRetry(path, true)
 
-		case resp.StatusCode == 429 && attempt < maxRateLimitRetries:
+		case resp.StatusCode == 429:
+			if attempt == maxRateLimitRetries {
+				return "", errRateLimitExceeded
+			}
 			waitDuration := parseRateLimitReset(resp.Header, attempt)
-			time.Sleep(waitDuration)
+			rateLimitSleep(waitDuration)
 			continue
 
 		case resp.StatusCode >= 400:
@@ -439,9 +446,12 @@ func (c *Client) uploadMultipartWithRetry(path, fieldName, fileName string, data
 			}
 			return c.uploadMultipartWithRetry(path, fieldName, fileName, data, true)
 
-		case resp.StatusCode == 429 && attempt < maxRateLimitRetries:
+		case resp.StatusCode == 429:
+			if attempt == maxRateLimitRetries {
+				return nil, errRateLimitExceeded
+			}
 			waitDuration := parseRateLimitReset(resp.Header, attempt)
-			time.Sleep(waitDuration)
+			rateLimitSleep(waitDuration)
 			continue
 
 		case resp.StatusCode >= 400:
@@ -489,9 +499,12 @@ func (c *Client) downloadFileWithRetry(path string, retried401 bool) ([]byte, ht
 			}
 			return c.downloadFileWithRetry(path, true)
 
-		case resp.StatusCode == 429 && attempt < maxRateLimitRetries:
+		case resp.StatusCode == 429:
+			if attempt == maxRateLimitRetries {
+				return nil, nil, errRateLimitExceeded
+			}
 			waitDuration := parseRateLimitReset(resp.Header, attempt)
-			time.Sleep(waitDuration)
+			rateLimitSleep(waitDuration)
 			continue
 
 		case resp.StatusCode >= 400:

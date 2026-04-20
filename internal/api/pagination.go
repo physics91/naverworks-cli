@@ -50,7 +50,7 @@ func extractNextCursorFromParsed(raw map[string]json.RawMessage) string {
 type FetchFunc func(cursor string) (*Response, error)
 
 func PaginateAll(fetch FetchFunc, itemsKey string) (json.RawMessage, error) {
-	var allItems []json.RawMessage
+	allItems := make([]json.RawMessage, 0)
 	cursor := ""
 
 	for {

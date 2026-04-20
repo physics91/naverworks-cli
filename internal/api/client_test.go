@@ -26,6 +26,15 @@ func (s *spyRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
 	return nil, fmt.Errorf("unexpected network call")
 }
 
+func withStubbedRateLimitSleep(t *testing.T) {
+	t.Helper()
+	original := rateLimitSleep
+	rateLimitSleep = func(time.Duration) {}
+	t.Cleanup(func() {
+		rateLimitSleep = original
+	})
+}
+
 func TestClient_Get_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer test-token" {
@@ -235,6 +244,7 @@ func TestClient_401_Retry(t *testing.T) {
 }
 
 func TestClient_429_Backoff(t *testing.T) {
+	withStubbedRateLimitSleep(t)
 	var callCount int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		count := atomic.AddInt32(&callCount, 1)
@@ -260,6 +270,32 @@ func TestClient_429_Backoff(t *testing.T) {
 	}
 	if atomic.LoadInt32(&callCount) != 3 {
 		t.Errorf("expected 3 calls, got %d", callCount)
+	}
+}
+
+func TestClient_429_RetryExhausted(t *testing.T) {
+	withStubbedRateLimitSleep(t)
+	var callCount int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&callCount, 1)
+		w.Header().Set("RateLimit-Reset", "0")
+		w.WriteHeader(http.StatusTooManyRequests)
+		w.Write([]byte(`{"code":"RATE_LIMIT"}`))
+	}))
+	defer server.Close()
+
+	token := &auth.Token{AccessToken: "t", ExpiresAt: time.Now().Add(time.Hour)}
+	client := NewClient(server.URL, token, nil)
+
+	_, err := client.Get("/test")
+	if err == nil {
+		t.Fatal("expected rate limit exhaustion error")
+	}
+	if err != errRateLimitExceeded {
+		t.Fatalf("expected errRateLimitExceeded, got %v", err)
+	}
+	if atomic.LoadInt32(&callCount) != maxRateLimitRetries+1 {
+		t.Fatalf("expected %d calls, got %d", maxRateLimitRetries+1, callCount)
 	}
 }
 
@@ -478,6 +514,32 @@ func TestClient_GetDownloadURL_301(t *testing.T) {
 	}
 	if url != expectedLocation {
 		t.Errorf("expected %q, got %q", expectedLocation, url)
+	}
+}
+
+func TestClient_GetDownloadURL_429_RetryExhausted(t *testing.T) {
+	withStubbedRateLimitSleep(t)
+	var callCount int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&callCount, 1)
+		w.Header().Set("RateLimit-Reset", "0")
+		w.WriteHeader(http.StatusTooManyRequests)
+		w.Write([]byte(`{"code":"RATE_LIMIT"}`))
+	}))
+	defer server.Close()
+
+	token := &auth.Token{AccessToken: "t", ExpiresAt: time.Now().Add(time.Hour)}
+	client := NewClient(server.URL, token, nil)
+
+	_, err := client.GetDownloadURL("/files/download")
+	if err == nil {
+		t.Fatal("expected rate limit exhaustion error")
+	}
+	if err != errRateLimitExceeded {
+		t.Fatalf("expected errRateLimitExceeded, got %v", err)
+	}
+	if atomic.LoadInt32(&callCount) != maxRateLimitRetries+1 {
+		t.Fatalf("expected %d calls, got %d", maxRateLimitRetries+1, callCount)
 	}
 }
 
@@ -739,6 +801,32 @@ func TestClient_UploadMultipart(t *testing.T) {
 	}
 }
 
+func TestClient_UploadMultipart_429_RetryExhausted(t *testing.T) {
+	withStubbedRateLimitSleep(t)
+	var callCount int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&callCount, 1)
+		w.Header().Set("RateLimit-Reset", "0")
+		w.WriteHeader(http.StatusTooManyRequests)
+		w.Write([]byte(`{"code":"RATE_LIMIT"}`))
+	}))
+	defer server.Close()
+
+	token := &auth.Token{AccessToken: "t", ExpiresAt: time.Now().Add(time.Hour)}
+	client := NewClient(server.URL, token, nil)
+
+	_, err := client.UploadMultipart("/upload", "fileData", "test.txt", []byte("hello"))
+	if err == nil {
+		t.Fatal("expected rate limit exhaustion error")
+	}
+	if err != errRateLimitExceeded {
+		t.Fatalf("expected errRateLimitExceeded, got %v", err)
+	}
+	if atomic.LoadInt32(&callCount) != maxRateLimitRetries+1 {
+		t.Fatalf("expected %d calls, got %d", maxRateLimitRetries+1, callCount)
+	}
+}
+
 func TestClient_DownloadFile(t *testing.T) {
 	binaryData := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A} // PNG header
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -774,6 +862,32 @@ func TestClient_DownloadFile(t *testing.T) {
 	}
 	if headers.Get("Content-Disposition") != `attachment; filename="test.png"` {
 		t.Errorf("unexpected Content-Disposition: %q", headers.Get("Content-Disposition"))
+	}
+}
+
+func TestClient_DownloadFile_429_RetryExhausted(t *testing.T) {
+	withStubbedRateLimitSleep(t)
+	var callCount int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&callCount, 1)
+		w.Header().Set("RateLimit-Reset", "0")
+		w.WriteHeader(http.StatusTooManyRequests)
+		w.Write([]byte(`{"code":"RATE_LIMIT"}`))
+	}))
+	defer server.Close()
+
+	token := &auth.Token{AccessToken: "t", ExpiresAt: time.Now().Add(time.Hour)}
+	client := NewClient(server.URL, token, nil)
+
+	_, _, err := client.DownloadFile("/files/test.png")
+	if err == nil {
+		t.Fatal("expected rate limit exhaustion error")
+	}
+	if err != errRateLimitExceeded {
+		t.Fatalf("expected errRateLimitExceeded, got %v", err)
+	}
+	if atomic.LoadInt32(&callCount) != maxRateLimitRetries+1 {
+		t.Fatalf("expected %d calls, got %d", maxRateLimitRetries+1, callCount)
 	}
 }
 

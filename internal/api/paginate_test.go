@@ -88,6 +88,23 @@ func TestPaginateAll_InvalidJSON(t *testing.T) {
 	}
 }
 
+func TestPaginateAll_EmptyItemsReturnsArray(t *testing.T) {
+	fetcher := func(cursor string) (*Response, error) {
+		return &Response{
+			StatusCode: 200,
+			Body:       []byte(`{"users":[],"responseMetaData":{"nextCursor":""}}`),
+		}, nil
+	}
+
+	result, err := PaginateAll(fetcher, "users")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(result) != "[]" {
+		t.Fatalf("result = %s, want []", result)
+	}
+}
+
 // TestPaginateAll_WithMockServer tests PaginateAll through a real httptest
 // server that returns paginated responses, verifying the full flow.
 func TestPaginateAll_WithMockServer(t *testing.T) {

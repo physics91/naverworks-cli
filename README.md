@@ -11,6 +11,7 @@
 - 주요 도메인: `bot`, `calendar`, `directory`, `drive`, `mail`, `approval`, `task`, `board`, `contact`, `attendance`, `audit`, `monitoring`, `scim`
 - 출력: pretty JSON 기본 출력, 일부 목록형 명령의 `--output table`
 - 페이지네이션: `--count`, `--cursor`, `--all`
+- API 요청 미리보기: `--dry-run`, `--plan-out`, `--generate-input`
 
 ## 설치
 
@@ -58,6 +59,10 @@ naverworks directory list-users --count 20
 naverworks bot send --to USER_ID --text "배포 완료"
 naverworks drive list --user-id me
 naverworks mail send --user-id me --to user@example.com --subject "배포 완료" --body "운영 반영 끝"
+
+# API 요청 미리보기
+naverworks --dry-run bot send --bot-id BOT_ID --to USER_ID --text "배포 완료"
+naverworks --dry-run directory list-users --count 20
 ```
 
 ## 문서

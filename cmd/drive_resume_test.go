@@ -70,7 +70,7 @@ func TestDoUploadFromResponse_WithoutOffsetUploadsWholeFile(t *testing.T) {
 	}, nil)
 
 	respBody := []byte(`{"uploadUrl":"https://example.com/upload"}`)
-	if err := doUploadFromResponse(client, respBody, filePath); err != nil {
+	if _, err := doUploadFromResponse(client, respBody, filePath); err != nil {
 		t.Fatalf("doUploadFromResponse failed: %v", err)
 	}
 

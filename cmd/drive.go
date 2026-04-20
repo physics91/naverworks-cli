@@ -115,10 +115,11 @@ var driveUploadCmd = &cobra.Command{
 			return err
 		}
 
-		if err := doUploadFromResponse(client, resp.Body, localPath); err != nil {
+		respBody, err := doUploadFromResponse(client, resp.Body, localPath)
+		if err != nil {
 			return err
 		}
-		printBody(resp.Body)
+		printBody(respBody)
 		return nil
 	},
 }
@@ -758,10 +759,11 @@ var driveSharedUploadCmd = &cobra.Command{
 			return err
 		}
 
-		if err := doUploadFromResponse(client, resp.Body, filePath); err != nil {
+		respBody, err := doUploadFromResponse(client, resp.Body, filePath)
+		if err != nil {
 			return err
 		}
-		printBody(resp.Body)
+		printBody(respBody)
 		return nil
 	},
 }
@@ -1675,10 +1677,11 @@ var driveGroupUploadCmd = &cobra.Command{
 			return err
 		}
 
-		if err := doUploadFromResponse(client, resp.Body, filePath); err != nil {
+		respBody, err := doUploadFromResponse(client, resp.Body, filePath)
+		if err != nil {
 			return err
 		}
-		printBody(resp.Body)
+		printBody(respBody)
 		return nil
 	},
 }
@@ -2375,10 +2378,11 @@ var driveSFUploadCmd = &cobra.Command{
 			return err
 		}
 
-		if err := doUploadFromResponse(client, resp.Body, filePath); err != nil {
+		respBody, err := doUploadFromResponse(client, resp.Body, filePath)
+		if err != nil {
 			return err
 		}
-		printBody(resp.Body)
+		printBody(respBody)
 		return nil
 	},
 }

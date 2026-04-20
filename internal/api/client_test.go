@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -15,6 +16,15 @@ import (
 
 	"github.com/physics91/naverworks-cli/internal/auth"
 )
+
+type spyRoundTripper struct {
+	calls int32
+}
+
+func (s *spyRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
+	atomic.AddInt32(&s.calls, 1)
+	return nil, fmt.Errorf("unexpected network call")
+}
 
 func TestClient_Get_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -55,6 +65,76 @@ func TestClient_Post_WithBody(t *testing.T) {
 	}
 	if resp.StatusCode != 201 {
 		t.Errorf("expected 201, got %d", resp.StatusCode)
+	}
+}
+
+func TestClient_Post_DryRunSkipsNetwork(t *testing.T) {
+	spy := &spyRoundTripper{}
+	token := &auth.Token{AccessToken: "t", ExpiresAt: time.Now().Add(time.Hour)}
+	client := NewClient("https://example.com", token, nil).WithPreview(PreviewOptions{DryRun: true, Profile: "preview"})
+	client.httpClient = &http.Client{Transport: spy}
+	resp, err := client.Post("/test", []byte(`{"text":"hello"}`))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if atomic.LoadInt32(&spy.calls) != 0 {
+		t.Fatalf("dry-run should skip network calls, got %d", spy.calls)
+	}
+
+	var payload map[string]interface{}
+	if err := json.Unmarshal(resp.Body, &payload); err != nil {
+		t.Fatalf("dry-run output should be valid JSON: %v", err)
+	}
+	if payload["method"] != "POST" {
+		t.Fatalf("expected POST method, got %#v", payload["method"])
+	}
+	if payload["path"] != "/test" {
+		t.Fatalf("expected /test path, got %#v", payload["path"])
+	}
+	if payload["profile"] != "preview" {
+		t.Fatalf("expected preview profile, got %#v", payload["profile"])
+	}
+	body, ok := payload["body"].(map[string]interface{})
+	if !ok || body["text"] != "hello" {
+		t.Fatalf("expected body.text=hello, got %#v", payload["body"])
+	}
+}
+
+func TestClient_Post_GenerateInputWritesPlan(t *testing.T) {
+	spy := &spyRoundTripper{}
+	planFile := t.TempDir() + "/plan.json"
+	token := &auth.Token{AccessToken: "t", ExpiresAt: time.Now().Add(time.Hour)}
+	client := NewClient("https://example.com", token, nil).WithPreview(PreviewOptions{
+		GenerateInput: true,
+		PlanOutPath:   planFile,
+		Profile:       "preview",
+	})
+	client.httpClient = &http.Client{Transport: spy}
+	resp, err := client.Post("/test", []byte(`{"text":"hello"}`))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if atomic.LoadInt32(&spy.calls) != 0 {
+		t.Fatalf("generate-input should skip network calls, got %d", spy.calls)
+	}
+	if strings.TrimSpace(string(resp.Body)) != `{"text":"hello"}` {
+		t.Fatalf("expected generated input JSON, got %s", resp.Body)
+	}
+
+	planData, err := os.ReadFile(planFile)
+	if err != nil {
+		t.Fatalf("expected plan file to be written: %v", err)
+	}
+	var plan map[string]interface{}
+	if err := json.Unmarshal(planData, &plan); err != nil {
+		t.Fatalf("plan file should be valid JSON: %v", err)
+	}
+	if plan["method"] != "POST" {
+		t.Fatalf("expected plan method POST, got %#v", plan["method"])
+	}
+	body, ok := plan["body"].(map[string]interface{})
+	if !ok || body["text"] != "hello" {
+		t.Fatalf("expected plan body.text=hello, got %#v", plan["body"])
 	}
 }
 
@@ -256,6 +336,28 @@ func TestDecodeAPIError_InvalidJSON(t *testing.T) {
 	}
 	if apiErr.Code != "UNKNOWN" {
 		t.Errorf("expected UNKNOWN, got %q", apiErr.Code)
+	}
+}
+
+func TestClient_UploadMultipart_DryRun(t *testing.T) {
+	spy := &spyRoundTripper{}
+	token := &auth.Token{AccessToken: "t", ExpiresAt: time.Now().Add(time.Hour)}
+	client := NewClient("https://example.com", token, nil).WithPreview(PreviewOptions{DryRun: true})
+	client.httpClient = &http.Client{Transport: spy}
+	resp, err := client.UploadMultipart("/upload", "fileData", "test.txt", []byte("hello multipart"))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if atomic.LoadInt32(&spy.calls) != 0 {
+		t.Fatalf("dry-run upload should skip network calls, got %d", spy.calls)
+	}
+	var payload map[string]interface{}
+	if err := json.Unmarshal(resp.Body, &payload); err != nil {
+		t.Fatalf("dry-run output should be valid JSON: %v", err)
+	}
+	part, ok := payload["multipart"].(map[string]interface{})
+	if !ok || part["file_name"] != "test.txt" {
+		t.Fatalf("expected multipart metadata, got %#v", payload["multipart"])
 	}
 }
 

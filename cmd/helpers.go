@@ -12,6 +12,7 @@ import (
 	"github.com/physics91/naverworks-cli/internal/api"
 	"github.com/physics91/naverworks-cli/internal/auth"
 	"github.com/physics91/naverworks-cli/internal/config"
+	"github.com/physics91/naverworks-cli/internal/fileutil"
 	"github.com/physics91/naverworks-cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -29,14 +30,23 @@ func loadConfigAndToken() (*config.Config, *auth.Token, string, error) {
 
 	tokenPath, err := auth.DefaultTokenPathOrError()
 	if err != nil {
+		if previewRequested() {
+			return profile, previewToken(inferAuthMethod(profile, nil), profile.Scope), name, nil
+		}
 		return nil, nil, "", err
 	}
 	store := auth.NewProfileTokenStore(tokenPath, name)
 	token, err := store.Load()
 	if err != nil {
+		if previewRequested() {
+			return profile, previewToken(inferAuthMethod(profile, nil), profile.Scope), name, nil
+		}
 		return nil, nil, "", err
 	}
 	if token == nil {
+		if previewRequested() {
+			return profile, previewToken(inferAuthMethod(profile, nil), profile.Scope), name, nil
+		}
 		return nil, nil, "", fmt.Errorf("로그인되어 있지 않습니다. naverworks auth login을 실행하세요")
 	}
 	return profile, token, name, nil
@@ -81,7 +91,7 @@ func buildAPIClient(cfg *config.Config, token *auth.Token, activeProfileName str
 
 		return fmt.Errorf("토큰 갱신 불가")
 	}
-	return api.NewClient(apiBaseURL, token, refreshFn)
+	return api.NewClient(apiBaseURL, token, refreshFn).WithPreview(currentPreviewOptions(activeProfileName))
 }
 
 func newAPIClient() (*api.Client, *config.Config, *auth.Token, error) {
@@ -112,7 +122,11 @@ func newSvc[T any](constructor func(*api.Client) *T) (*T, error) {
 	return constructor(client), nil
 }
 
-func buildScimClient(cfg *config.Config) (*api.Client, error) {
+func buildScimClient(cfg *config.Config, activeProfileName string) (*api.Client, error) {
+	if previewRequested() {
+		return api.NewClient(scimBaseURL, previewToken(auth.AuthMethodSCIM, ""), nil).
+			WithPreview(currentPreviewOptions(activeProfileName)), nil
+	}
 	if cfg.ScimAccessToken == "" {
 		return nil, fmt.Errorf("scim_access_token이 설정되지 않았습니다. naverworks config set scim_access_token <token>")
 	}
@@ -122,7 +136,7 @@ func buildScimClient(cfg *config.Config) (*api.Client, error) {
 		TokenType:   "Bearer",
 		ExpiresAt:   time.Now().Add(365 * 24 * time.Hour),
 	}
-	return api.NewClient(scimBaseURL, token, nil), nil
+	return api.NewClient(scimBaseURL, token, nil).WithPreview(currentPreviewOptions(activeProfileName)), nil
 }
 
 func resolveUserID(cmd *cobra.Command, defaultUID string, authMethod auth.AuthMethod) (string, error) {
@@ -215,6 +229,38 @@ func runListCmd(cmd *cobra.Command, columns []string, itemKey string, fetch func
 	formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable(columns, itemKey)
 
 	if all {
+		if previewRequested() {
+			resp, err := fetch(cursor, count)
+			if err != nil {
+				return err
+			}
+			if generateInput {
+				if strings.TrimSpace(planOutPath) != "" {
+					planBody, err := os.ReadFile(planOutPath)
+					if err != nil {
+						return fmt.Errorf("preview plan 파일 읽기 실패: %w", err)
+					}
+					body, err := appendPaginationPreview(planBody, cursor, count)
+					if err != nil {
+						return err
+					}
+					if err := rewritePreviewPlanFile(body); err != nil {
+						return err
+					}
+				}
+				formatter.PrintRaw(resp.Body)
+				return nil
+			}
+			body, err := appendPaginationPreview(resp.Body, cursor, count)
+			if err != nil {
+				return err
+			}
+			if err := rewritePreviewPlanFile(body); err != nil {
+				return err
+			}
+			formatter.PrintRaw(body)
+			return nil
+		}
 		return paginateAndPrint(func(c string) (*api.Response, error) {
 			return fetch(c, count)
 		}, itemKey, formatter)
@@ -309,6 +355,10 @@ func parseOptionalJSONData(cmd *cobra.Command) (map[string]interface{}, error) {
 }
 
 func printDownloadURL(downloadURL string) {
+	if trimmed := strings.TrimSpace(downloadURL); strings.HasPrefix(trimmed, "{") && json.Valid([]byte(trimmed)) {
+		printBody([]byte(trimmed))
+		return
+	}
 	result, err := json.Marshal(map[string]string{"download_url": downloadURL})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, `{"error":{"code":"marshal_error","description":"%s"}}`+"\n", err)
@@ -456,32 +506,133 @@ func statFileForUpload(localPath string) (fileName string, fileSize int64, err e
 }
 
 // doUploadFromResponse extracts the uploadUrl from a JSON response body
-// and uploads the local file to it.
-func doUploadFromResponse(client *api.Client, respBody []byte, localPath string) error {
+// and uploads the local file to it. In preview mode it appends the
+// presigned upload follow-up step to the preview body instead.
+func doUploadFromResponse(client *api.Client, respBody []byte, localPath string) ([]byte, error) {
+	if client.PreviewEnabled() {
+		if generateInput {
+			if strings.TrimSpace(planOutPath) != "" {
+				planBody, err := os.ReadFile(planOutPath)
+				if err != nil {
+					return nil, fmt.Errorf("preview plan 파일 읽기 실패: %w", err)
+				}
+				previewBody, err := appendUploadPreviewStep(planBody, localPath)
+				if err != nil {
+					return nil, err
+				}
+				if err := rewritePreviewPlanFile(previewBody); err != nil {
+					return nil, err
+				}
+			}
+			return respBody, nil
+		}
+		previewBody, err := appendUploadPreviewStep(respBody, localPath)
+		if err != nil {
+			return nil, err
+		}
+		if err := rewritePreviewPlanFile(previewBody); err != nil {
+			return nil, err
+		}
+		return previewBody, nil
+	}
 	var result struct {
 		UploadURL string `json:"uploadUrl"`
 		Offset    int64  `json:"offset"`
 	}
 	if err := json.Unmarshal(respBody, &result); err != nil {
-		return fmt.Errorf("업로드 URL 파싱 실패: %w", err)
+		return nil, fmt.Errorf("업로드 URL 파싱 실패: %w", err)
 	}
 	if result.UploadURL == "" {
-		return fmt.Errorf("업로드 URL을 받지 못했습니다")
+		return nil, fmt.Errorf("업로드 URL을 받지 못했습니다")
 	}
-	return client.UploadFileFromOffset(result.UploadURL, localPath, result.Offset)
+	if err := client.UploadFileFromOffset(result.UploadURL, localPath, result.Offset); err != nil {
+		return nil, err
+	}
+	return respBody, nil
+}
+
+func appendUploadPreviewStep(respBody []byte, localPath string) ([]byte, error) {
+	var payload map[string]interface{}
+	if err := json.Unmarshal(respBody, &payload); err != nil {
+		return respBody, nil
+	}
+	payload["next_step"] = map[string]interface{}{
+		"type":      "presigned_upload",
+		"method":    "PUT",
+		"file_path": localPath,
+	}
+	updated, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("preview 업로드 계획 직렬화 실패: %w", err)
+	}
+	return updated, nil
+}
+
+func appendPaginationPreview(respBody []byte, cursor string, count int) ([]byte, error) {
+	var payload map[string]interface{}
+	if err := json.Unmarshal(respBody, &payload); err != nil {
+		return respBody, nil
+	}
+	payload["pagination"] = map[string]interface{}{
+		"all":          true,
+		"start_cursor": cursor,
+		"count":        count,
+		"strategy":     "follow_next_cursor_until_empty",
+	}
+	updated, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("preview 페이지네이션 계획 직렬화 실패: %w", err)
+	}
+	return updated, nil
+}
+
+func rewritePreviewPlanFile(body []byte) error {
+	if strings.TrimSpace(planOutPath) == "" {
+		return nil
+	}
+	var payload interface{}
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return fmt.Errorf("preview plan 파일 파싱 실패: %w", err)
+	}
+	if err := fileutil.WriteSecureJSON(planOutPath, payload); err != nil {
+		return fmt.Errorf("plan 파일 저장 실패: %w", err)
+	}
+	return nil
 }
 
 func resolveOrCreateProfile(pc *config.ProfileConfig) (*config.Config, string) {
-	_, name, err := pc.ActiveProfile(profileName)
-	if err != nil {
-		name = profileName
-		if name == "" {
-			name = pc.CurrentProfile
-			if name == "" {
-				name = "default"
-			}
-		}
+	profile, name, err := pc.ActiveProfile(profileName)
+	if err == nil {
+		return profile, name
+	}
+	if name == "" {
+		name = "default"
+	}
+	if pc.Profiles[name] == nil {
 		pc.EnsureProfile(name)
 	}
 	return pc.Profiles[name], name
+}
+
+func previewRequested() bool {
+	return dryRun || strings.TrimSpace(planOutPath) != "" || generateInput
+}
+
+func currentPreviewOptions(activeProfileName string) api.PreviewOptions {
+	return api.PreviewOptions{
+		DryRun:        dryRun || strings.TrimSpace(planOutPath) != "",
+		PlanOutPath:   strings.TrimSpace(planOutPath),
+		GenerateInput: generateInput,
+		Profile:       activeProfileName,
+	}
+}
+
+func previewToken(method auth.AuthMethod, scope string) *auth.Token {
+	return &auth.Token{
+		AuthMethod:  method,
+		AccessToken: "preview-token",
+		TokenType:   "Bearer",
+		Scope:       scope,
+		ExpiresAt:   time.Now().Add(24 * time.Hour),
+	}
 }

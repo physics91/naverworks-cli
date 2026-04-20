@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -169,6 +171,179 @@ func TestSmoke_AuthDoctor_NoConfig(t *testing.T) {
 	}
 	if _, ok := payload["checks"]; !ok {
 		t.Fatalf("auth doctor output missing checks: %v", payload)
+	}
+}
+
+func TestSmoke_BotSend_DryRunWithoutToken(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "--dry-run", "bot", "send", "--bot-id", "bot1", "--to", "u1", "--text", "hi")
+	if err != nil {
+		t.Fatalf("bot send --dry-run failed: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &payload); err != nil {
+		t.Fatalf("dry-run output is not valid JSON: %v\noutput: %q", err, out)
+	}
+	if payload["method"] != "POST" {
+		t.Fatalf("expected POST method, got %#v", payload["method"])
+	}
+	if payload["dry_run"] != true {
+		t.Fatalf("expected dry_run=true, got %#v", payload["dry_run"])
+	}
+}
+
+func TestSmoke_DirectoryListUsers_DryRunWithoutToken(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "--dry-run", "directory", "list-users", "--count", "1")
+	if err != nil {
+		t.Fatalf("directory list-users --dry-run failed: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &payload); err != nil {
+		t.Fatalf("dry-run output is not valid JSON: %v\noutput: %q", err, out)
+	}
+	if payload["method"] != "GET" {
+		t.Fatalf("expected GET method, got %#v", payload["method"])
+	}
+	if payload["path"] != "/users?count=1" {
+		t.Fatalf("expected /users?count=1 path, got %#v", payload["path"])
+	}
+}
+
+func TestSmoke_SCIMListUsers_WithScimTokenOnly(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	cfgDir := filepath.Join(tmpDir, ".config", "naverworks")
+	if err := os.MkdirAll(cfgDir, 0700); err != nil {
+		t.Fatalf("failed to create config dir: %v", err)
+	}
+	cfgData := `{"scim_access_token":"scim-token"}`
+	if err := os.WriteFile(filepath.Join(cfgDir, "config.json"), []byte(cfgData), 0600); err != nil {
+		t.Fatalf("failed to write config: %v", err)
+	}
+
+	var authHeader string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader = r.Header.Get("Authorization")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"Resources":[]}`))
+	}))
+	defer server.Close()
+	setSCIMBaseURL(t, server.URL)
+
+	out, err := runCLI(t, "scim", "list-users")
+	if err != nil {
+		t.Fatalf("scim list-users failed: %v", err)
+	}
+	if authHeader != "Bearer scim-token" {
+		t.Fatalf("expected SCIM token auth, got %q", authHeader)
+	}
+	if !strings.Contains(out, `"Resources"`) {
+		t.Fatalf("expected SCIM list output, got %q", out)
+	}
+}
+
+func TestSmoke_SCIMListUsers_DryRunWithoutToken(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "--dry-run", "scim", "list-users")
+	if err != nil {
+		t.Fatalf("scim list-users --dry-run failed: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &payload); err != nil {
+		t.Fatalf("dry-run output is not valid JSON: %v\noutput: %q", err, out)
+	}
+	if payload["method"] != "GET" {
+		t.Fatalf("expected GET method, got %#v", payload["method"])
+	}
+}
+
+func TestSmoke_SCIMListUsers_DryRunUsesCurrentProfile(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	cfgDir := filepath.Join(tmpDir, ".config", "naverworks")
+	if err := os.MkdirAll(cfgDir, 0700); err != nil {
+		t.Fatalf("failed to create config dir: %v", err)
+	}
+	profiles := &config.ProfileConfig{
+		CurrentProfile: "work",
+		Profiles: map[string]*config.Config{
+			"default": {},
+			"work":    {},
+		},
+	}
+	cfgData, err := json.Marshal(profiles)
+	if err != nil {
+		t.Fatalf("failed to marshal profile config: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(cfgDir, "config.json"), cfgData, 0600); err != nil {
+		t.Fatalf("failed to write config: %v", err)
+	}
+
+	out, err := runCLI(t, "--dry-run", "scim", "list-users")
+	if err != nil {
+		t.Fatalf("scim list-users --dry-run failed: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &payload); err != nil {
+		t.Fatalf("dry-run output is not valid JSON: %v\noutput: %q", err, out)
+	}
+	if payload["profile"] != "work" {
+		t.Fatalf("expected current_profile in preview output, got %#v", payload["profile"])
+	}
+}
+
+func TestSmoke_DirectoryListUsers_DryRunAllShowsPreviewPlan(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "--dry-run", "directory", "list-users", "--all")
+	if err != nil {
+		t.Fatalf("directory list-users --dry-run --all failed: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &payload); err != nil {
+		t.Fatalf("dry-run output is not valid JSON: %v\noutput: %q", err, out)
+	}
+	if payload["method"] != "GET" {
+		t.Fatalf("expected GET method, got %#v", payload["method"])
+	}
+	if payload["path"] != "/users" {
+		t.Fatalf("expected /users path, got %#v", payload["path"])
+	}
+	pagination, ok := payload["pagination"].(map[string]any)
+	if !ok || pagination["all"] != true {
+		t.Fatalf("expected pagination preview metadata, got %#v", payload["pagination"])
+	}
+}
+
+func TestSmoke_DirectoryListUsers_GenerateInputPlanOutAll(t *testing.T) {
+	setupTestEnv(t)
+	planFile := filepath.Join(t.TempDir(), "plan.json")
+	out, err := runCLI(t, "--generate-input", "--plan-out", planFile, "directory", "list-users", "--all")
+	if err != nil {
+		t.Fatalf("directory list-users --generate-input --plan-out --all failed: %v", err)
+	}
+	if strings.TrimSpace(out) != "{}" {
+		t.Fatalf("expected pure generated input, got %q", out)
+	}
+	data, err := os.ReadFile(planFile)
+	if err != nil {
+		t.Fatalf("expected plan file to be written: %v", err)
+	}
+	if !strings.Contains(string(data), `"pagination"`) {
+		t.Fatalf("expected pagination metadata in plan file: %s", data)
+	}
+}
+
+func TestSmoke_DriveDownload_DryRunShowsPreviewPlan(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "--dry-run", "drive", "download", "file1", "--user-id", "u1")
+	if err != nil {
+		t.Fatalf("drive download --dry-run failed: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &payload); err != nil {
+		t.Fatalf("dry-run output is not valid JSON: %v\noutput: %q", err, out)
+	}
+	if payload["method"] != "GET" {
+		t.Fatalf("expected GET method, got %#v", payload["method"])
 	}
 }
 
@@ -2200,6 +2375,11 @@ func TestResolveBotID(t *testing.T) {
 }
 
 func TestResolveOrCreateProfile(t *testing.T) {
+	origProfileName := profileName
+	profileName = ""
+	t.Cleanup(func() {
+		profileName = origProfileName
+	})
 	pc := &config.ProfileConfig{
 		CurrentProfile: "default",
 		Profiles: map[string]*config.Config{
@@ -2212,6 +2392,32 @@ func TestResolveOrCreateProfile(t *testing.T) {
 	}
 	if cfg.ClientID != "cid1" {
 		t.Errorf("expected cid1, got %s", cfg.ClientID)
+	}
+}
+
+func TestResolveOrCreateProfile_UsesEnvSelectionForMissingProfile(t *testing.T) {
+	origProfileName := profileName
+	profileName = ""
+	t.Cleanup(func() {
+		profileName = origProfileName
+	})
+	t.Setenv("NW_PROFILE", "work")
+
+	pc := &config.ProfileConfig{
+		CurrentProfile: "default",
+		Profiles: map[string]*config.Config{
+			"default": {ClientID: "cid1"},
+		},
+	}
+	cfg, name := resolveOrCreateProfile(pc)
+	if name != "work" {
+		t.Fatalf("expected work, got %s", name)
+	}
+	if cfg == nil {
+		t.Fatal("expected created profile config")
+	}
+	if pc.Profiles["work"] == nil {
+		t.Fatal("expected missing env-selected profile to be created")
 	}
 }
 

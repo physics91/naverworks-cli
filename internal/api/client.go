@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/physics91/naverworks-cli/internal/auth"
+	"github.com/physics91/naverworks-cli/internal/fileutil"
 	"github.com/physics91/naverworks-cli/internal/httputil"
 )
 
@@ -39,6 +40,13 @@ var defaultAllowedPresignedUploadHostSuffixes = []string{
 
 type RefreshFunc func(token *auth.Token) error
 
+type PreviewOptions struct {
+	DryRun        bool
+	PlanOutPath   string
+	GenerateInput bool
+	Profile       string
+}
+
 type Client struct {
 	baseURL          string
 	token            *auth.Token
@@ -46,6 +54,7 @@ type Client struct {
 	httpClient       *http.Client
 	noRedirectClient *http.Client
 	uploadClient     *http.Client
+	preview          *PreviewOptions
 }
 
 func NewClient(baseURL string, token *auth.Token, refreshFn RefreshFunc) *Client {
@@ -64,6 +73,24 @@ func NewClient(baseURL string, token *auth.Token, refreshFn RefreshFunc) *Client
 		},
 		uploadClient: &http.Client{Timeout: 10 * time.Minute, Transport: transport},
 	}
+}
+
+func (c *Client) WithPreview(opts PreviewOptions) *Client {
+	opts.PlanOutPath = strings.TrimSpace(opts.PlanOutPath)
+	if opts.PlanOutPath != "" {
+		opts.DryRun = true
+	}
+	if !opts.enabled() {
+		c.preview = nil
+		return c
+	}
+	copied := opts
+	c.preview = &copied
+	return c
+}
+
+func (c *Client) PreviewEnabled() bool {
+	return c.preview != nil && c.preview.enabled()
 }
 
 func (c *Client) Get(path string) (*Response, error) {
@@ -96,6 +123,9 @@ func (c *Client) refreshIfNeeded() error {
 }
 
 func (c *Client) do(method, path string, body []byte) (*Response, error) {
+	if resp, err, handled := c.previewJSONRequest(method, path, body); handled {
+		return resp, err
+	}
 	if err := c.refreshIfNeeded(); err != nil {
 		return nil, err
 	}
@@ -107,6 +137,9 @@ func (c *Client) doWithRetry(method, path string, body []byte, retried401 bool) 
 }
 
 func (c *Client) GetWithMaxResponseSize(path string, maxResponseSize int64) (*Response, error) {
+	if resp, err, handled := c.previewJSONRequest(http.MethodGet, path, nil); handled {
+		return resp, err
+	}
 	if err := c.refreshIfNeeded(); err != nil {
 		return nil, err
 	}
@@ -177,6 +210,12 @@ func readResponseBodyWithLimit(body io.ReadCloser, maxResponseSize int64) ([]byt
 // returning the Location header URL for download endpoints that return 302.
 // Includes token refresh and 401/429 retry logic (same as doWithRetry).
 func (c *Client) GetDownloadURL(path string) (string, error) {
+	if resp, err, handled := c.previewJSONRequest(http.MethodGet, path, nil); handled {
+		if err != nil {
+			return "", err
+		}
+		return string(resp.Body), nil
+	}
 	if err := c.refreshIfNeeded(); err != nil {
 		return "", err
 	}
@@ -249,6 +288,9 @@ func (c *Client) UploadFile(uploadURL string, filePath string) error {
 // UploadFileFromOffset uploads a file to a pre-signed URL starting at the given offset.
 // When offset > 0, the request sends only the remaining bytes and includes Content-Range.
 func (c *Client) UploadFileFromOffset(uploadURL string, filePath string, offset int64) error {
+	if err, handled := c.previewUploadFromOffset(uploadURL, filePath, offset); handled {
+		return err
+	}
 	if _, err := validatePresignedUploadURL(uploadURL); err != nil {
 		return err
 	}
@@ -347,6 +389,9 @@ func parseRateLimitReset(header http.Header, attempt int) time.Duration {
 // and data is the file content. Auth header and token refresh / retry logic
 // are handled identically to other Client methods.
 func (c *Client) UploadMultipart(path, fieldName, fileName string, data []byte) (*Response, error) {
+	if resp, err, handled := c.previewMultipart(path, fieldName, fileName, data); handled {
+		return resp, err
+	}
 	if err := c.refreshIfNeeded(); err != nil {
 		return nil, err
 	}
@@ -515,4 +560,144 @@ func allowedPresignedUploadHostSuffixes() []string {
 		return defaultAllowedPresignedUploadHostSuffixes
 	}
 	return allowed
+}
+
+func (o PreviewOptions) enabled() bool {
+	return o.DryRun || o.GenerateInput || strings.TrimSpace(o.PlanOutPath) != ""
+}
+
+func (c *Client) previewJSONRequest(method, path string, body []byte) (*Response, error, bool) {
+	if !c.PreviewEnabled() {
+		return nil, nil, false
+	}
+	plan, err := c.buildJSONPreviewPlan(method, path, body)
+	if err != nil {
+		return nil, err, true
+	}
+	resp, err := c.previewResponse(plan, body)
+	return resp, err, true
+}
+
+func (c *Client) previewMultipart(path, fieldName, fileName string, data []byte) (*Response, error, bool) {
+	if !c.PreviewEnabled() {
+		return nil, nil, false
+	}
+	plan := map[string]interface{}{
+		"dry_run":      true,
+		"method":       http.MethodPost,
+		"path":         path,
+		"url":          c.baseURL + path,
+		"content_type": "multipart/form-data",
+		"multipart": map[string]interface{}{
+			"field_name": fieldName,
+			"file_name":  fileName,
+			"file_size":  len(data),
+		},
+	}
+	if profile := strings.TrimSpace(c.preview.Profile); profile != "" {
+		plan["profile"] = profile
+	}
+	input := map[string]interface{}{
+		"field_name": fieldName,
+		"file_name":  fileName,
+		"file_size":  len(data),
+	}
+	resp, err := c.previewResponse(plan, mustMarshalJSON(input))
+	return resp, err, true
+}
+
+func (c *Client) previewUploadFromOffset(uploadURL, filePath string, offset int64) (error, bool) {
+	if !c.PreviewEnabled() {
+		return nil, false
+	}
+	plan := map[string]interface{}{
+		"dry_run":      true,
+		"method":       http.MethodPut,
+		"url":          uploadURL,
+		"content_type": "application/octet-stream",
+		"upload": map[string]interface{}{
+			"file_path": filePath,
+			"offset":    offset,
+		},
+	}
+	if profile := strings.TrimSpace(c.preview.Profile); profile != "" {
+		plan["profile"] = profile
+	}
+	_, err := c.previewResponse(plan, mustMarshalJSON(plan["upload"]))
+	return err, true
+}
+
+func (c *Client) previewResponse(plan map[string]interface{}, inputBody []byte) (*Response, error) {
+	if err := c.writePreviewPlan(plan); err != nil {
+		return nil, err
+	}
+	if c.preview != nil && c.preview.GenerateInput {
+		return &Response{StatusCode: http.StatusOK, Body: previewInputBody(inputBody)}, nil
+	}
+	body, err := json.Marshal(plan)
+	if err != nil {
+		return nil, fmt.Errorf("dry-run 결과 직렬화 실패: %w", err)
+	}
+	return &Response{StatusCode: http.StatusOK, Body: body}, nil
+}
+
+func (c *Client) buildJSONPreviewPlan(method, path string, body []byte) (map[string]interface{}, error) {
+	plan := map[string]interface{}{
+		"dry_run":      true,
+		"method":       method,
+		"path":         path,
+		"url":          c.baseURL + path,
+		"content_type": "application/json",
+	}
+	if profile := strings.TrimSpace(c.preview.Profile); profile != "" {
+		plan["profile"] = profile
+	}
+	if len(body) == 0 {
+		plan["body"] = map[string]interface{}{}
+		return plan, nil
+	}
+	plan["body_size"] = len(body)
+	if json.Valid(body) {
+		var payload interface{}
+		if err := json.Unmarshal(body, &payload); err != nil {
+			return nil, fmt.Errorf("dry-run 본문 파싱 실패: %w", err)
+		}
+		plan["body"] = payload
+		return plan, nil
+	}
+	plan["body_text"] = string(body)
+	return plan, nil
+}
+
+func (c *Client) writePreviewPlan(plan map[string]interface{}) error {
+	if c.preview == nil || strings.TrimSpace(c.preview.PlanOutPath) == "" {
+		return nil
+	}
+	if err := fileutil.WriteSecureJSON(c.preview.PlanOutPath, plan); err != nil {
+		return fmt.Errorf("plan 파일 저장 실패: %w", err)
+	}
+	return nil
+}
+
+func previewInputBody(body []byte) []byte {
+	if len(body) == 0 {
+		return []byte("{}")
+	}
+	if json.Valid(body) {
+		var payload interface{}
+		if err := json.Unmarshal(body, &payload); err == nil {
+			if data, err := json.Marshal(payload); err == nil {
+				return data
+			}
+		}
+	}
+	return mustMarshalJSON(map[string]interface{}{"input_text": string(body)})
+}
+
+func mustMarshalJSON(v interface{}) []byte {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return []byte("{}")
+	}
+	return data
 }

@@ -6,7 +6,10 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/physics91/naverworks-cli/internal/api"
+	"github.com/physics91/naverworks-cli/internal/auth"
 	"github.com/spf13/cobra"
 )
 
@@ -239,5 +242,100 @@ func TestStatFileForUpload_NonRegularFile(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "일반 파일만 허용합니다") {
 		t.Errorf("error should mention regular files only: %v", err)
+	}
+}
+
+func TestDoUploadFromResponse_PreviewSkipsUpload(t *testing.T) {
+	client := api.NewClient("https://example.com", &auth.Token{
+		AccessToken: "preview",
+		ExpiresAt:   time.Now().Add(time.Hour),
+	}, nil).WithPreview(api.PreviewOptions{DryRun: true})
+
+	body, err := doUploadFromResponse(client, []byte(`{"dry_run":true}`), "missing-file.txt")
+	if err != nil {
+		t.Fatalf("preview mode should skip upload follow-up: %v", err)
+	}
+	if !strings.Contains(string(body), `"next_step"`) {
+		t.Fatalf("preview upload plan should include next_step: %s", body)
+	}
+}
+
+func TestDoUploadFromResponse_GenerateInputPreservesBody(t *testing.T) {
+	origGenerateInput := generateInput
+	generateInput = true
+	t.Cleanup(func() {
+		generateInput = origGenerateInput
+	})
+
+	client := api.NewClient("https://example.com", &auth.Token{
+		AccessToken: "preview",
+		ExpiresAt:   time.Now().Add(time.Hour),
+	}, nil).WithPreview(api.PreviewOptions{GenerateInput: true})
+
+	body, err := doUploadFromResponse(client, []byte(`{"fileName":"sample.txt","fileSize":12}`), "sample.txt")
+	if err != nil {
+		t.Fatalf("generate-input preview should preserve original body: %v", err)
+	}
+	if strings.Contains(string(body), `"next_step"`) {
+		t.Fatalf("generate-input should not include upload next_step: %s", body)
+	}
+}
+
+func TestDoUploadFromResponse_PreviewRewritesPlanFile(t *testing.T) {
+	origPlanOutPath := planOutPath
+	planOutPath = t.TempDir() + "/upload-plan.json"
+	t.Cleanup(func() {
+		planOutPath = origPlanOutPath
+	})
+
+	client := api.NewClient("https://example.com", &auth.Token{
+		AccessToken: "preview",
+		ExpiresAt:   time.Now().Add(time.Hour),
+	}, nil).WithPreview(api.PreviewOptions{DryRun: true, PlanOutPath: planOutPath})
+
+	if _, err := doUploadFromResponse(client, []byte(`{"dry_run":true}`), "missing-file.txt"); err != nil {
+		t.Fatalf("preview mode should rewrite plan file: %v", err)
+	}
+	data, err := os.ReadFile(planOutPath)
+	if err != nil {
+		t.Fatalf("expected rewritten plan file: %v", err)
+	}
+	if !strings.Contains(string(data), `"next_step"`) {
+		t.Fatalf("rewritten plan file should include next_step: %s", data)
+	}
+}
+
+func TestDoUploadFromResponse_GenerateInputRewritesPlanFile(t *testing.T) {
+	origGenerateInput := generateInput
+	origPlanOutPath := planOutPath
+	generateInput = true
+	planOutPath = t.TempDir() + "/upload-plan.json"
+	t.Cleanup(func() {
+		generateInput = origGenerateInput
+		planOutPath = origPlanOutPath
+	})
+
+	if err := os.WriteFile(planOutPath, []byte(`{"dry_run":true}`), 0600); err != nil {
+		t.Fatalf("failed to seed plan file: %v", err)
+	}
+
+	client := api.NewClient("https://example.com", &auth.Token{
+		AccessToken: "preview",
+		ExpiresAt:   time.Now().Add(time.Hour),
+	}, nil).WithPreview(api.PreviewOptions{GenerateInput: true, PlanOutPath: planOutPath})
+
+	body, err := doUploadFromResponse(client, []byte(`{"fileName":"sample.txt","fileSize":12}`), "sample.txt")
+	if err != nil {
+		t.Fatalf("generate-input preview should rewrite plan file: %v", err)
+	}
+	if strings.Contains(string(body), `"next_step"`) {
+		t.Fatalf("stdout should remain pure generated input: %s", body)
+	}
+	data, err := os.ReadFile(planOutPath)
+	if err != nil {
+		t.Fatalf("expected rewritten plan file: %v", err)
+	}
+	if !strings.Contains(string(data), `"next_step"`) {
+		t.Fatalf("rewritten plan file should include next_step: %s", data)
 	}
 }

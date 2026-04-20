@@ -13,11 +13,11 @@ var scimCmd = &cobra.Command{
 }
 
 func loadScimService() (*api.ScimService, error) {
-	cfg, _, err := loadActiveConfig()
+	cfg, name, err := loadActiveConfig()
 	if err != nil {
 		return nil, err
 	}
-	client, err := buildScimClient(cfg)
+	client, err := buildScimClient(cfg, name)
 	if err != nil {
 		return nil, err
 	}

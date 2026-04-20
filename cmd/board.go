@@ -330,10 +330,11 @@ var boardCreateAttachmentCmd = &cobra.Command{
 			return err
 		}
 
-		if err := doUploadFromResponse(client, resp.Body, filePath); err != nil {
+		respBody, err := doUploadFromResponse(client, resp.Body, filePath)
+		if err != nil {
 			return err
 		}
-		printBody(resp.Body)
+		printBody(respBody)
 		return nil
 	},
 }
@@ -425,10 +426,11 @@ var boardCreateCommentAttachmentCmd = &cobra.Command{
 			return err
 		}
 
-		if err := doUploadFromResponse(client, resp.Body, filePath); err != nil {
+		respBody, err := doUploadFromResponse(client, resp.Body, filePath)
+		if err != nil {
 			return err
 		}
-		printBody(resp.Body)
+		printBody(respBody)
 		return nil
 	},
 }

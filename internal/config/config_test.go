@@ -168,6 +168,46 @@ func TestProfileConfig_EnvOverride(t *testing.T) {
 	}
 }
 
+func TestProfileConfig_ActiveProfile_TrimsOverridesAndKeepsPriority(t *testing.T) {
+	t.Setenv("NW_PROFILE", " work ")
+
+	cfg := NewProfileConfig()
+	cfg.SetCurrentProfile(" default ")
+	cfg.EnsureProfile("default").ClientID = "def-id"
+	cfg.EnsureProfile("work").ClientID = "work-id"
+	cfg.EnsureProfile("staging").ClientID = "stg-id"
+
+	p, name, err := cfg.ActiveProfile(" staging ")
+	if err != nil {
+		t.Fatalf("ActiveProfile failed: %v", err)
+	}
+	if name != "staging" {
+		t.Fatalf("name = %q, want staging", name)
+	}
+	if p.ClientID != "stg-id" {
+		t.Fatalf("client_id = %q, want stg-id", p.ClientID)
+	}
+}
+
+func TestProfileConfig_ActiveProfile_IgnoresWhitespaceOnlyOverrides(t *testing.T) {
+	t.Setenv("NW_PROFILE", "   ")
+
+	cfg := NewProfileConfig()
+	cfg.SetCurrentProfile(" work ")
+	cfg.EnsureProfile("work").ClientID = "work-id"
+
+	p, name, err := cfg.ActiveProfile("   ")
+	if err != nil {
+		t.Fatalf("ActiveProfile failed: %v", err)
+	}
+	if name != "work" {
+		t.Fatalf("name = %q, want work", name)
+	}
+	if p.ClientID != "work-id" {
+		t.Fatalf("client_id = %q, want work-id", p.ClientID)
+	}
+}
+
 func TestConfigPathFromDir(t *testing.T) {
 	t.Run("absolute config dir", func(t *testing.T) {
 		got, err := configPathFromDir("/tmp/naverworks-test")

@@ -306,7 +306,7 @@ func loadActiveConfig() (*config.Config, string, error) {
 }
 
 func selectedProfileName(pc *config.ProfileConfig) (string, bool) {
-	name := pc.CurrentProfile
+	name := strings.TrimSpace(pc.CurrentProfile)
 	explicit := false
 	if name == "" {
 		name = "default"

@@ -44,6 +44,43 @@ func TestLoadActiveConfig_MissingExplicitProfileWithoutEnvConfigStillErrors(t *t
 	}
 }
 
+func TestSelectedProfileName_TrimsCurrentProfileWhenNoOverrides(t *testing.T) {
+	originalProfileName := profileName
+	profileName = ""
+	t.Cleanup(func() {
+		profileName = originalProfileName
+	})
+
+	pc := &config.ProfileConfig{CurrentProfile: " work "}
+
+	name, explicit := selectedProfileName(pc)
+	if name != "work" {
+		t.Fatalf("name = %q, want work", name)
+	}
+	if explicit {
+		t.Fatal("expected current profile to remain implicit")
+	}
+}
+
+func TestSelectedProfileName_IgnoresWhitespaceOnlyOverrides(t *testing.T) {
+	originalProfileName := profileName
+	profileName = "   "
+	t.Cleanup(func() {
+		profileName = originalProfileName
+	})
+	t.Setenv("NW_PROFILE", "   ")
+
+	pc := &config.ProfileConfig{CurrentProfile: " work "}
+
+	name, explicit := selectedProfileName(pc)
+	if name != "work" {
+		t.Fatalf("name = %q, want work", name)
+	}
+	if explicit {
+		t.Fatal("expected whitespace-only overrides to stay implicit")
+	}
+}
+
 func TestJourneyConfigSet_StdinLargeValue(t *testing.T) {
 	h := clitest.NewHarness(t)
 	largeValue := strings.Repeat("a", 70000)

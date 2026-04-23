@@ -201,15 +201,15 @@ func (pc *ProfileConfig) SetCurrentProfile(name string) {
 // ActiveProfile returns the active profile by priority:
 // flagProfile > NW_PROFILE env > current_profile > "default"
 func (pc *ProfileConfig) ActiveProfile(flagProfile string) (*Config, string, error) {
-	name := pc.CurrentProfile
+	name := strings.TrimSpace(pc.CurrentProfile)
 	if name == "" {
 		name = "default"
 	}
 
-	if envProfile := os.Getenv("NW_PROFILE"); envProfile != "" {
+	if envProfile := strings.TrimSpace(os.Getenv("NW_PROFILE")); envProfile != "" {
 		name = envProfile
 	}
-	if flagProfile != "" {
+	if flagProfile = strings.TrimSpace(flagProfile); flagProfile != "" {
 		name = flagProfile
 	}
 

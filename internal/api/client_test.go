@@ -719,7 +719,6 @@ func TestClient_UploadFileFromOffset_RejectsInvalidOffset(t *testing.T) {
 		offset int64
 	}{
 		{name: "negative", offset: -1},
-		{name: "equal to file size", offset: 5},
 		{name: "greater than file size", offset: 6},
 	}
 
@@ -742,6 +741,33 @@ func TestClient_UploadFileFromOffset_RejectsInvalidOffset(t *testing.T) {
 				t.Fatalf("expected no upload request, got %d", requestCount)
 			}
 		})
+	}
+}
+
+func TestClient_UploadFileFromOffset_AtEOFSkipsNetwork(t *testing.T) {
+	tmp, err := os.CreateTemp("", "upload-eof-offset-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmp.Name())
+	if _, err := tmp.WriteString("hello"); err != nil {
+		t.Fatal(err)
+	}
+	if err := tmp.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	var requestCount int32
+	client, uploadURL := newUploadTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&requestCount, 1)
+		w.WriteHeader(http.StatusOK)
+	})
+
+	if err := client.UploadFileFromOffset(uploadURL, tmp.Name(), 5); err != nil {
+		t.Fatalf("UploadFileFromOffset failed at EOF: %v", err)
+	}
+	if atomic.LoadInt32(&requestCount) != 0 {
+		t.Fatalf("expected no upload request at EOF, got %d", requestCount)
 	}
 }
 
@@ -862,6 +888,30 @@ func TestClient_DownloadFile(t *testing.T) {
 	}
 	if headers.Get("Content-Disposition") != `attachment; filename="test.png"` {
 		t.Errorf("unexpected Content-Disposition: %q", headers.Get("Content-Disposition"))
+	}
+}
+
+func TestClient_DownloadFile_AllowsLargeBinaryPayload(t *testing.T) {
+	largeBody := []byte(strings.Repeat("x", maxAPIResponseSize+1024))
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.WriteHeader(200)
+		w.Write(largeBody)
+	}))
+	defer server.Close()
+
+	token := &auth.Token{AccessToken: "test-token", ExpiresAt: time.Now().Add(1 * time.Hour)}
+	client := NewClient(server.URL, token, nil)
+
+	data, headers, err := client.DownloadFile("/files/large.bin")
+	if err != nil {
+		t.Fatalf("unexpected error for large binary download: %v", err)
+	}
+	if len(data) != len(largeBody) {
+		t.Fatalf("downloaded %d bytes, want %d", len(data), len(largeBody))
+	}
+	if headers.Get("Content-Type") != "application/octet-stream" {
+		t.Fatalf("Content-Type = %q, want application/octet-stream", headers.Get("Content-Type"))
 	}
 }
 

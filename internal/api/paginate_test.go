@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -63,6 +64,39 @@ func TestPaginateAll_MultiplePages(t *testing.T) {
 	}
 	if len(items) != 2 {
 		t.Errorf("expected 2 items, got %d", len(items))
+	}
+}
+
+func TestPaginateAll_RepeatedNextCursorReturnsError(t *testing.T) {
+	callCount := 0
+	fetcher := func(cursor string) (*Response, error) {
+		callCount++
+		switch callCount {
+		case 1:
+			return &Response{
+				StatusCode: 200,
+				Body:       []byte(`{"items":[{"id":"1"}],"responseMetaData":{"nextCursor":"loop"}}`),
+			}, nil
+		case 2:
+			return &Response{
+				StatusCode: 200,
+				Body:       []byte(`{"items":[{"id":"2"}],"responseMetaData":{"nextCursor":"loop"}}`),
+			}, nil
+		default:
+			t.Fatalf("unexpected extra fetch for cursor %q", cursor)
+			return nil, nil
+		}
+	}
+
+	_, err := PaginateAll(fetcher, "items")
+	if err == nil {
+		t.Fatal("expected repeated cursor error")
+	}
+	if !strings.Contains(err.Error(), "loop") {
+		t.Fatalf("error = %v, want cursor value in error", err)
+	}
+	if callCount != 2 {
+		t.Fatalf("expected 2 fetches before loop detection, got %d", callCount)
 	}
 }
 

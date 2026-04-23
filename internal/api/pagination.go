@@ -52,6 +52,7 @@ type FetchFunc func(cursor string) (*Response, error)
 func PaginateAll(fetch FetchFunc, itemsKey string) (json.RawMessage, error) {
 	allItems := make([]json.RawMessage, 0)
 	cursor := ""
+	seenCursors := make(map[string]struct{})
 
 	for {
 		resp, err := fetch(cursor)
@@ -72,10 +73,15 @@ func PaginateAll(fetch FetchFunc, itemsKey string) (json.RawMessage, error) {
 			allItems = append(allItems, pageItems...)
 		}
 
-		cursor = extractNextCursorFromParsed(raw)
-		if cursor == "" {
+		nextCursor := extractNextCursorFromParsed(raw)
+		if nextCursor == "" {
 			break
 		}
+		if _, exists := seenCursors[nextCursor]; exists {
+			return nil, fmt.Errorf("페이지네이션 next cursor 순환 감지: %q", nextCursor)
+		}
+		seenCursors[nextCursor] = struct{}{}
+		cursor = nextCursor
 	}
 
 	return json.Marshal(allItems)

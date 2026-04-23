@@ -199,6 +199,15 @@ func (c *Client) doWithRetryAndMaxResponseSize(method, path string, body []byte,
 }
 
 func readResponseBodyWithLimit(body io.ReadCloser, maxResponseSize int64) ([]byte, error) {
+	if maxResponseSize <= 0 {
+		respBody, err := io.ReadAll(body)
+		body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("응답 읽기 실패: %w", err)
+		}
+		return respBody, nil
+	}
+
 	respBody, err := io.ReadAll(io.LimitReader(body, maxResponseSize+1))
 	body.Close()
 	if err != nil {
@@ -298,9 +307,6 @@ func (c *Client) UploadFileFromOffset(uploadURL string, filePath string, offset 
 	if err, handled := c.previewUploadFromOffset(uploadURL, filePath, offset); handled {
 		return err
 	}
-	if _, err := validatePresignedUploadURL(uploadURL); err != nil {
-		return err
-	}
 
 	stat, err := os.Stat(filePath)
 	if err != nil {
@@ -310,8 +316,14 @@ func (c *Client) UploadFileFromOffset(uploadURL string, filePath string, offset 
 		return fmt.Errorf("일반 파일만 허용합니다: %s", filePath)
 	}
 	size := stat.Size()
-	if offset < 0 || offset > size || (size > 0 && offset == size) {
+	if offset < 0 || offset > size {
 		return fmt.Errorf("유효하지 않은 업로드 offset: %d (file size: %d)", offset, size)
+	}
+	if offset == size {
+		return nil
+	}
+	if _, err := validatePresignedUploadURL(uploadURL); err != nil {
+		return err
 	}
 
 	f, err := os.Open(filePath)
@@ -469,13 +481,20 @@ func (c *Client) uploadMultipartWithRetry(path, fieldName, fileName string, data
 // with HTTP headers. This is useful for binary file downloads where the
 // caller needs access to Content-Type, Content-Disposition, etc.
 func (c *Client) DownloadFile(path string) ([]byte, http.Header, error) {
+	return c.DownloadFileWithMaxResponseSize(path, 0)
+}
+
+// DownloadFileWithMaxResponseSize performs a GET request for binary downloads
+// with a caller-specified response size limit. A non-positive limit disables
+// the size cap.
+func (c *Client) DownloadFileWithMaxResponseSize(path string, maxResponseSize int64) ([]byte, http.Header, error) {
 	if err := c.refreshIfNeeded(); err != nil {
 		return nil, nil, err
 	}
-	return c.downloadFileWithRetry(path, false)
+	return c.downloadFileWithRetry(path, false, maxResponseSize)
 }
 
-func (c *Client) downloadFileWithRetry(path string, retried401 bool) ([]byte, http.Header, error) {
+func (c *Client) downloadFileWithRetry(path string, retried401 bool, maxResponseSize int64) ([]byte, http.Header, error) {
 	for attempt := 0; attempt <= maxRateLimitRetries; attempt++ {
 		req, err := http.NewRequest("GET", c.baseURL+path, nil)
 		if err != nil {
@@ -487,7 +506,7 @@ func (c *Client) downloadFileWithRetry(path string, retried401 bool) ([]byte, ht
 		if err != nil {
 			return nil, nil, fmt.Errorf("네트워크 에러: %w", err)
 		}
-		respBody, err := readResponseBodyWithLimit(resp.Body, maxAPIResponseSize)
+		respBody, err := readResponseBodyWithLimit(resp.Body, maxResponseSize)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -497,7 +516,7 @@ func (c *Client) downloadFileWithRetry(path string, retried401 bool) ([]byte, ht
 			if err := c.refreshFn(c.token); err != nil {
 				return nil, nil, fmt.Errorf("토큰 갱신 실패: %w", err)
 			}
-			return c.downloadFileWithRetry(path, true)
+			return c.downloadFileWithRetry(path, true, maxResponseSize)
 
 		case resp.StatusCode == 429:
 			if attempt == maxRateLimitRetries {

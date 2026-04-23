@@ -29,6 +29,7 @@
   "files": [
     "bin/",
     "install.js",
+    "platform.js",
     "package.json"
   ],
   "os": [

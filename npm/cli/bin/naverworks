@@ -3,13 +3,15 @@
 const { execFileSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
+const { getSidecarBinaryPath, resolvePlatformBinaryPath } = require("../platform");
 
-const ext = process.platform === "win32" ? ".exe" : "";
-const binary = path.join(__dirname, `naverworks${ext}`);
+const sidecarBinary = getSidecarBinaryPath(__dirname);
+const { binaryPath: packagedBinary } = resolvePlatformBinaryPath(path.join(__dirname, ".."));
+const binary = fs.existsSync(sidecarBinary) ? sidecarBinary : packagedBinary;
 
-if (!fs.existsSync(binary)) {
+if (!binary || !fs.existsSync(binary)) {
   console.error("naverworks 바이너리가 설치되지 않았습니다.");
-  console.error("npm install naverworks 를 다시 실행해주세요.");
+  console.error("npm 또는 bun으로 naverworks 패키지를 다시 설치해주세요.");
   process.exit(1);
 }
 

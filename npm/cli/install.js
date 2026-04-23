@@ -1,44 +1,27 @@
 const fs = require("fs");
 const path = require("path");
+const {
+  getPlatformPackage,
+  getSupportedPlatforms,
+  getSidecarBinaryPath,
+  resolvePlatformBinaryPath,
+} = require("./platform");
 
-const PLATFORM_MAP = {
-  "linux-x64": "@physics91org/linux-x64",
-  "linux-arm64": "@physics91org/linux-arm64",
-  "darwin-x64": "@physics91org/darwin-x64",
-  "darwin-arm64": "@physics91org/darwin-arm64",
-  "win32-x64": "@physics91org/win32-x64",
-};
-
-function getPlatformPackage() {
-  const key = `${process.platform}-${process.arch}`;
-  const pkg = PLATFORM_MAP[key];
+function install() {
+  const pkg = getPlatformPackage();
   if (!pkg) {
     console.error(
       `지원하지 않는 플랫폼입니다: ${process.platform}-${process.arch}`
     );
-    console.error(`지원 플랫폼: ${Object.keys(PLATFORM_MAP).join(", ")}`);
+    console.error(`지원 플랫폼: ${getSupportedPlatforms().join(", ")}`);
     process.exit(1);
   }
-  return pkg;
-}
 
-function getBinaryPath(pkg) {
-  const ext = process.platform === "win32" ? ".exe" : "";
-  try {
-    const pkgDir = path.dirname(require.resolve(`${pkg}/package.json`));
-    return path.join(pkgDir, `naverworks${ext}`);
-  } catch {
-    return null;
-  }
-}
-
-function install() {
-  const pkg = getPlatformPackage();
-  const binaryPath = getBinaryPath(pkg);
+  const { binaryPath } = resolvePlatformBinaryPath(__dirname);
 
   if (!binaryPath || !fs.existsSync(binaryPath)) {
     console.error(`바이너리를 찾을 수 없습니다: ${pkg}`);
-    console.error("npm install을 다시 실행해주세요.");
+    console.error("npm 또는 bun으로 패키지를 다시 설치해주세요.");
     process.exit(1);
   }
 
@@ -47,8 +30,7 @@ function install() {
     fs.mkdirSync(binDir, { recursive: true });
   }
 
-  const ext = process.platform === "win32" ? ".exe" : "";
-  const dest = path.join(binDir, `naverworks${ext}`);
+  const dest = getSidecarBinaryPath(binDir);
 
   fs.copyFileSync(binaryPath, dest);
   fs.chmodSync(dest, 0o755);

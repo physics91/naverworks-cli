@@ -14,12 +14,32 @@ npm install -g naverworks
 naverworks version
 ```
 
+## bun
+
+Bun으로도 전역 설치할 수 있습니다.
+
+```bash
+bun add -g naverworks
+naverworks version
+```
+
+현재 전역 명령은 Node 호환 런처를 사용합니다.
+Node 없이 Bun만 쓰는 환경이면 아래 `bunx --bun` 또는 설치 스크립트를 권장합니다.
+
 ## npx
 
 전역 설치 없이 한 번 실행할 때 편합니다.
 
 ```bash
 npx naverworks version
+```
+
+## bunx
+
+Bun으로 한 번 실행할 때는 `bunx`를 사용하면 됩니다.
+
+```bash
+bunx --bun naverworks version
 ```
 
 ## 설치 스크립트

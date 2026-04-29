@@ -28,13 +28,18 @@ GitHub Docs 기준으로, 위키는 GitHub 웹 UI에서 초기 페이지를 한 
 git clone https://github.com/physics91/naverworks-cli.wiki.git /tmp/naverworks-cli.wiki
 ```
 
-4. 원본 문서 복사
+4. 변경된 문서 점검
+
+퍼블리시 전에 [Wiki Review Checklist](wiki/Wiki-Review-Checklist.md)를 기준으로 변경된 문서를 확인합니다.
+특히 제목 계층, 첫 문단 요약, 링크 텍스트, 목록/표 구조를 확인합니다.
+
+5. 원본 문서 복사
 
 ```bash
 cp docs/wiki/* /tmp/naverworks-cli.wiki/
 ```
 
-5. wiki 저장소에서 커밋 후 푸시
+6. wiki 저장소에서 커밋 후 푸시
 
 ```bash
 cd /tmp/naverworks-cli.wiki
@@ -54,6 +59,8 @@ git push origin master
 - `Configuration-Keys-and-Environment-Variables.md`
 - `Output-and-Pagination.md`
 - `Domain-Command-Guide.md`
+- `Writing-Guide.md`
+- `Wiki-Review-Checklist.md`
 - `SCIM.md`
 - `Troubleshooting.md`
 - `_Sidebar.md`

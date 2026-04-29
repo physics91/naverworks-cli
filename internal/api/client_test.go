@@ -570,6 +570,41 @@ func TestValidatePresignedUploadURL_RejectsUnknownHost(t *testing.T) {
 	}
 }
 
+func TestValidatePresignedUploadURL_RejectsAmazonAWSByDefault(t *testing.T) {
+	_, err := validatePresignedUploadURL("https://s3.ap-northeast-2.amazonaws.com/upload")
+	if err == nil {
+		t.Fatal("amazonaws upload host should be rejected by default")
+	}
+	if !strings.Contains(err.Error(), "허용되지 않는 업로드 호스트") {
+		t.Fatalf("expected disallowed upload host error, got: %v", err)
+	}
+}
+
+func TestValidatePresignedUploadURL_RejectsCloudFrontByDefault(t *testing.T) {
+	_, err := validatePresignedUploadURL("https://d111111abcdef8.cloudfront.net/upload")
+	if err == nil {
+		t.Fatal("cloudfront upload host should be rejected by default")
+	}
+	if !strings.Contains(err.Error(), "허용되지 않는 업로드 호스트") {
+		t.Fatalf("expected disallowed upload host error, got: %v", err)
+	}
+}
+
+func TestValidatePresignedUploadURL_AllowsCustomHostOverride(t *testing.T) {
+	t.Setenv("NW_UPLOAD_ALLOWED_HOSTS", "amazonaws.com, cloudfront.net")
+
+	tests := []string{
+		"https://s3.ap-northeast-2.amazonaws.com/upload",
+		"https://d111111abcdef8.cloudfront.net/upload",
+	}
+
+	for _, rawURL := range tests {
+		if _, err := validatePresignedUploadURL(rawURL); err != nil {
+			t.Fatalf("custom upload host override should allow %q: %v", rawURL, err)
+		}
+	}
+}
+
 func TestClient_UploadFile_RejectsLoopbackUploadURL(t *testing.T) {
 	tmp, err := os.CreateTemp("", "upload-file-*")
 	if err != nil {

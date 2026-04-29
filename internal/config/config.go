@@ -177,6 +177,20 @@ type ProfileConfig struct {
 	Profiles       map[string]*Config `json:"profiles"`
 }
 
+func (pc *ProfileConfig) normalizeProfiles() {
+	if pc.Profiles == nil {
+		pc.Profiles = make(map[string]*Config)
+	}
+	for name, profile := range pc.Profiles {
+		if profile == nil {
+			pc.Profiles[name] = &Config{}
+		}
+	}
+	if strings.TrimSpace(pc.CurrentProfile) == "" {
+		pc.CurrentProfile = "default"
+	}
+}
+
 func NewProfileConfig() *ProfileConfig {
 	return &ProfileConfig{
 		CurrentProfile: "default",
@@ -185,10 +199,8 @@ func NewProfileConfig() *ProfileConfig {
 }
 
 func (pc *ProfileConfig) EnsureProfile(name string) *Config {
-	if pc.Profiles == nil {
-		pc.Profiles = make(map[string]*Config)
-	}
-	if _, ok := pc.Profiles[name]; !ok {
+	pc.normalizeProfiles()
+	if _, ok := pc.Profiles[name]; !ok || pc.Profiles[name] == nil {
 		pc.Profiles[name] = &Config{}
 	}
 	return pc.Profiles[name]
@@ -201,6 +213,8 @@ func (pc *ProfileConfig) SetCurrentProfile(name string) {
 // ActiveProfile returns the active profile by priority:
 // flagProfile > NW_PROFILE env > current_profile > "default"
 func (pc *ProfileConfig) ActiveProfile(flagProfile string) (*Config, string, error) {
+	pc.normalizeProfiles()
+
 	name := strings.TrimSpace(pc.CurrentProfile)
 	if name == "" {
 		name = "default"
@@ -216,6 +230,10 @@ func (pc *ProfileConfig) ActiveProfile(flagProfile string) (*Config, string, err
 	profile, ok := pc.Profiles[name]
 	if !ok {
 		return nil, name, fmt.Errorf("프로필 '%s'을(를) 찾을 수 없습니다", name)
+	}
+	if profile == nil {
+		profile = &Config{}
+		pc.Profiles[name] = profile
 	}
 	return profile, name, nil
 }
@@ -234,6 +252,7 @@ func LoadProfileConfig(path string) (*ProfileConfig, error) {
 	// Try profile format first
 	pc := &ProfileConfig{}
 	if err := json.Unmarshal(data, pc); err == nil && pc.Profiles != nil && len(pc.Profiles) > 0 {
+		pc.normalizeProfiles()
 		return pc, nil
 	}
 
@@ -244,6 +263,7 @@ func LoadProfileConfig(path string) (*ProfileConfig, error) {
 	}
 	pc = NewProfileConfig()
 	pc.Profiles["default"] = legacy
+	pc.normalizeProfiles()
 	return pc, nil
 }
 

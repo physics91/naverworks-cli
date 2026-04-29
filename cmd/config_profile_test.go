@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"encoding/json"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -154,5 +156,69 @@ func TestJourneyConfigSet_StdinOversizeRejected(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "stdin 읽기 실패") || !strings.Contains(err.Error(), "너무 큽니다") {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestJourneyConfigList_RepairsNilActiveProfile(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	cfgDir := filepath.Join(tmpDir, ".config", "naverworks")
+	if err := os.MkdirAll(cfgDir, 0700); err != nil {
+		t.Fatalf("mkdir failed: %v", err)
+	}
+	if err := os.WriteFile(
+		filepath.Join(cfgDir, "config.json"),
+		[]byte(`{"current_profile":"default","profiles":{"default":null}}`),
+		0600,
+	); err != nil {
+		t.Fatalf("write config failed: %v", err)
+	}
+
+	h := clitest.FromCurrentEnv(t)
+	result, err := h.Run([]string{"config", "list"}, newRootCommandRunner(t))
+	if err != nil {
+		t.Fatalf("config list failed: %v", err)
+	}
+
+	var payload map[string]string
+	if err := json.Unmarshal([]byte(strings.TrimSpace(result.Stdout)), &payload); err != nil {
+		t.Fatalf("config list output is not valid JSON: %v\noutput: %q", err, result.Stdout)
+	}
+	if payload["client_id"] != "" {
+		t.Fatalf("client_id = %q, want empty", payload["client_id"])
+	}
+}
+
+func TestJourneyConfigSet_RepairsNilActiveProfile(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	cfgDir := filepath.Join(tmpDir, ".config", "naverworks")
+	if err := os.MkdirAll(cfgDir, 0700); err != nil {
+		t.Fatalf("mkdir failed: %v", err)
+	}
+	if err := os.WriteFile(
+		filepath.Join(cfgDir, "config.json"),
+		[]byte(`{"current_profile":"default","profiles":{"default":null}}`),
+		0600,
+	); err != nil {
+		t.Fatalf("write config failed: %v", err)
+	}
+
+	h := clitest.FromCurrentEnv(t)
+	if _, err := h.Run([]string{"config", "set", "client_id", "fixed-id"}, newRootCommandRunner(t)); err != nil {
+		t.Fatalf("config set failed: %v", err)
+	}
+
+	pc, err := config.LoadProfileConfig(config.DefaultPath())
+	if err != nil {
+		t.Fatalf("LoadProfileConfig failed: %v", err)
+	}
+	profile, name, err := pc.ActiveProfile("")
+	if err != nil {
+		t.Fatalf("ActiveProfile failed: %v", err)
+	}
+	if name != "default" {
+		t.Fatalf("active profile = %q, want default", name)
+	}
+	if profile.ClientID != "fixed-id" {
+		t.Fatalf("client_id = %q, want fixed-id", profile.ClientID)
 	}
 }

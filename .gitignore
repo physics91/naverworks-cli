@@ -28,3 +28,4 @@ docs/reviews/
 .codex
 .kilocode/
 .playwright-mcp/
+.worktrees/

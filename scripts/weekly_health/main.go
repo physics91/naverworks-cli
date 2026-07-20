@@ -146,7 +146,10 @@ func buildReport(now time.Time, checks []checkStatus, updates []dependencyUpdate
 		rep.IssueLabels = []string{"ops-error"}
 		return rep
 	}
-	if len(updates) > 0 {
+	// Only direct module drift opens a health-check issue.
+	// Indirect-only noise (e.g. unused transitive tools) is reported in markdown
+	// when an issue already exists for directs, but does not create issues alone.
+	if len(directUpdates(updates)) > 0 {
 		rep.HasIssue = true
 		rep.ShouldFailWorkflow = false
 		// Fixed title (no date) so github_issue can reuse one open issue.
@@ -154,6 +157,16 @@ func buildReport(now time.Time, checks []checkStatus, updates []dependencyUpdate
 		rep.IssueLabels = []string{"health-check"}
 	}
 	return rep
+}
+
+func directUpdates(updates []dependencyUpdate) []dependencyUpdate {
+	out := make([]dependencyUpdate, 0, len(updates))
+	for _, update := range updates {
+		if update.Type == "direct" {
+			out = append(out, update)
+		}
+	}
+	return out
 }
 
 func hasCheckFailures(checks []checkStatus) bool {
@@ -201,12 +214,41 @@ func renderMarkdown(rep report) string {
 		return b.String()
 	}
 
-	b.WriteString("| Module | Current | Latest | Type |\n")
-	b.WriteString("| --- | --- | --- | --- |\n")
-	for _, update := range rep.OutdatedModules {
-		b.WriteString(fmt.Sprintf("| `%s` | `%s` | `%s` | `%s` |\n", update.Path, update.Current, update.Latest, update.Type))
+	directs := directUpdates(rep.OutdatedModules)
+	indirects := indirectUpdates(rep.OutdatedModules)
+
+	if len(directs) > 0 {
+		b.WriteString("#### Direct\n\n")
+		b.WriteString("| Module | Current | Latest | Type |\n")
+		b.WriteString("| --- | --- | --- | --- |\n")
+		for _, update := range directs {
+			b.WriteString(fmt.Sprintf("| `%s` | `%s` | `%s` | `%s` |\n", update.Path, update.Current, update.Latest, update.Type))
+		}
+		b.WriteString("\n")
+	} else {
+		b.WriteString("direct 모듈 업데이트 없음.\n\n")
+	}
+
+	if len(indirects) > 0 {
+		b.WriteString("#### Indirect (informational)\n\n")
+		b.WriteString("indirect-only 변경은 health-check 이슈를 생성하지 않습니다.\n\n")
+		b.WriteString("| Module | Current | Latest | Type |\n")
+		b.WriteString("| --- | --- | --- | --- |\n")
+		for _, update := range indirects {
+			b.WriteString(fmt.Sprintf("| `%s` | `%s` | `%s` | `%s` |\n", update.Path, update.Current, update.Latest, update.Type))
+		}
 	}
 	return b.String()
+}
+
+func indirectUpdates(updates []dependencyUpdate) []dependencyUpdate {
+	out := make([]dependencyUpdate, 0, len(updates))
+	for _, update := range updates {
+		if update.Type == "indirect" {
+			out = append(out, update)
+		}
+	}
+	return out
 }
 
 func writeReportJSON(path string, rep report) error {

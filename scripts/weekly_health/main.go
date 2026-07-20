@@ -139,7 +139,6 @@ func buildReport(now time.Time, checks []checkStatus, updates []dependencyUpdate
 		OutdatedModules: updates,
 	}
 
-	date := now.Format("2006-01-02")
 	if hasCheckFailures(checks) {
 		rep.HasIssue = true
 		rep.ShouldFailWorkflow = true
@@ -150,7 +149,8 @@ func buildReport(now time.Time, checks []checkStatus, updates []dependencyUpdate
 	if len(updates) > 0 {
 		rep.HasIssue = true
 		rep.ShouldFailWorkflow = false
-		rep.IssueTitle = fmt.Sprintf("[Weekly Health] %s: Dependency updates available", date)
+		// Fixed title (no date) so github_issue can reuse one open issue.
+		rep.IssueTitle = "[Weekly Health] Dependency updates available"
 		rep.IssueLabels = []string{"health-check"}
 	}
 	return rep

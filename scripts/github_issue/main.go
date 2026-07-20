@@ -14,6 +14,7 @@ import (
 )
 
 type issue struct {
+	Number  int    `json:"number"`
 	Title   string `json:"title"`
 	HTMLURL string `json:"html_url"`
 }
@@ -58,7 +59,11 @@ func main() {
 		fatalf("기존 이슈 조회 실패: %v", err)
 	}
 	if existing != nil {
-		fmt.Printf("existing %s\n", existing.HTMLURL)
+		updated, err := updateIssueBody(client, *repo, resolvedToken, existing.Number, string(body))
+		if err != nil {
+			fatalf("이슈 본문 갱신 실패: %v", err)
+		}
+		fmt.Printf("updated %s\n", updated.HTMLURL)
 		return
 	}
 
@@ -144,6 +149,48 @@ func createIssue(client *http.Client, repo, token, title, body string, labels []
 		return nil, err
 	}
 	return &created, nil
+}
+
+func updateIssueBody(client *http.Client, repo, token string, number int, body string) (*issue, error) {
+	if number <= 0 {
+		return nil, fmt.Errorf("invalid issue number: %d", number)
+	}
+	parts := strings.SplitN(repo, "/", 2)
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid repo: %s", repo)
+	}
+
+	payload := struct {
+		Body string `json:"body"`
+	}{Body: body}
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	endpoint := fmt.Sprintf("https://api.github.com/repos/%s/%s/issues/%d", parts[0], parts[1], number)
+	req, err := http.NewRequest(http.MethodPatch, endpoint, bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	setGitHubHeaders(req, token)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
+		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(respBody)))
+	}
+
+	var updated issue
+	if err := json.NewDecoder(resp.Body).Decode(&updated); err != nil {
+		return nil, err
+	}
+	return &updated, nil
 }
 
 func splitLabels(raw string) []string {

@@ -59,7 +59,7 @@ func TestBuildReportClassifiesDependencyUpdate(t *testing.T) {
 	if !rep.HasIssue || rep.ShouldFailWorkflow {
 		t.Fatalf("expected non-failing issue report, got %+v", rep)
 	}
-	if rep.IssueTitle != "[Weekly Health] 2026-04-20: Dependency updates available" {
+	if rep.IssueTitle != "[Weekly Health] Dependency updates available" {
 		t.Fatalf("unexpected title: %q", rep.IssueTitle)
 	}
 }

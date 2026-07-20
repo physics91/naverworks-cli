@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 const maxMailAttachmentResponseSize = 40 << 20
@@ -52,11 +53,11 @@ func (s *MailService) PatchMail(userID, mailID string, body []byte) (*Response, 
 }
 
 // MoveMail moves a mail into another folder via PATCH body folderId.
-// Official mail-update-patch documents folderId as integer; numeric strings are encoded as numbers.
+// Official mail-update-patch documents folderId as integer.
 func (s *MailService) MoveMail(userID, mailID, folderID string) (*Response, error) {
-	var folderValue interface{} = folderID
-	if n, err := strconv.ParseInt(folderID, 10, 64); err == nil {
-		folderValue = n
+	folderValue, err := strconv.ParseInt(strings.TrimSpace(folderID), 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("folderId는 정수여야 합니다: %q", folderID)
 	}
 	return s.client.PatchJSON(fmt.Sprintf("/users/%s/mail/%s", url.PathEscape(userID), url.PathEscape(mailID)), map[string]interface{}{
 		"folderId": folderValue,

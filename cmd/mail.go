@@ -544,7 +544,7 @@ func init() {
 	mailSendCmd.Flags().String("content-type", "", "본문 형식 (html 또는 text, 기본: html)")
 
 	mailGetCmd.Flags().Bool("has-threads", false, "메일 스레드 데이터 포함 조회 (hasThreads=true)")
-	mailMoveCmd.Flags().String("folder", "", "이동 대상 폴더 ID (folderId, 필수)")
+	mailMoveCmd.Flags().String("folder", "", "이동 대상 폴더 ID (folderId, 정수, 필수)")
 
 	// --json flags
 	mailUpdateCmd.Flags().String("json", "", "JSON 페이로드 (필수, -: stdin)")

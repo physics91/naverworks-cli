@@ -107,7 +107,7 @@ naverworks <command> --help
 ### 코어 정기 업데이트 (`core_20260723`)
 
 - **CLI 반영 (스펙 확정분)**
-  - `mail move <mailId> --folder <folderId>`: 메일 폴더 이동 (`PATCH .../mail/{mailId}`, body `folderId`)
+  - `mail move <mailId> --folder <folderId>`: 메일 폴더 이동 (`PATCH .../mail/{mailId}`, body `folderId` 정수)
   - `task list`: `--category-id`, `--status`, `--search-filter-type` (`ALL|ASSIGNEE|ASSIGNOR`)
   - `approval list-all`: `--from`, `--until`, `--document-form-id`, `--order-by`
 - **응답 변경 (passthrough, 코드 변경 없음)**

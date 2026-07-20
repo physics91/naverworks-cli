@@ -102,6 +102,23 @@ naverworks --help
 naverworks <command> --help
 ```
 
+## API 호환성 노트
+
+### 코어 정기 업데이트 (`core_20260723`)
+
+- **CLI 반영 (스펙 확정분)**
+  - `mail move <mailId> --folder <folderId>`: 메일 폴더 이동 (`PATCH .../mail/{mailId}`, body `folderId`)
+  - `task list`: `--category-id`, `--status`, `--search-filter-type` (`ALL|ASSIGNEE|ASSIGNOR`)
+  - `approval list-all`: `--from`, `--until`, `--document-form-id`, `--order-by`
+- **응답 변경 (passthrough, 코드 변경 없음)**
+  - 구성원/연락처 messenger type: 응답 값이 `X`로 통일될 수 있음 (기존 `TWITTER` 포함)
+  - 공용 드라이브 목록 `quota.trash` 필드 제거 가능
+  - 휴지통 목록에서 종료된 `orderBy` 값(`deletedDate`, `name`) 사용 불가 — CLI는 orderBy 미노출
+- **미반영 (developers 문서 미등재, #27 잔여)**
+  - Board/Note/Calendar/Contact/User/OrgUnit/Group/Task/Approval **검색 API**
+  - 구성원 소속 그룹·조직 목록, 채널 폴더 API
+  - 검색 `queryFilters`, 메시지 content download `channelId`, profile-status `delegates`, 결재 `type`
+
 ## 개발 검증
 
 빠른 회귀 확인과 전체 검증을 분리해서 돌릴 수 있습니다.

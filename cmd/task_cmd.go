@@ -21,8 +21,16 @@ var taskListCmd = &cobra.Command{
 			return err
 		}
 		svc := api.NewTaskService(client)
+		categoryID, _ := cmd.Flags().GetString("category-id")
+		status, _ := cmd.Flags().GetString("status")
+		searchFilterType, _ := cmd.Flags().GetString("search-filter-type")
+		opts := api.TaskListOptions{
+			CategoryID:       categoryID,
+			Status:           status,
+			SearchFilterType: searchFilterType,
+		}
 		return runListCmd(cmd, []string{"taskId", "title"}, "tasks", func(c string, n int) (*api.Response, error) {
-			return svc.ListTasks(userID, c, n)
+			return svc.ListTasks(userID, c, n, opts)
 		})
 	},
 }
@@ -330,6 +338,10 @@ func init() {
 		taskCreateCategoryCmd, taskGetCategoryCmd, taskUpdateCategoryCmd, taskDeleteCategoryCmd, taskMoveCmd} {
 		c.Flags().String("user-id", "", "사용자 ID (OAuth: me 허용)")
 	}
+
+	taskListCmd.Flags().String("category-id", "", "카테고리 ID (categoryId)")
+	taskListCmd.Flags().String("status", "", "상태 필터 (status)")
+	taskListCmd.Flags().String("search-filter-type", "", "검색 필터 (searchFilterType: ALL|ASSIGNEE|ASSIGNOR)")
 
 	taskCreateCmd.Flags().String("title", "", "태스크 제목 (필수)")
 	taskCreateCmd.Flags().String("description", "", "태스크 설명")

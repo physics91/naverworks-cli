@@ -83,7 +83,7 @@ func TestServiceMethods(t *testing.T) {
 		},
 		{
 			name:       "ApprovalService.ListDocuments",
-			call:       func(c *Client) { NewApprovalService(c).ListDocuments("", 10) },
+			call:       func(c *Client) { NewApprovalService(c).ListDocuments("", 10, DocumentListOptions{}) },
 			wantMethod: "GET",
 			wantPath:   "/business-support/approval/documents",
 		},
@@ -971,7 +971,7 @@ func TestServiceMethods(t *testing.T) {
 		// ─── Task (remaining) ───
 		{
 			name:       "TaskService.ListTasks",
-			call:       func(c *Client) { NewTaskService(c).ListTasks("u1", "", 10) },
+			call:       func(c *Client) { NewTaskService(c).ListTasks("u1", "", 10, TaskListOptions{}) },
 			wantMethod: "GET",
 			wantPath:   "/users/u1/tasks",
 		},

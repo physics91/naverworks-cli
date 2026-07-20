@@ -165,6 +165,28 @@ var mailUpdateCmd = &cobra.Command{
 	},
 }
 
+var mailMoveCmd = &cobra.Command{
+	Use:   "move <mailId>",
+	Short: "메일을 다른 폴더로 이동",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		folderID, _ := cmd.Flags().GetString("folder")
+		if folderID == "" {
+			return fmt.Errorf("--folder는 필수입니다")
+		}
+		resp, err := api.NewMailService(client).MoveMail(userID, args[0], folderID)
+		if err != nil {
+			return err
+		}
+		printResponse(resp)
+		return nil
+	},
+}
+
 var mailUnreadCountCmd = &cobra.Command{
 	Use:   "unread-count",
 	Short: "읽지 않은 메일 수 조회",
@@ -491,7 +513,7 @@ func init() {
 	// user-id flag for all mail commands
 	for _, c := range []*cobra.Command{
 		mailSendCmd, mailGetCmd, mailDeleteCmd, mailListFoldersCmd, mailGetFolderCmd, mailListCmd,
-		mailUpdateCmd, mailUnreadCountCmd, mailGetAttachmentCmd, mailListFavoriteFoldersCmd,
+		mailUpdateCmd, mailMoveCmd, mailUnreadCountCmd, mailGetAttachmentCmd, mailListFavoriteFoldersCmd,
 		mailCreateFolderCmd, mailUpdateFolderCmd, mailDeleteFolderCmd,
 	} {
 		c.Flags().String("user-id", "", "사용자 ID (OAuth: me 허용)")
@@ -522,6 +544,7 @@ func init() {
 	mailSendCmd.Flags().String("content-type", "", "본문 형식 (html 또는 text, 기본: html)")
 
 	mailGetCmd.Flags().Bool("has-threads", false, "메일 스레드 데이터 포함 조회 (hasThreads=true)")
+	mailMoveCmd.Flags().String("folder", "", "이동 대상 폴더 ID (folderId, 필수)")
 
 	// --json flags
 	mailUpdateCmd.Flags().String("json", "", "JSON 페이로드 (필수, -: stdin)")
@@ -543,7 +566,7 @@ func init() {
 
 	// Register all to mailCmd
 	mailCmd.AddCommand(mailSendCmd, mailGetCmd, mailDeleteCmd, mailListFoldersCmd, mailGetFolderCmd, mailListCmd,
-		mailUpdateCmd, mailUnreadCountCmd, mailGetAttachmentCmd, mailListFavoriteFoldersCmd,
+		mailUpdateCmd, mailMoveCmd, mailUnreadCountCmd, mailGetAttachmentCmd, mailListFavoriteFoldersCmd,
 		mailCreateFolderCmd, mailUpdateFolderCmd, mailDeleteFolderCmd,
 		mailFilterCmd, mailMigrationCmd, mailForwardingCmd)
 	rootCmd.AddCommand(mailCmd)

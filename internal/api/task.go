@@ -13,8 +13,20 @@ func NewTaskService(client *Client) *TaskService {
 	return &TaskService{client: client}
 }
 
-func (s *TaskService) ListTasks(userID string, cursor string, count int) (*Response, error) {
-	return s.client.Get(fmt.Sprintf("/users/%s/tasks", url.PathEscape(userID)) + BuildPaginationQuery(cursor, count))
+// TaskListOptions holds optional filters for GET /users/{userId}/tasks.
+type TaskListOptions struct {
+	CategoryID       string
+	Status           string
+	SearchFilterType string // ALL | ASSIGNEE | ASSIGNOR
+}
+
+func (s *TaskService) ListTasks(userID string, cursor string, count int, opts TaskListOptions) (*Response, error) {
+	extra := map[string]string{
+		"categoryId":       opts.CategoryID,
+		"status":           opts.Status,
+		"searchFilterType": opts.SearchFilterType,
+	}
+	return s.client.Get(fmt.Sprintf("/users/%s/tasks", url.PathEscape(userID)) + BuildListQuery(cursor, count, extra))
 }
 
 func (s *TaskService) GetTask(taskID string) (*Response, error) {

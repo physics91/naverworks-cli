@@ -856,7 +856,7 @@ func TestSmoke_MailHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mail --help failed: %v", err)
 	}
-	for _, sub := range []string{"send", "get", "delete", "list", "update"} {
+	for _, sub := range []string{"send", "get", "delete", "list", "update", "move"} {
 		if !containsCommand(out, sub) {
 			t.Errorf("mail --help missing subcommand %q", sub)
 		}
@@ -908,6 +908,44 @@ func TestSmoke_MailUpdate_MissingJSON(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "--json 플래그가 필요합니다") {
 		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_MailMove_MissingFolder(t *testing.T) {
+	tmpDir := setupTestEnv(t)
+	writeTestConfig(t, tmpDir)
+	_, err := runCLI(t, "mail", "move", "mail1", "--user-id", "testuser")
+	if err == nil {
+		t.Fatal("expected error when --folder is missing")
+	}
+	if !strings.Contains(err.Error(), "--folder") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_TaskList_HelpFilters(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "task", "list", "--help")
+	if err != nil {
+		t.Fatalf("task list --help failed: %v", err)
+	}
+	for _, flag := range []string{"--category-id", "--status", "--search-filter-type"} {
+		if !strings.Contains(out, flag) {
+			t.Errorf("task list --help missing %s; got: %s", flag, out)
+		}
+	}
+}
+
+func TestSmoke_ApprovalListAll_HelpFilters(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "approval", "list-all", "--help")
+	if err != nil {
+		t.Fatalf("approval list-all --help failed: %v", err)
+	}
+	for _, flag := range []string{"--from", "--until", "--document-form-id", "--order-by"} {
+		if !strings.Contains(out, flag) {
+			t.Errorf("approval list-all --help missing %s; got: %s", flag, out)
+		}
 	}
 }
 

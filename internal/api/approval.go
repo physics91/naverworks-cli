@@ -17,8 +17,23 @@ func (s *ApprovalService) ListUserDocuments(userID string, cursor string, count 
 	return s.client.Get(fmt.Sprintf("/business-support/approval/users/%s/documents", url.PathEscape(userID)) + BuildPaginationQuery(cursor, count))
 }
 
-func (s *ApprovalService) ListDocuments(cursor string, count int) (*Response, error) {
-	return s.client.Get("/business-support/approval/documents" + BuildPaginationQuery(cursor, count))
+// DocumentListOptions holds optional filters for admin document list.
+// Confirmed on approval-document-list docs: fromDateTime, untilDateTime, documentFormId, orderBy.
+type DocumentListOptions struct {
+	FromDateTime   string
+	UntilDateTime  string
+	DocumentFormID string
+	OrderBy        string
+}
+
+func (s *ApprovalService) ListDocuments(cursor string, count int, opts DocumentListOptions) (*Response, error) {
+	extra := map[string]string{
+		"fromDateTime":   opts.FromDateTime,
+		"untilDateTime":  opts.UntilDateTime,
+		"documentFormId": opts.DocumentFormID,
+		"orderBy":        opts.OrderBy,
+	}
+	return s.client.Get("/business-support/approval/documents" + BuildListQuery(cursor, count, extra))
 }
 
 func (s *ApprovalService) GetDocument(documentID string) (*Response, error) {

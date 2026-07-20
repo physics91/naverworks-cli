@@ -5,15 +5,28 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 func BuildPaginationQuery(cursor string, count int) string {
+	return BuildListQuery(cursor, count, nil)
+}
+
+// BuildListQuery builds a query string with pagination plus optional extra params.
+// Empty extra values are skipped.
+func BuildListQuery(cursor string, count int, extra map[string]string) string {
 	params := url.Values{}
 	if cursor != "" {
 		params.Set("cursor", cursor)
 	}
 	if count > 0 {
 		params.Set("count", strconv.Itoa(count))
+	}
+	for key, value := range extra {
+		if strings.TrimSpace(value) == "" {
+			continue
+		}
+		params.Set(key, value)
 	}
 	return encodeQueryFromValues(params)
 }

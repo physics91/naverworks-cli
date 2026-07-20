@@ -180,7 +180,25 @@ var approvalListCmd = &cobra.Command{
 var approvalListAllCmd = &cobra.Command{
 	Use:   "list-all",
 	Short: "전체 결재 문서 목록 조회",
-	RunE:  approvalListRunListE([]string{"approvalDocumentId", "title"}, "documents", (*api.ApprovalService).ListDocuments),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		svc, err := newSvc(api.NewApprovalService)
+		if err != nil {
+			return err
+		}
+		from, _ := cmd.Flags().GetString("from")
+		until, _ := cmd.Flags().GetString("until")
+		formID, _ := cmd.Flags().GetString("document-form-id")
+		orderBy, _ := cmd.Flags().GetString("order-by")
+		opts := api.DocumentListOptions{
+			FromDateTime:   from,
+			UntilDateTime:  until,
+			DocumentFormID: formID,
+			OrderBy:        orderBy,
+		}
+		return runListCmd(cmd, []string{"approvalDocumentId", "title"}, "documents", func(cursor string, count int) (*api.Response, error) {
+			return svc.ListDocuments(cursor, count, opts)
+		})
+	},
 }
 
 var approvalGetCmd = &cobra.Command{
@@ -410,6 +428,10 @@ func init() {
 		approvalLinkageCodeListCmd, approvalLinkageCodeItemListCmd)
 
 	approvalListCmd.Flags().String("user-id", "", "사용자 ID (OAuth: me 허용)")
+	approvalListAllCmd.Flags().String("from", "", "조회 시작 시각 (fromDateTime)")
+	approvalListAllCmd.Flags().String("until", "", "조회 종료 시각 (untilDateTime)")
+	approvalListAllCmd.Flags().String("document-form-id", "", "문서 양식 ID (documentFormId)")
+	approvalListAllCmd.Flags().String("order-by", "", "정렬 (orderBy)")
 	for _, c := range []*cobra.Command{approvalCreateDocumentCmd, approvalCreateDocumentLinkCmd, approvalUploadAttachmentCmd} {
 		c.Flags().String("user-id", "", "사용자 ID (OAuth: me 허용)")
 	}

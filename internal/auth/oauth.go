@@ -31,6 +31,17 @@ func GenerateState() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
+// BuildAuthorizationURL builds the OAuth authorization URL.
+//
+// PKCE (RFC 7636) is deliberately not used: the NAVER WORKS authorization
+// endpoint accepts only client_id, redirect_uri, scope, response_type, state,
+// nonce, and domain — there is no code_challenge parameter — and the token
+// endpoint takes no code_verifier while requiring client_secret. Sending PKCE
+// parameters would be silently ignored, giving no protection while implying
+// otherwise. CSRF protection therefore rests on the 128-bit state value, which
+// WaitForCallback and ReadCallbackURLFromStdin both verify.
+//
+// Revisit if the authorization endpoint documents code_challenge support.
 func BuildAuthorizationURL(authBaseURL, clientID, redirectURI, state, scope string) string {
 	params := url.Values{
 		"client_id":     {clientID},

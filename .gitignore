@@ -23,6 +23,14 @@ docs/research/
 docs/plans/
 docs/reviews/
 
+# 자격 증명 (실수 커밋 방지)
+*.pem
+*.key
+*.p12
+*.pfx
+.env
+.env.*
+
 # 에이전트 런타임 아티팩트
 .brain/
 .codex

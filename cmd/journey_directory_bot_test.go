@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"net/http"
-	"path/filepath"
 	"testing"
 
 	clitest "github.com/physics91/naverworks-cli/internal/testkit/cli"
@@ -10,8 +9,8 @@ import (
 
 func TestJourneyDirectoryListUsers(t *testing.T) {
 	h := clitest.NewHarness(t)
-	installJourneyFixture(t, h.HomeDir(), "directory/list-users/config.json", configPathForHome(h.HomeDir()))
-	installJourneyFixture(t, h.HomeDir(), "directory/list-users/token.json", tokenPathForHome(h.HomeDir()))
+	installJourneyFixture(t, h.HomeDir(), "directory/list-users/config.json", h.ConfigPath())
+	installJourneyFixture(t, h.HomeDir(), "directory/list-users/token.json", h.TokenPath())
 
 	server := h.StartScriptedServer([]clitest.ResponseScript{
 		{
@@ -54,8 +53,8 @@ func TestJourneyDirectoryListUsers(t *testing.T) {
 
 func TestJourneyBotSendText(t *testing.T) {
 	h := clitest.NewHarness(t)
-	installJourneyFixture(t, h.HomeDir(), "bot/send-text/config.json", configPathForHome(h.HomeDir()))
-	installJourneyFixture(t, h.HomeDir(), "bot/send-text/token.json", tokenPathForHome(h.HomeDir()))
+	installJourneyFixture(t, h.HomeDir(), "bot/send-text/config.json", h.ConfigPath())
+	installJourneyFixture(t, h.HomeDir(), "bot/send-text/token.json", h.TokenPath())
 
 	server := h.StartScriptedServer([]clitest.ResponseScript{
 		{
@@ -95,8 +94,4 @@ func TestJourneyBotSendText(t *testing.T) {
 		clitest.Fatalf(t, clitest.RequestShapeFailure, "bot send content-type = %q, want %q", logs[0].Headers["Content-Type"], "application/json")
 	}
 	assertNormalizedJSON(t, logs[0].Body, readJourneyFixture(t, "bot/send-text/expected-request-body.json"))
-}
-
-func configPathForHome(homeDir string) string {
-	return filepath.Join(homeDir, ".config", "naverworks", "config.json")
 }

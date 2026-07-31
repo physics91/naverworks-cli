@@ -100,6 +100,34 @@ func (h *Harness) HomeDir() string {
 	return h.homeDir
 }
 
+// ConfigDir returns the directory the CLI will actually read configuration from,
+// resolved through the same os.UserConfigDir call the CLI uses.
+//
+// Tests must not assemble this path by hand: os.UserConfigDir honours
+// XDG_CONFIG_HOME on POSIX but %AppData% on Windows, so a hardcoded
+// "<home>/.config/naverworks" makes fixtures land where the CLI never looks.
+func (h *Harness) ConfigDir() string {
+	h.t.Helper()
+
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		h.t.Fatalf("resolve user config dir failed: %v", err)
+	}
+	return filepath.Join(dir, "naverworks")
+}
+
+// ConfigPath returns the CLI's config.json location for this harness.
+func (h *Harness) ConfigPath() string {
+	h.t.Helper()
+	return filepath.Join(h.ConfigDir(), "config.json")
+}
+
+// TokenPath returns the CLI's token.json location for this harness.
+func (h *Harness) TokenPath() string {
+	h.t.Helper()
+	return filepath.Join(h.ConfigDir(), "token.json")
+}
+
 func (h *Harness) Capture(fn func() error) (CaptureResult, error) {
 	h.t.Helper()
 

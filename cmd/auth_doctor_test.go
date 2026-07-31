@@ -54,7 +54,7 @@ func TestAuthDoctor_LocalOnlyUsesEnvFallback(t *testing.T) {
 
 func TestAuthDoctorVerifyRemoteDoesNotMutateToken(t *testing.T) {
 	h := clitest.NewHarness(t)
-	writeDoctorProfileConfig(t, h.HomeDir(), &config.ProfileConfig{
+	writeDoctorProfileConfig(t, &config.ProfileConfig{
 		CurrentProfile: "default",
 		Profiles: map[string]*config.Config{
 			"default": {
@@ -64,7 +64,7 @@ func TestAuthDoctorVerifyRemoteDoesNotMutateToken(t *testing.T) {
 			},
 		},
 	})
-	tokenPath := tokenPathForHome(h.HomeDir())
+	tokenPath := h.TokenPath()
 	if err := os.MkdirAll(filepath.Dir(tokenPath), 0700); err != nil {
 		t.Fatalf("mkdir token dir failed: %v", err)
 	}
@@ -113,7 +113,7 @@ func TestAuthDoctorVerifyRemoteDoesNotMutateToken(t *testing.T) {
 
 func TestAuthDoctorVerifyRemoteChecksScimWhenConfigured(t *testing.T) {
 	h := clitest.NewHarness(t)
-	writeDoctorProfileConfig(t, h.HomeDir(), &config.ProfileConfig{
+	writeDoctorProfileConfig(t, &config.ProfileConfig{
 		CurrentProfile: "default",
 		Profiles: map[string]*config.Config{
 			"default": {
@@ -124,7 +124,7 @@ func TestAuthDoctorVerifyRemoteChecksScimWhenConfigured(t *testing.T) {
 			},
 		},
 	})
-	writeDoctorToken(t, h.HomeDir(), &auth.Token{
+	writeDoctorToken(t, &auth.Token{
 		AuthMethod:  auth.AuthMethodOAuth,
 		AccessToken: "access-token",
 		TokenType:   "Bearer",
@@ -177,10 +177,10 @@ func indexDoctorChecks(checks []authdoctor.Check) map[string]authdoctor.Check {
 	return out
 }
 
-func writeDoctorProfileConfig(t *testing.T, homeDir string, pc *config.ProfileConfig) {
+func writeDoctorProfileConfig(t *testing.T, pc *config.ProfileConfig) {
 	t.Helper()
 
-	cfgPath := filepath.Join(homeDir, ".config", "naverworks", "config.json")
+	cfgPath := testConfigPath(t)
 	if err := os.MkdirAll(filepath.Dir(cfgPath), 0700); err != nil {
 		t.Fatalf("mkdir config dir failed: %v", err)
 	}
@@ -193,10 +193,10 @@ func writeDoctorProfileConfig(t *testing.T, homeDir string, pc *config.ProfileCo
 	}
 }
 
-func writeDoctorToken(t *testing.T, homeDir string, token *auth.Token) {
+func writeDoctorToken(t *testing.T, token *auth.Token) {
 	t.Helper()
 
-	tokenPath := filepath.Join(homeDir, ".config", "naverworks", "token.json")
+	tokenPath := testTokenPath(t)
 	if err := os.MkdirAll(filepath.Dir(tokenPath), 0700); err != nil {
 		t.Fatalf("mkdir token dir failed: %v", err)
 	}

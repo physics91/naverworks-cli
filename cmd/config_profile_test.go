@@ -160,8 +160,8 @@ func TestJourneyConfigSet_StdinOversizeRejected(t *testing.T) {
 }
 
 func TestJourneyConfigList_RepairsNilActiveProfile(t *testing.T) {
-	tmpDir := setupTestEnv(t)
-	cfgDir := filepath.Join(tmpDir, ".config", "naverworks")
+	setupTestEnv(t)
+	cfgDir := testConfigDir(t)
 	if err := os.MkdirAll(cfgDir, 0700); err != nil {
 		t.Fatalf("mkdir failed: %v", err)
 	}
@@ -189,8 +189,8 @@ func TestJourneyConfigList_RepairsNilActiveProfile(t *testing.T) {
 }
 
 func TestJourneyConfigSet_RepairsNilActiveProfile(t *testing.T) {
-	tmpDir := setupTestEnv(t)
-	cfgDir := filepath.Join(tmpDir, ".config", "naverworks")
+	setupTestEnv(t)
+	cfgDir := testConfigDir(t)
 	if err := os.MkdirAll(cfgDir, 0700); err != nil {
 		t.Fatalf("mkdir failed: %v", err)
 	}

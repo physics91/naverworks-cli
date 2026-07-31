@@ -45,7 +45,13 @@ func setupTestEnv(t *testing.T) string {
 
 func writeTestConfig(t *testing.T, tmpDir string) {
 	t.Helper()
-	cfgDir := filepath.Join(tmpDir, ".config", "naverworks")
+	// The CLI resolves its config directory through os.UserConfigDir, which is
+	// XDG_CONFIG_HOME on POSIX but %AppData% on Windows. Deriving the path from
+	// tmpDir by hand would drop fixtures where Windows never reads them.
+	cfgDir := testConfigDir(t)
+	if !strings.HasPrefix(cfgDir, tmpDir) {
+		t.Fatalf("config dir %q escaped the test sandbox %q", cfgDir, tmpDir)
+	}
 	if err := os.MkdirAll(cfgDir, 0700); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
@@ -223,8 +229,8 @@ func TestSmoke_DirectoryListUsers_DryRunWithoutToken(t *testing.T) {
 }
 
 func TestSmoke_SCIMListUsers_WithScimTokenOnly(t *testing.T) {
-	tmpDir := setupTestEnv(t)
-	cfgDir := filepath.Join(tmpDir, ".config", "naverworks")
+	setupTestEnv(t)
+	cfgDir := testConfigDir(t)
 	if err := os.MkdirAll(cfgDir, 0700); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
@@ -270,8 +276,8 @@ func TestSmoke_SCIMListUsers_DryRunWithoutToken(t *testing.T) {
 }
 
 func TestSmoke_SCIMListUsers_DryRunUsesCurrentProfile(t *testing.T) {
-	tmpDir := setupTestEnv(t)
-	cfgDir := filepath.Join(tmpDir, ".config", "naverworks")
+	setupTestEnv(t)
+	cfgDir := testConfigDir(t)
 	if err := os.MkdirAll(cfgDir, 0700); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
@@ -2617,4 +2623,28 @@ func TestSmoke_ContactUpdate_Flags(t *testing.T) {
 			t.Errorf("contact update --help missing %s flag", flag)
 		}
 	}
+}
+
+// testConfigDir returns the directory the CLI reads configuration from, resolved
+// the same way the CLI resolves it. Hardcoding "<home>/.config/naverworks" makes
+// fixtures land where Windows never looks, since os.UserConfigDir uses %AppData%
+// there rather than XDG_CONFIG_HOME.
+func testConfigDir(t *testing.T) string {
+	t.Helper()
+
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		t.Fatalf("resolve user config dir failed: %v", err)
+	}
+	return filepath.Join(dir, "naverworks")
+}
+
+func testConfigPath(t *testing.T) string {
+	t.Helper()
+	return filepath.Join(testConfigDir(t), "config.json")
+}
+
+func testTokenPath(t *testing.T) string {
+	t.Helper()
+	return filepath.Join(testConfigDir(t), "token.json")
 }

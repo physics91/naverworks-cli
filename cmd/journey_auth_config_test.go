@@ -14,7 +14,7 @@ import (
 func TestJourneyAuthStatus(t *testing.T) {
 	h := clitest.NewHarness(t)
 	installJourneyFixture(t, h.HomeDir(), "auth/status/config.json", config.DefaultPath())
-	installJourneyFixture(t, h.HomeDir(), "auth/status/token.json", tokenPathForHome(h.HomeDir()))
+	installJourneyFixture(t, h.HomeDir(), "auth/status/token.json", h.TokenPath())
 
 	result, err := h.Run([]string{"auth", "status"}, newRootCommandRunner(t))
 	if err != nil {
@@ -64,7 +64,7 @@ func TestJourneyConfigLifecycle(t *testing.T) {
 	expected := readJourneyFixture(t, "config/set-get-list/expected-list.json")
 	assertNormalizedJSON(t, listResult.Stdout, expected)
 
-	cfgPath := filepath.Join(h.HomeDir(), ".config", "naverworks", "config.json")
+	cfgPath := h.ConfigPath()
 	pc, err := config.LoadProfileConfig(cfgPath)
 	if err != nil {
 		clitest.Fatalf(t, clitest.SideEffectFailure, "load saved profile config failed: %v", err)
@@ -139,8 +139,4 @@ func assertNormalizedJSON(t *testing.T, gotText string, wantJSON []byte) {
 	if string(gotNormalized) != string(wantNormalized) {
 		clitest.Fatalf(t, clitest.UXContractFailure, "json mismatch\nactual:\n%s\nexpected:\n%s", string(gotNormalized), string(wantNormalized))
 	}
-}
-
-func tokenPathForHome(homeDir string) string {
-	return filepath.Join(homeDir, ".config", "naverworks", "token.json")
 }

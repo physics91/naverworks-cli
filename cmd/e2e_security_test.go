@@ -36,7 +36,7 @@ func TestE2E_ConfigSave_AtomicWrite(t *testing.T) {
 	}
 
 	// Read back the config file and verify the value was persisted
-	cfgPath := filepath.Join(tmpDir, ".config", "naverworks", "config.json")
+	cfgPath := testConfigPath(t)
 	data, err := os.ReadFile(cfgPath)
 	if err != nil {
 		t.Fatalf("failed to read config file: %v", err)
@@ -114,7 +114,7 @@ func TestE2E_ConfigSave_AtomicWrite_Concurrent(t *testing.T) {
 	tmpDir := setupTestEnv(t)
 	writeTestConfig(t, tmpDir)
 
-	cfgPath := filepath.Join(tmpDir, ".config", "naverworks", "config.json")
+	cfgPath := testConfigPath(t)
 
 	const iterations = 10
 	var wg sync.WaitGroup

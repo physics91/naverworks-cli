@@ -12,9 +12,15 @@ naverworks config list
 목록에 남습니다.
 
 ```bash
-# 시크릿 매니저나 파일에서 파이프로 전달 (명령문에 값이 남지 않음)
+# Linux/macOS — 시크릿 매니저나 파일에서 파이프로 전달
 pass show naverworks/client-secret | naverworks config set client_secret --stdin
 cat ~/secure/scim-token | naverworks config set scim_access_token --stdin
+```
+
+```powershell
+# Windows PowerShell
+Get-Secret naverworks-client-secret -AsPlainText | naverworks config set client_secret --stdin
+Get-Content $HOME\secure\scim-token | naverworks config set scim_access_token --stdin
 ```
 
 값을 직접 입력하려면 인자 없이 실행해 터미널에서 붙여넣으세요. here-string
@@ -88,9 +94,16 @@ CI나 외부 시크릿 매니저(Vault, AWS Secrets Manager, GitHub Actions secr
 안전합니다.
 
 ```bash
-# 이 명령의 환경에만 값이 존재
+# Linux/macOS — 이 명령의 환경에만 값이 존재
 NW_CLIENT_SECRET="$(pass show naverworks/client-secret)" \
   naverworks directory list-users --count 20
+```
+
+```powershell
+# Windows PowerShell
+$env:NW_CLIENT_SECRET = Get-Secret naverworks-client-secret -AsPlainText
+naverworks directory list-users --count 20
+Remove-Item Env:\NW_CLIENT_SECRET
 ```
 
 **셸 히스토리 주의**

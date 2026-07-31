@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, develop]
   pull_request:
-    branches: [master, main]
+    branches: [master, main, develop]
 
 jobs:
   test:
@@ -32,3 +32,24 @@ jobs:
 
       - name: Vet
         run: go vet ./...
+
+  # Credential file protection is enforced through Windows ACLs, which cannot be
+  # exercised on Linux. Without this job the icacls inspection, foreign-ACE
+  # removal, and post-repair verification paths ship untested.
+  test-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version: "1.25"
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...
+
+      - name: Build
+        run: go build -o naverworks.exe .

@@ -108,12 +108,15 @@ func ValidateKeyPermissions(path string) error {
 }
 
 func keyPermissionIssue(path string) (string, error) {
-	if runtime.GOOS == "windows" {
-		return checkWindowsKeyPermissions(path)
-	}
+	// Check existence first so a missing key reports the same error on every
+	// platform. On Windows, invoking icacls first surfaced its exit status
+	// instead of a readable "file not accessible" message.
 	info, err := os.Stat(path)
 	if err != nil {
 		return "", fmt.Errorf("private key 파일 접근 실패: %w", err)
+	}
+	if runtime.GOOS == "windows" {
+		return checkWindowsKeyPermissions(path)
 	}
 	perm := info.Mode().Perm()
 	if perm != 0600 {

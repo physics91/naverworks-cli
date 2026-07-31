@@ -210,11 +210,16 @@ func TestProfileConfig_ActiveProfile_IgnoresWhitespaceOnlyOverrides(t *testing.T
 
 func TestConfigPathFromDir(t *testing.T) {
 	t.Run("absolute config dir", func(t *testing.T) {
-		got, err := configPathFromDir("/tmp/naverworks-test")
+		// filepath.IsAbs is OS-specific: "/tmp/..." is not absolute on Windows.
+		base := "/tmp/naverworks-test"
+		if runtime.GOOS == "windows" {
+			base = `C:\tmp\naverworks-test`
+		}
+		got, err := configPathFromDir(base)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		want := filepath.Join("/tmp/naverworks-test", "naverworks", "config.json")
+		want := filepath.Join(base, "naverworks", "config.json")
 		if got != want {
 			t.Fatalf("path = %q, want %q", got, want)
 		}

@@ -74,8 +74,11 @@ func TestEnsureSecureFilePermissions_RemovesExplicitEveryoneACE(t *testing.T) {
 	if err != nil {
 		t.Fatalf("icacls failed: %v", err)
 	}
-	if strings.Contains(strings.ToLower(string(out)), "everyone") {
-		t.Errorf("Everyone ACE still present after repair: %s", out)
+	// Check parsed principals, not the raw output: the temp directory name is
+	// derived from this test's name and therefore contains "Everyone", which
+	// makes a substring search on the output always match.
+	if foreign := ForeignWindowsACLPrincipals(string(out), path, user); len(foreign) > 0 {
+		t.Errorf("foreign ACEs survived repair: %v\nicacls output: %s", foreign, out)
 	}
 
 	// The repair must not lock the owner out of its own credentials.

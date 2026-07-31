@@ -31,7 +31,12 @@ func (f *Formatter) Print(data interface{}) {
 	fmt.Fprintln(f.writer, string(encoded))
 }
 
+// PrintRaw writes a raw JSON response. Every command prints through here, so
+// this is where presigned upload URLs are stripped — placing the check at
+// individual call sites left the list and pagination paths unprotected.
 func (f *Formatter) PrintRaw(data []byte) {
+	data = SanitizeJSON(data)
+
 	if f.format == "table" && len(f.columns) > 0 {
 		f.printAsTable(data)
 		return

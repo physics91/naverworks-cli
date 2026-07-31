@@ -41,7 +41,10 @@ func TestNpmWrapperLauncherFallsBackToPlatformPackage(t *testing.T) {
 `)
 	writeFile(t, filepath.Join(depDir, binaryName), "#!/bin/sh\nprintf 'bun fallback ok\\n'\n")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	// The timeout exists to catch a recursive launcher path, which hangs
+	// indefinitely — a generous limit still detects that. Two seconds was too
+	// tight for a cold `node` start on a CI runner and made this test flaky.
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "node", launcherPath, "version")

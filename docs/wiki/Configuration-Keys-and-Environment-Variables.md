@@ -8,12 +8,17 @@ naverworks config get <key>
 naverworks config list
 ```
 
-민감한 값은 `--stdin`으로 넣는 편이 안전합니다.
+민감한 값은 `--stdin`으로 넣습니다. 값을 인자로 주면 셸 히스토리와 프로세스
+목록에 남습니다.
 
 ```bash
-naverworks config set client_secret --stdin <<< "YOUR_CLIENT_SECRET"
-naverworks config set scim_access_token --stdin <<< "YOUR_SCIM_TOKEN"
+# 시크릿 매니저나 파일에서 파이프로 전달 (명령문에 값이 남지 않음)
+pass show naverworks/client-secret | naverworks config set client_secret --stdin
+cat ~/secure/scim-token | naverworks config set scim_access_token --stdin
 ```
+
+값을 직접 입력하려면 인자 없이 실행해 터미널에서 붙여넣으세요. here-string
+(`<<< "값"`)은 명령문의 일부이므로 히스토리에 그대로 기록됩니다.
 
 ## 설정 키
 
@@ -76,13 +81,26 @@ CI나 외부 시크릿 매니저(Vault, AWS Secrets Manager, GitHub Actions secr
 쓰는 환경에서는 이 방식을 권장합니다. 값이 프로세스 환경에만 존재하므로 디스크에
 평문이 남지 않습니다.
 
+다만 환경변수도 완전히 안전한 것은 아닙니다. 자식 프로세스로 상속되고, 같은
+사용자 권한이면 프로세스 환경을 조회할 수 있으며(Linux `/proc/<pid>/environ`),
+크래시 덤프나 디버그 로그에 포함될 수 있습니다. 값을 셸 프로필에 하드코딩하지
+말고, 필요한 순간에 시크릿 매니저에서 읽어 해당 명령에만 전달하는 방식이 가장
+안전합니다.
+
+```bash
+# 이 명령의 환경에만 값이 존재
+NW_CLIENT_SECRET="$(pass show naverworks/client-secret)" \
+  naverworks directory list-users --count 20
+```
+
 **셸 히스토리 주의**
 
 `config set`에 값을 인자로 넘기면 셸 히스토리와 프로세스 목록에 남습니다.
-`--stdin`을 쓰면 둘 다 피할 수 있습니다.
+`--stdin`으로 파이프해서 넣으면 둘 다 피할 수 있습니다. here-string은
+명령문의 일부라 히스토리에 남으므로 피하세요.
 
 ```bash
-naverworks config set client_secret --stdin <<< "YOUR_CLIENT_SECRET"
+pass show naverworks/client-secret | naverworks config set client_secret --stdin
 ```
 
 ## 설정 파일 위치

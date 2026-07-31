@@ -5,7 +5,7 @@ SCIM은 일반 로그인 토큰이 아니라 별도 `scim_access_token` 설정�
 ## 준비
 
 ```bash
-naverworks config set scim_access_token --stdin <<< "YOUR_SCIM_TOKEN"
+pass show naverworks/scim-token | naverworks config set scim_access_token --stdin
 ```
 
 설정 확인:

@@ -22,7 +22,7 @@ naverworks auth status
 ```bash
 # 공통
 naverworks config set client_id YOUR_CLIENT_ID
-naverworks config set client_secret --stdin <<< "YOUR_CLIENT_SECRET"
+pass show naverworks/client-secret | naverworks config set client_secret --stdin
 
 # Bot API를 쓸 때
 naverworks config set bot_id YOUR_BOT_ID
@@ -70,7 +70,7 @@ naverworks auth logout
 ```bash
 # staging 프로필에 설정 저장
 naverworks --profile staging config set client_id STAGING_CLIENT_ID
-naverworks --profile staging config set client_secret --stdin <<< "STAGING_SECRET"
+pass show naverworks/staging-secret | naverworks --profile staging config set client_secret --stdin
 naverworks --profile staging auth login
 
 # staging 프로필로 실행

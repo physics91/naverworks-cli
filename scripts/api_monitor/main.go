@@ -202,11 +202,54 @@ func fetchReleaseNoteTitle(client *http.Client, pageURL string) (string, error) 
 	return "", fmt.Errorf("title not found")
 }
 
+const maxReleaseNoteTitleLen = 200
+
+// normalizeReleaseNoteTitle cleans an untrusted title scraped from the release
+// note page before it is embedded in a GitHub issue body. Control characters
+// and newlines are stripped so the value cannot break out of the surrounding
+// Markdown list item or inject extra lines, and the length is capped.
 func normalizeReleaseNoteTitle(raw string) string {
 	title := html.UnescapeString(strings.TrimSpace(raw))
+	title = strings.Map(func(r rune) rune {
+		if r == '\n' || r == '\r' || r == '\t' {
+			return ' '
+		}
+		if r < 0x20 || r == 0x7f {
+			return -1
+		}
+		return r
+	}, title)
+	title = strings.Join(strings.Fields(title), " ")
 	title = strings.TrimSuffix(title, " - 네이버웍스")
-	return strings.TrimSpace(title)
+	title = strings.TrimSpace(title)
+	if runes := []rune(title); len(runes) > maxReleaseNoteTitleLen {
+		title = strings.TrimSpace(string(runes[:maxReleaseNoteTitleLen])) + "…"
+	}
+	return escapeMarkdownInline(title)
 }
+
+// markdownMetaCharacters are inline Markdown constructs that would otherwise let
+// a scraped title inject emphasis, links, images, or raw HTML into the issue body.
+const markdownMetaCharacters = "\\`*_[]()<>#|~"
+
+// escapeMarkdownInline backslash-escapes inline Markdown metacharacters so an
+// untrusted title renders as literal text.
+func escapeMarkdownInline(s string) string {
+	var b strings.Builder
+	b.Grow(len(s))
+	for _, r := range s {
+		if r < 0x80 && strings.ContainsRune(markdownMetaCharacters, r) {
+			b.WriteByte('\\')
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
+}
+
+// maxFetchSize bounds how much of an external page is read into memory.
+// Release-note pages are well under this; an unbounded read would let a
+// hostile or misbehaving upstream exhaust the CI runner's memory.
+const maxFetchSize = 8 << 20 // 8MB
 
 func fetchText(client *http.Client, pageURL string) (string, error) {
 	req, err := http.NewRequest(http.MethodGet, pageURL, nil)
@@ -225,9 +268,12 @@ func fetchText(client *http.Client, pageURL string) (string, error) {
 		return "", fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxFetchSize+1))
 	if err != nil {
 		return "", err
+	}
+	if int64(len(body)) > maxFetchSize {
+		return "", fmt.Errorf("응답 크기 초과: > %d bytes (%s)", maxFetchSize, pageURL)
 	}
 	return string(body), nil
 }

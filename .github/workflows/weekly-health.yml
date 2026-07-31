@@ -91,11 +91,14 @@ jobs:
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Passed through env, never interpolated into the shell.
+          ISSUE_TITLE: ${{ steps.report.outputs.title }}
+          ISSUE_LABELS: ${{ steps.report.outputs.labels }}
         run: |
           go run ./scripts/github_issue \
             --repo "$GITHUB_REPOSITORY" \
-            --title "${{ steps.report.outputs.title }}" \
-            --labels "${{ steps.report.outputs.labels }}" \
+            --title "$ISSUE_TITLE" \
+            --labels "$ISSUE_LABELS" \
             --body-file weekly-health-issue.md
 
       - name: Mark workflow failed on command errors

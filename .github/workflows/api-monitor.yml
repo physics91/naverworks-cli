@@ -85,11 +85,16 @@ jobs:
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Passed through env, never interpolated into the shell: the values
+          # originate from a generated report and must not be able to become
+          # shell syntax.
+          ISSUE_TITLE: ${{ steps.report.outputs.title }}
+          ISSUE_LABELS: ${{ steps.report.outputs.labels }}
         run: |
           go run ./scripts/github_issue \
             --repo "$GITHUB_REPOSITORY" \
-            --title "${{ steps.report.outputs.title }}" \
-            --labels "${{ steps.report.outputs.labels }}" \
+            --title "$ISSUE_TITLE" \
+            --labels "$ISSUE_LABELS" \
             --body-file api-monitor-issue.md
 
       - name: Create or reuse monitor ops issue

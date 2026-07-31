@@ -141,7 +141,15 @@ func WaitForCallback(ln net.Listener, expectedState string, timeout time.Duratio
 		codeCh <- code
 	})
 
-	server := &http.Server{Handler: mux}
+	// Timeouts bound a stalled or half-open connection to the loopback
+	// callback listener (gosec G112).
+	server := &http.Server{
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       30 * time.Second,
+	}
 	go server.Serve(ln)
 	defer server.Close()
 

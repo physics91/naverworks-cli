@@ -5,7 +5,14 @@ SCIM은 일반 로그인 토큰이 아니라 별도 `scim_access_token` 설정�
 ## 준비
 
 ```bash
+# 시크릿 매니저에서 파이프로 전달 (명령문에 값이 남지 않음)
 pass show naverworks/scim-token | naverworks config set scim_access_token --stdin
+
+# 파일에서 전달
+cat ~/secure/scim-token | naverworks config set scim_access_token --stdin
+
+# 환경변수만 사용 (디스크에 저장하지 않음)
+export NW_SCIM_ACCESS_TOKEN="$(pass show naverworks/scim-token)"
 ```
 
 설정 확인:

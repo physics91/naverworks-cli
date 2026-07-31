@@ -49,9 +49,7 @@ func writeTestConfig(t *testing.T, tmpDir string) {
 	// XDG_CONFIG_HOME on POSIX but %AppData% on Windows. Deriving the path from
 	// tmpDir by hand would drop fixtures where Windows never reads them.
 	cfgDir := testConfigDir(t)
-	if !strings.HasPrefix(cfgDir, tmpDir) {
-		t.Fatalf("config dir %q escaped the test sandbox %q", cfgDir, tmpDir)
-	}
+	assertWithinSandbox(t, tmpDir, cfgDir)
 	if err := os.MkdirAll(cfgDir, 0700); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
@@ -2647,4 +2645,22 @@ func testConfigPath(t *testing.T) string {
 func testTokenPath(t *testing.T) string {
 	t.Helper()
 	return filepath.Join(testConfigDir(t), "token.json")
+}
+
+// assertWithinSandbox fails unless path is inside root.
+//
+// A strings.HasPrefix check is not sufficient: with root "/tmp/Test1" it would
+// also accept "/tmp/Test1234/config", which is a different directory. Comparing
+// the cleaned relative path catches that and normalizes separators, so the check
+// behaves the same on Windows.
+func assertWithinSandbox(t *testing.T, root, path string) {
+	t.Helper()
+
+	rel, err := filepath.Rel(root, path)
+	if err != nil {
+		t.Fatalf("path %q is not relative to the test sandbox %q: %v", path, root, err)
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
+		t.Fatalf("path %q escaped the test sandbox %q (rel %q)", path, root, rel)
+	}
 }

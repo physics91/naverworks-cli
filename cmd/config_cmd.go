@@ -44,6 +44,15 @@ var configSetCmd = &cobra.Command{
 				return fmt.Errorf("stdin 읽기 실패: %w", err)
 			}
 			value = strings.TrimRight(string(data), "\r\n")
+			// A secret piped from an external tool (`pass show ... | ...`) is
+			// empty when that tool fails. Storing it would silently wipe a
+			// working credential, so require an explicit empty argument instead.
+			if strings.TrimSpace(value) == "" {
+				return fmt.Errorf(
+					"stdin에서 빈 값을 받았습니다. 값을 생성하는 명령이 실패했을 수 있습니다. "+
+						"의도적으로 비우려면 naverworks config set %s \"\" 를 사용하세요", key,
+				)
+			}
 		} else if len(args) == 2 {
 			value = args[1]
 		} else {

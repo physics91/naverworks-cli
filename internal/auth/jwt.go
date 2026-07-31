@@ -15,9 +15,19 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/physics91/naverworks-cli/internal/fileutil"
 )
 
+// BuildJWTAssertion builds a signed RS256 JWT assertion for the JWT
+// Service Account grant. Key file permissions are validated here — the single
+// choke point every signing path goes through (interactive login as well as
+// automatic token refresh) — so an insecure key can never be used to sign.
 func BuildJWTAssertion(clientID, serviceAccountID, privateKeyPath string) (string, error) {
+	if err := ValidateKeyPermissions(privateKeyPath); err != nil {
+		return "", fmt.Errorf("private key 파일 권한 검증 실패: %w", err)
+	}
+
 	keyData, err := os.ReadFile(privateKeyPath)
 	if err != nil {
 		return "", fmt.Errorf("private key 파일 읽기 실패: %w", err)
@@ -117,39 +127,39 @@ func checkWindowsKeyPermissions(path string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("private key ACL 확인 실패: %w", err)
 	}
-	lines := strings.Split(string(out), "\n")
 	user := currentWindowsUser()
 	if user == "" {
 		return "", fmt.Errorf("현재 Windows 사용자 확인 실패")
 	}
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == "" || strings.HasPrefix(trimmed, "Successfully") {
-			continue
-		}
-		if !strings.Contains(trimmed, ":") {
-			continue
-		}
-		if !strings.Contains(strings.ToLower(trimmed), strings.ToLower(user)) {
-			return fmt.Sprintf("%s에 현재 사용자(%s) 외의 접근 권한이 설정되어 있습니다", path, user), nil
-		}
-	}
-	return "", nil
+	// Shared with the credential-file permission check in fileutil so both use
+	// one ACL evaluation implementation.
+	return fileutil.EvaluateWindowsACL(string(out), path, user), nil
 }
 
+// currentWindowsUser resolves the current account, preferring `whoami` over the
+// USERNAME/USERDOMAIN environment variables. Environment variables are
+// attacker-controllable, and trusting them first would let a caller name an
+// over-broad principal (e.g. USERNAME=Everyone) to pass the ACL check. The
+// resolved name is validated for the same reason, since the fallback path still
+// reads the environment.
 func currentWindowsUser() string {
-	user := strings.TrimSpace(os.Getenv("USERNAME"))
-	if user == "" {
-		out, err := exec.Command("whoami").Output()
-		if err != nil {
-			return ""
+	if out, err := exec.Command("whoami").Output(); err == nil {
+		user := strings.TrimSpace(string(out))
+		if fileutil.IsUsableWindowsIdentity(user) {
+			return user
 		}
-		return strings.TrimSpace(string(out))
 	}
 
-	domain := strings.TrimSpace(os.Getenv("USERDOMAIN"))
-	if domain == "" {
-		return user
+	user := strings.TrimSpace(os.Getenv("USERNAME"))
+	if user == "" {
+		return ""
 	}
-	return domain + `\` + user
+
+	if domain := strings.TrimSpace(os.Getenv("USERDOMAIN")); domain != "" {
+		user = domain + `\` + user
+	}
+	if !fileutil.IsUsableWindowsIdentity(user) {
+		return ""
+	}
+	return user
 }

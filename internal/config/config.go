@@ -95,6 +95,9 @@ func configPathFromDir(configDir string) (string, error) {
 
 func Load(path string) (*Config, error) {
 	cfg := &Config{}
+	if err := fileutil.EnsureSecureFilePermissions(path); err != nil {
+		return nil, err
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -239,6 +242,9 @@ func (pc *ProfileConfig) ActiveProfile(flagProfile string) (*Config, string, err
 }
 
 func LoadProfileConfig(path string) (*ProfileConfig, error) {
+	if err := fileutil.EnsureSecureFilePermissions(path); err != nil {
+		return nil, err
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {

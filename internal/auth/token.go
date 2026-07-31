@@ -77,6 +77,9 @@ func NewTokenStore(path string) *TokenStore {
 }
 
 func (s *TokenStore) Load() (*Token, error) {
+	if err := fileutil.EnsureSecureFilePermissions(s.path); err != nil {
+		return nil, err
+	}
 	data, err := os.ReadFile(s.path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -117,6 +120,9 @@ func NewProfileTokenStore(path, profile string) *ProfileTokenStore {
 }
 
 func (s *ProfileTokenStore) Load() (*Token, error) {
+	if err := fileutil.EnsureSecureFilePermissions(s.path); err != nil {
+		return nil, err
+	}
 	data, err := os.ReadFile(s.path)
 	if err != nil {
 		if os.IsNotExist(err) {

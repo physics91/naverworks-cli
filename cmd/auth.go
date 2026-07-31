@@ -55,15 +55,13 @@ func loginJWT(cfg *config.Config, store *auth.ProfileTokenStore) error {
 		return fmt.Errorf("JWT 인증에 필요한 설정이 누락되었습니다: client_id, client_secret, service_account_id, private_key_path")
 	}
 
-	if err := auth.ValidateKeyPermissions(cfg.PrivateKeyPath); err != nil {
-		return fmt.Errorf("private key 파일 권한 검증 실패: %w", err)
-	}
-
 	scope := cfg.Scope
 	if scope == "" {
 		scope = defaultJWTScope
 	}
 
+	// Key file permissions are validated inside BuildJWTAssertion so that the
+	// refresh path is covered by the same check.
 	assertion, err := auth.BuildJWTAssertion(cfg.ClientID, cfg.ServiceAccountID, cfg.PrivateKeyPath)
 	if err != nil {
 		return err

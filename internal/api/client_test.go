@@ -544,9 +544,15 @@ func TestClient_GetDownloadURL_429_RetryExhausted(t *testing.T) {
 }
 
 func TestValidatePresignedUploadURL_AllowsKnownStorageHost(t *testing.T) {
-	_, err := validatePresignedUploadURL("https://kr.object.ncloudstorage.com/upload?signature=test")
-	if err != nil {
-		t.Fatalf("known storage host should pass: %v", err)
+	tests := []string{
+		"https://apis-storage.worksmobile.com/upload?signature=test",
+		"https://kr.object.ncloudstorage.com/upload?signature=test",
+	}
+
+	for _, rawURL := range tests {
+		if _, err := validatePresignedUploadURL(rawURL); err != nil {
+			t.Fatalf("known storage host %q should pass: %v", rawURL, err)
+		}
 	}
 }
 

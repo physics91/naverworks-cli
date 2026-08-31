@@ -44,7 +44,7 @@ type channelFolderCoverageCase struct {
 func channelFolderCoverageCases() []channelFolderCoverageCase {
 	responseError := func(_ *Response, err error) error { return err }
 	return []channelFolderCoverageCase{
-		{http.MethodGet, "/channel-folders", "/channel-folders", "ListChannelFolders", func(s *ChannelFolderService) error { return responseError(s.ListChannelFolders("", 0)) }},
+		{http.MethodGet, "/channel-folders", "/channel-folders", "ListChannelFolders", func(s *ChannelFolderService) error { return responseError(s.ListChannelFolders()) }},
 		{http.MethodGet, "/channel-folders/{channelFolderId}", "/channel-folders/cf1", "GetChannelFolder", func(s *ChannelFolderService) error { return responseError(s.GetChannelFolder("cf1")) }},
 		{http.MethodPost, "/channel-folders/{channelFolderId}/files", "/channel-folders/cf1/files", "CreateRootUploadURL", func(s *ChannelFolderService) error {
 			return responseError(s.CreateRootUploadURL("cf1", map[string]interface{}{"fileName": "report.txt"}, 10))
@@ -154,7 +154,7 @@ func TestChannelFolderOfficialCoverage(t *testing.T) {
 		if endpoint.Method != test.method || endpoint.Path != test.pathTemplate || endpoint.APIMethod != test.apiMethod {
 			t.Fatalf("coverage row %d = %s %s %s, want %s %s %s", index+1, endpoint.Method, endpoint.Path, endpoint.APIMethod, test.method, test.pathTemplate, test.apiMethod)
 		}
-		if _, ok := allowedAnchors[endpoint.SourceAnchor]; !ok || endpoint.CLIStatus != "pending:TASK-009" {
+		if _, ok := allowedAnchors[endpoint.SourceAnchor]; !ok || endpoint.CLIStatus != "implemented:TASK-009" {
 			t.Fatalf("coverage row %d lacks source/CLI status: %#v", index+1, endpoint)
 		}
 		usedAnchors[endpoint.SourceAnchor] = struct{}{}

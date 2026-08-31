@@ -156,3 +156,15 @@ helpers:
       - command needs send validation, attachment upload/download orchestration, file reads, or other multi-step flows outside the current local wrappers
       - extracting another repo-wide helper tier into `cmd/helpers.go` would only mirror bot-specific scoped-id and raw JSON argument shapes
     replacement: ""
+  - id: channel-folder-run-e-family
+    path: cmd/drive_channelfolder.go
+    symbol: withChannelFolderService/newChannelFolderBodyCommand/newChannelFolderWriteCommand/newChannelFolderJSONCommand/newChannelFolderDownloadCommand
+    lifecycle: experimental
+    owner: Code Reuse Agent
+    use_when:
+      - channel-folder command only differs by id arity, raw JSON body handling, response printer choice, or download URL output
+      - command must enforce the member-access-token boundary before constructing ChannelFolderService
+    avoid_when:
+      - command needs paginated list orchestration, local file upload, or root-versus-child branching
+      - extracting the channel-specific authentication boundary into a repo-wide helper would blur other Drive authentication contracts
+    replacement: ""

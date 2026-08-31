@@ -26,7 +26,7 @@ func installHTTPSIntercept(t *testing.T, targetAddr string) {
 	dialer := &net.Dialer{}
 	baseTransport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
 		switch addr {
-		case "www.worksapis.com:443", "example.com:443":
+		case "www.worksapis.com:443", "apis-storage.worksmobile.com:443", "example.com:443":
 			addr = targetAddr
 		}
 		return dialer.DialContext(ctx, network, addr)

@@ -14,8 +14,8 @@ func NewChannelFolderService(client *Client) *ChannelFolderService {
 	return &ChannelFolderService{client: client}
 }
 
-func (s *ChannelFolderService) ListChannelFolders(cursor string, count int) (*Response, error) {
-	return s.client.Get("/channel-folders" + BuildPaginationQuery(cursor, count))
+func (s *ChannelFolderService) ListChannelFolders() (*Response, error) {
+	return s.client.Get("/channel-folders")
 }
 
 func (s *ChannelFolderService) GetChannelFolder(channelFolderID string) (*Response, error) {

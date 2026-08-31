@@ -1773,7 +1773,7 @@ func TestSmoke_DriveHelp(t *testing.T) {
 	for _, sub := range []string{
 		"info", "list", "search", "get", "download", "upload", "mkdir", "delete",
 		"copy", "rename", "move", "protect", "unprotect", "lock", "unlock",
-		"revision", "link", "share", "shared", "group",
+		"revision", "link", "share", "shared", "group", "channel",
 	} {
 		if !containsCommand(out, sub) {
 			t.Errorf("drive --help missing subcommand %q", sub)
@@ -1785,6 +1785,68 @@ func TestSmoke_DriveHelp(t *testing.T) {
 	} {
 		if !strings.Contains(out, sub) {
 			t.Errorf("drive --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_DriveChannelHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "drive", "channel", "--help")
+	if err != nil {
+		t.Fatalf("drive channel --help failed: %v", err)
+	}
+	for _, sub := range []string{
+		"list", "get", "files", "get-file", "upload", "download", "mkdir", "delete",
+		"copy", "rename", "move", "protect", "unprotect", "lock", "unlock",
+		"revision", "link-setting", "link", "trash-list", "trash-restore", "trash-delete", "permission",
+	} {
+		if !strings.Contains(out, sub) {
+			t.Errorf("drive channel --help missing subcommand %q", sub)
+		}
+	}
+	for _, want := range []string{"구성원 계정", "서비스 계정 사용 불가", "file.read", "group.folder.read", "file", "group.folder"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("drive channel --help missing %q", want)
+		}
+	}
+
+	groups := []struct {
+		name string
+		subs []string
+	}{
+		{name: "revision", subs: []string{"list", "get", "restore", "download"}},
+		{name: "link", subs: []string{"get", "create", "update", "delete"}},
+		{name: "permission", subs: []string{"list", "create", "get", "update", "delete", "delete-all", "enable", "disable"}},
+	}
+	for _, group := range groups {
+		groupHelp, err := runCLI(t, "drive", "channel", group.name, "--help")
+		if err != nil {
+			t.Fatalf("drive channel %s --help failed: %v", group.name, err)
+		}
+		for _, sub := range group.subs {
+			if !strings.Contains(groupHelp, sub) {
+				t.Errorf("drive channel %s --help missing %q", group.name, sub)
+			}
+		}
+	}
+}
+
+func TestSmoke_DriveChannelRequiredInput(t *testing.T) {
+	tests := []struct {
+		args []string
+		want string
+	}{
+		{args: []string{"drive", "channel", "upload", "cf1"}, want: "--file 플래그가 필요합니다"},
+		{args: []string{"drive", "channel", "mkdir", "cf1"}, want: "--json 플래그가 필요합니다"},
+		{args: []string{"drive", "channel", "copy", "cf1", "file1"}, want: "--json 플래그가 필요합니다"},
+		{args: []string{"drive", "channel", "permission", "create", "cf1", "file1"}, want: "--json 플래그가 필요합니다"},
+	}
+	for _, test := range tests {
+		homeDir := setupTestEnv(t)
+		writeTestConfig(t, homeDir)
+		_, err := runCLI(t, test.args...)
+		if err == nil || !strings.Contains(err.Error(), test.want) {
+			t.Fatalf("%v error = %v, want %q", test.args, err, test.want)
 		}
 	}
 }

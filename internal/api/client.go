@@ -30,9 +30,10 @@ const maxAPIResponseSize = 10 << 20 // 10MB
 var errRateLimitExceeded = &APIError{StatusCode: 429, Code: "RATE_LIMIT_EXCEEDED", Description: "최대 재시도 횟수 초과"}
 var rateLimitSleep = time.Sleep
 
-// Default trust is limited to NAVER Cloud storage endpoints.
+// Default trust is limited to official NAVER WORKS and NAVER Cloud storage endpoints.
 // Broader CDN/object-storage domains must be explicitly opt-in via NW_UPLOAD_ALLOWED_HOSTS.
 var defaultAllowedPresignedUploadHostSuffixes = []string{
+	"apis-storage.worksmobile.com",
 	"ncloudstorage.com",
 }
 

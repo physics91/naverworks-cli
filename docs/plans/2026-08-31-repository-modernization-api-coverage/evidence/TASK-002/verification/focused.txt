@@ -1,3 +1,0 @@
-TASK_002_FOCUSED_OK
-command: go test ./scripts/github_issue ./scripts/api_monitor ./scripts/weekly_health -count=1
-result: exit=0; complete repository pagination, pull-request exclusion, lifecycle, ownership mismatch, duplicate target, workflow wiring, and baseline decisions passed

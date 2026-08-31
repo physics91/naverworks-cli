@@ -1,3 +1,0 @@
-TASK_002_INTEGRATION_OK
-command: project test skill layers; make verify-maintenance
-result: exit=0; tidy diff clean, go vet passed, unit/integration/e2e passed, build/version smoke passed, full tests passed, govulncheck reported no vulnerabilities

@@ -1,6 +1,0 @@
-TASK-001 networking risk verification run 2
-- five official GitHub Action tag reads: exit 0
-- every official tag SHA matched the local workflow pin
-- MSYS2 package installation is runner-local, signature-validated by pacman, and fails closed
-- govulncheck database query completed: No vulnerabilities found.
-TASK_001_NETWORKING_OK

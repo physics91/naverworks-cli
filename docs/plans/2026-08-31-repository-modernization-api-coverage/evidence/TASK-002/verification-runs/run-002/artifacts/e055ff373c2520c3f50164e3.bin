@@ -1,3 +1,0 @@
-TASK_002_NETWORKING_OK
-command: go test ./scripts/github_issue -count=1; inspect post-review remediation
-result: exit=0; repository issues are enumerated to an empty final page, pull requests are excluded, ambiguous ownership fails before mutation, and no remote issue mutation was performed

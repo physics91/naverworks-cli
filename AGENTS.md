@@ -44,6 +44,7 @@ In Claude Code, when a trigger condition below is matched, the corresponding ski
 | `version` | "버전", "version", `/version`, "bump" | Inspect version state or create/push release tags |
 | `deploy` | "배포", "릴리스", "deploy", "release", `/deploy` | Preflight checks → release tag → GitHub Actions verification |
 | `release` | "릴리스 관리", "release manage", "release edit", "release delete", "release rollback" | View, edit, delete, rollback GitHub Releases |
+| `naverworks-cli` | `naverworks <domain>`, "NAVER WORKS API 실행/조회", "네이버웍스 명령 실행", "채널 폴더 조회/관리" | Execute NAVER WORKS API reads and explicitly approved writes with profile, scope, and result verification |
 | `naverworks-profile` | "프로필", "인증", "NW_PROFILE", "auth setup" | Multi-profile setup, auth, and troubleshooting |
 | `reuse-governor-local` | "재사용", "중복", "공통화", "헬퍼", "보일러플레이트", "reuse cleanup", "duplication" | Review helper reuse, decide extract/keep-local/waive, and maintain reuse catalog/waivers |
 | `commit-work` | Any commit request | Create commits (never run `git commit` directly) |
@@ -53,4 +54,5 @@ In Claude Code, when a trigger condition below is matched, the corresponding ski
 - `deploy` includes tests — no need to invoke `test` separately before deploy
 - After a version bump, suggest deploy if appropriate
 - `build`, `test`, and `version` can be invoked independently
+- Use `naverworks-cli` for NAVER WORKS API execution; invoke `naverworks-profile` first when authentication or profile changes are required
 - "릴리스 관리", "release manage", "release edit", "release delete", "release rollback" 요청은 `release`를 `deploy`보다 우선한다

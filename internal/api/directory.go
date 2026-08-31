@@ -3,10 +3,17 @@ package api
 import (
 	"fmt"
 	"net/url"
+	"strconv"
 )
 
 type DirectoryService struct {
 	client *Client
+}
+
+type DirectorySearchOptions struct {
+	Query    string
+	OrderBy  string
+	DomainID int64
 }
 
 func NewDirectoryService(client *Client) *DirectoryService {
@@ -19,8 +26,24 @@ func (s *DirectoryService) ListUsers(cursor string, count int) (*Response, error
 	return s.client.Get("/users" + BuildPaginationQuery(cursor, count))
 }
 
+func (s *DirectoryService) SearchUsers(cursor string, count int, options DirectorySearchOptions) (*Response, error) {
+	return s.client.Get("/users/search" + buildDirectorySearchQuery(cursor, count, options))
+}
+
 func (s *DirectoryService) GetUser(userID string) (*Response, error) {
 	return s.client.Get("/users/" + url.PathEscape(userID))
+}
+
+func (s *DirectoryService) ListUserGroups(userID string, membershipType string, cursor string, count int) (*Response, error) {
+	return s.client.Get(fmt.Sprintf("/users/%s/groups", url.PathEscape(userID)) + BuildListQuery(cursor, count, map[string]string{
+		"membershipType": membershipType,
+	}))
+}
+
+func (s *DirectoryService) ListUserOrgUnits(userID string, membershipType string, cursor string, count int) (*Response, error) {
+	return s.client.Get(fmt.Sprintf("/users/%s/orgunits", url.PathEscape(userID)) + BuildListQuery(cursor, count, map[string]string{
+		"membershipType": membershipType,
+	}))
 }
 
 // ─── Task 4-1: User CUD ───
@@ -197,6 +220,10 @@ func (s *DirectoryService) ListGroups(cursor string, count int) (*Response, erro
 	return s.client.Get("/groups" + BuildPaginationQuery(cursor, count))
 }
 
+func (s *DirectoryService) SearchGroups(cursor string, count int, options DirectorySearchOptions) (*Response, error) {
+	return s.client.Get("/groups/search" + buildDirectorySearchQuery(cursor, count, options))
+}
+
 func (s *DirectoryService) GetGroup(groupID string) (*Response, error) {
 	return s.client.Get("/groups/" + url.PathEscape(groupID))
 }
@@ -255,6 +282,10 @@ func (s *DirectoryService) ListGroupExternalKeys(cursor string, count int) (*Res
 
 func (s *DirectoryService) ListOrgUnits(cursor string, count int) (*Response, error) {
 	return s.client.Get("/orgunits" + BuildPaginationQuery(cursor, count))
+}
+
+func (s *DirectoryService) SearchOrgUnits(cursor string, count int, options DirectorySearchOptions) (*Response, error) {
+	return s.client.Get("/orgunits/search" + buildDirectorySearchQuery(cursor, count, options))
 }
 
 func (s *DirectoryService) GetOrgUnit(orgUnitID string) (*Response, error) {
@@ -567,4 +598,16 @@ func (s *DirectoryService) PatchCustomField(id string, body []byte) (*Response, 
 
 func (s *DirectoryService) DeleteCustomField(id string) (*Response, error) {
 	return s.client.Delete("/directory/custom-fields/" + url.PathEscape(id))
+}
+
+func buildDirectorySearchQuery(cursor string, count int, options DirectorySearchOptions) string {
+	domainID := ""
+	if options.DomainID > 0 {
+		domainID = strconv.FormatInt(options.DomainID, 10)
+	}
+	return BuildListQuery(cursor, count, map[string]string{
+		"query":    options.Query,
+		"orderBy":  options.OrderBy,
+		"domainId": domainID,
+	})
 }

@@ -1391,7 +1391,8 @@ func TestSmoke_DirectoryHelp(t *testing.T) {
 	}
 	for _, sub := range []string{
 		// Existing read
-		"list-users", "get-user", "list-groups", "get-group", "list-orgunits", "get-orgunit",
+		"list-users", "search-users", "get-user", "list-user-groups", "list-user-orgunits",
+		"list-groups", "search-groups", "get-group", "list-orgunits", "search-orgunits", "get-orgunit",
 		"list-levels", "list-positions", "list-user-types", "list-employment-types",
 		// Task 4-1: User CUD
 		"create-user", "update-user", "patch-user", "delete-user", "force-delete-user",
@@ -1418,6 +1419,27 @@ func TestSmoke_DirectoryHelp(t *testing.T) {
 	} {
 		if !strings.Contains(out, sub) {
 			t.Errorf("directory --help missing subcommand %q", sub)
+		}
+	}
+
+	for _, test := range []struct {
+		command string
+		scope   string
+	}{
+		{command: "search-users", scope: "user.read"},
+		{command: "list-user-groups", scope: "user.read"},
+		{command: "list-user-orgunits", scope: "user.read"},
+		{command: "search-groups", scope: "group.read"},
+		{command: "search-orgunits", scope: "orgunit.read"},
+	} {
+		help, err := runCLI(t, "directory", test.command, "--help")
+		if err != nil {
+			t.Fatalf("directory %s --help failed: %v", test.command, err)
+		}
+		for _, want := range []string{"구성원 계정", "서비스 계정", test.scope, "directory.read"} {
+			if !strings.Contains(help, want) {
+				t.Errorf("directory %s --help missing %q", test.command, want)
+			}
 		}
 	}
 }

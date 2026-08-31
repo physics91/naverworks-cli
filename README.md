@@ -80,6 +80,18 @@ naverworks --dry-run bot send --bot-id BOT_ID --to USER_ID --text "배포 완료
 naverworks --dry-run directory list-users --count 20
 ```
 
+### Directory 검색·소속 조회
+
+Directory 조회 명령은 구성원 계정 또는 서비스 계정으로 발급한 Access Token을 사용합니다. 최소 권한으로 구성원 검색·소속 조회는 `user.read` 또는 `directory.read`, 그룹 검색은 `group.read` 또는 `directory.read`, 조직 검색은 `orgunit.read` 또는 `directory.read` scope가 필요합니다.
+
+```bash
+naverworks directory search-users "홍길동" --domain-id 10000001 --order-by "userName asc"
+naverworks directory search-groups "개발" --order-by "groupName asc"
+naverworks directory search-orgunits "플랫폼" --order-by "orgUnitName asc"
+naverworks directory list-user-groups USER_ID --membership-type DIRECT
+naverworks directory list-user-orgunits USER_ID --membership-type ALL
+```
+
 ## 문서
 
 - [User Guide Home](https://github.com/physics91/naverworks-cli/wiki)
@@ -110,14 +122,17 @@ naverworks <command> --help
   - `mail move <mailId> --folder <folderId>`: 메일 폴더 이동 (`PATCH .../mail/{mailId}`, body `folderId` 정수)
   - `task list`: `--category-id`, `--status`, `--search-filter-type` (`ALL|ASSIGNEE|ASSIGNOR`)
   - `approval list-all`: `--from`, `--until`, `--document-form-id`, `--order-by`
+  - `directory search-users|search-groups|search-orgunits`: Directory 리소스 검색
+  - `directory list-user-groups|list-user-orgunits`: 구성원 소속 그룹·조직 조회
+  - 구성원 profile-status 응답의 `delegates` 필드 passthrough 검증
 - **응답 변경 (passthrough, 코드 변경 없음)**
   - 구성원/연락처 messenger type: 응답 값이 `X`로 통일될 수 있음 (기존 `TWITTER` 포함)
   - 공용 드라이브 목록 `quota.trash` 필드 제거 가능
   - 휴지통 목록에서 종료된 `orderBy` 값(`deletedDate`, `name`) 사용 불가 — CLI는 orderBy 미노출
 - **미반영 (developers 문서 미등재, #27 잔여)**
-  - Board/Note/Calendar/Contact/User/OrgUnit/Group/Task/Approval **검색 API**
-  - 구성원 소속 그룹·조직 목록, 채널 폴더 API
-  - 검색 `queryFilters`, 메시지 content download `channelId`, profile-status `delegates`, 결재 `type`
+  - Board/Note/Calendar/Contact/Task/Approval **검색 API**
+  - 채널 폴더 API
+  - 검색 `queryFilters`, 메시지 content download `channelId`, 결재 `type`
 
 ## 개발 검증
 

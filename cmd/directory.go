@@ -128,6 +128,12 @@ func directoryTwoIDBodyRunE(call directoryTwoIDBodyCall, printer func(*api.Respo
 
 // ─── Existing Read Commands ───
 
+const (
+	directoryUserReadHelp    = "인증: 구성원 계정 또는 서비스 계정 Access Token\n최소 scope: user.read 또는 directory.read"
+	directoryGroupReadHelp   = "인증: 구성원 계정 또는 서비스 계정 Access Token\n최소 scope: group.read 또는 directory.read"
+	directoryOrgUnitReadHelp = "인증: 구성원 계정 또는 서비스 계정 Access Token\n최소 scope: orgunit.read 또는 directory.read"
+)
+
 var dirListUsersCmd = &cobra.Command{
 	Use:   "list-users",
 	Short: "사용자 목록 조회",
@@ -137,6 +143,59 @@ var dirListUsersCmd = &cobra.Command{
 			return err
 		}
 		return runListCmd(cmd, []string{"userId", "userName", "email"}, "users", dir.ListUsers)
+	},
+}
+
+var dirSearchUsersCmd = &cobra.Command{
+	Use:   "search-users <query>",
+	Short: "사용자 검색",
+	Long:  "사용자 검색\n\n" + directoryUserReadHelp,
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		dir, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		orderBy, _ := cmd.Flags().GetString("order-by")
+		domainID, _ := cmd.Flags().GetInt64("domain-id")
+		options := api.DirectorySearchOptions{Query: args[0], OrderBy: orderBy, DomainID: domainID}
+		return runListCmd(cmd, []string{"userId", "userName", "email"}, "users", func(cursor string, count int) (*api.Response, error) {
+			return dir.SearchUsers(cursor, count, options)
+		})
+	},
+}
+
+var dirListUserGroupsCmd = &cobra.Command{
+	Use:   "list-user-groups <userId>",
+	Short: "사용자 소속 그룹 목록 조회",
+	Long:  "사용자 소속 그룹 목록 조회\n\n" + directoryUserReadHelp,
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		dir, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		membershipType, _ := cmd.Flags().GetString("membership-type")
+		return runListCmd(cmd, []string{"groupId", "groupName", "isGroupMember"}, "groups", func(cursor string, count int) (*api.Response, error) {
+			return dir.ListUserGroups(args[0], membershipType, cursor, count)
+		})
+	},
+}
+
+var dirListUserOrgUnitsCmd = &cobra.Command{
+	Use:   "list-user-orgunits <userId>",
+	Short: "사용자 소속 조직 목록 조회",
+	Long:  "사용자 소속 조직 목록 조회\n\n" + directoryUserReadHelp,
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		dir, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		membershipType, _ := cmd.Flags().GetString("membership-type")
+		return runListCmd(cmd, []string{"orgUnitId", "orgUnitName", "isPrimaryOrgUnit"}, "orgUnits", func(cursor string, count int) (*api.Response, error) {
+			return dir.ListUserOrgUnits(args[0], membershipType, cursor, count)
+		})
 	},
 }
 
@@ -163,6 +222,25 @@ var dirListGroupsCmd = &cobra.Command{
 	},
 }
 
+var dirSearchGroupsCmd = &cobra.Command{
+	Use:   "search-groups <query>",
+	Short: "그룹 검색",
+	Long:  "그룹 검색\n\n" + directoryGroupReadHelp,
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		dir, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		orderBy, _ := cmd.Flags().GetString("order-by")
+		domainID, _ := cmd.Flags().GetInt64("domain-id")
+		options := api.DirectorySearchOptions{Query: args[0], OrderBy: orderBy, DomainID: domainID}
+		return runListCmd(cmd, []string{"groupId", "groupName"}, "groups", func(cursor string, count int) (*api.Response, error) {
+			return dir.SearchGroups(cursor, count, options)
+		})
+	},
+}
+
 var dirGetGroupCmd = &cobra.Command{
 	Use:   "get-group <groupId>",
 	Short: "그룹 상세 조회",
@@ -183,6 +261,25 @@ var dirListOrgUnitsCmd = &cobra.Command{
 			return err
 		}
 		return runListCmd(cmd, []string{"orgUnitId", "orgUnitName"}, "orgUnits", dir.ListOrgUnits)
+	},
+}
+
+var dirSearchOrgUnitsCmd = &cobra.Command{
+	Use:   "search-orgunits <query>",
+	Short: "조직 단위 검색",
+	Long:  "조직 단위 검색\n\n" + directoryOrgUnitReadHelp,
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		dir, err := newSvc(api.NewDirectoryService)
+		if err != nil {
+			return err
+		}
+		orderBy, _ := cmd.Flags().GetString("order-by")
+		domainID, _ := cmd.Flags().GetInt64("domain-id")
+		options := api.DirectorySearchOptions{Query: args[0], OrderBy: orderBy, DomainID: domainID}
+		return runListCmd(cmd, []string{"orgUnitId", "orgUnitName"}, "orgUnits", func(cursor string, count int) (*api.Response, error) {
+			return dir.SearchOrgUnits(cursor, count, options)
+		})
 	},
 }
 
@@ -1234,7 +1331,8 @@ var dirCustomFieldDeleteCmd = &cobra.Command{
 func init() {
 	// ── List flags ──
 	addListFlags(
-		dirListUsersCmd, dirListGroupsCmd, dirListOrgUnitsCmd,
+		dirListUsersCmd, dirSearchUsersCmd, dirListUserGroupsCmd, dirListUserOrgUnitsCmd,
+		dirListGroupsCmd, dirSearchGroupsCmd, dirListOrgUnitsCmd, dirSearchOrgUnitsCmd,
 		dirListLevelsCmd, dirListPositionsCmd, dirListUserTypesCmd, dirListEmploymentTypesCmd,
 		dirListExternalKeysCmd, dirListGroupExternalKeysCmd, dirListOrgUnitExternalKeysCmd,
 		dirUserCustomPropertyListCmd,
@@ -1244,6 +1342,14 @@ func init() {
 		dirProfileStatusDefListCmd,
 		dirCustomFieldListCmd,
 	)
+	dirSearchUsersCmd.Flags().String("order-by", "", "정렬 기준 (userName asc 또는 userName desc)")
+	dirSearchGroupsCmd.Flags().String("order-by", "", "정렬 기준 (groupName asc 또는 groupName desc)")
+	dirSearchOrgUnitsCmd.Flags().String("order-by", "", "정렬 기준 (orgUnitName asc 또는 orgUnitName desc)")
+	dirSearchUsersCmd.Flags().Int64("domain-id", 0, "도메인 ID")
+	dirSearchGroupsCmd.Flags().Int64("domain-id", 0, "도메인 ID")
+	dirSearchOrgUnitsCmd.Flags().Int64("domain-id", 0, "도메인 ID")
+	dirListUserGroupsCmd.Flags().String("membership-type", "", "소속 유형 (DIRECT 또는 ALL, 기본값: ALL)")
+	dirListUserOrgUnitsCmd.Flags().String("membership-type", "", "소속 유형 (DIRECT 또는 ALL, 기본값: ALL)")
 
 	// ── JSON flags ──
 	for _, c := range []*cobra.Command{
@@ -1334,9 +1440,10 @@ func init() {
 	// ── Register all subcommands ──
 	directoryCmd.AddCommand(
 		// Existing read commands
-		dirListUsersCmd, dirGetUserCmd,
-		dirListGroupsCmd, dirGetGroupCmd,
-		dirListOrgUnitsCmd, dirGetOrgUnitCmd,
+		dirListUsersCmd, dirSearchUsersCmd, dirGetUserCmd,
+		dirListUserGroupsCmd, dirListUserOrgUnitsCmd,
+		dirListGroupsCmd, dirSearchGroupsCmd, dirGetGroupCmd,
+		dirListOrgUnitsCmd, dirSearchOrgUnitsCmd, dirGetOrgUnitCmd,
 		dirListLevelsCmd, dirListPositionsCmd, dirListUserTypesCmd, dirListEmploymentTypesCmd,
 		// Task 4-1: User CUD
 		dirCreateUserCmd, dirUpdateUserCmd, dirPatchUserCmd,

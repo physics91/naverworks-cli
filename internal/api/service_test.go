@@ -472,8 +472,10 @@ func TestServiceMethods(t *testing.T) {
 			wantPath:   "/contact-tags/tag1",
 		},
 		{
-			name:       "ContactService.CreateUserTags",
-			call:       func(c *Client) { NewContactService(c).CreateUserTags("u1", map[string]interface{}{"tagIds": []string{"t1"}}) },
+			name: "ContactService.CreateUserTags",
+			call: func(c *Client) {
+				NewContactService(c).CreateUserTags("u1", map[string]interface{}{"tagIds": []string{"t1"}})
+			},
 			wantMethod: "POST",
 			wantPath:   "/users/u1/contact-tags",
 		},
@@ -772,8 +774,10 @@ func TestServiceMethods(t *testing.T) {
 			wantPath:   "/boards/must/posts",
 		},
 		{
-			name:       "BoardService.CreatePostAttachment",
-			call:       func(c *Client) { NewBoardService(c).CreatePostAttachment("b1", "p1", map[string]interface{}{"fileName": "a.txt"}) },
+			name: "BoardService.CreatePostAttachment",
+			call: func(c *Client) {
+				NewBoardService(c).CreatePostAttachment("b1", "p1", map[string]interface{}{"fileName": "a.txt"})
+			},
 			wantMethod: "POST",
 			wantPath:   "/boards/b1/posts/p1/attachments",
 		},
@@ -802,8 +806,10 @@ func TestServiceMethods(t *testing.T) {
 			wantPath:   "/boards/b1/posts/p1/comments/c1",
 		},
 		{
-			name:       "BoardService.UpdateComment",
-			call:       func(c *Client) { NewBoardService(c).UpdateComment("b1", "p1", "c1", map[string]interface{}{"body": "up"}) },
+			name: "BoardService.UpdateComment",
+			call: func(c *Client) {
+				NewBoardService(c).UpdateComment("b1", "p1", "c1", map[string]interface{}{"body": "up"})
+			},
 			wantMethod: "PUT",
 			wantPath:   "/boards/b1/posts/p1/comments/c1",
 		},
@@ -814,8 +820,10 @@ func TestServiceMethods(t *testing.T) {
 			wantPath:   "/boards/b1/posts/p1/comments/c1",
 		},
 		{
-			name:       "BoardService.CreateCommentAttachment",
-			call:       func(c *Client) { NewBoardService(c).CreateCommentAttachment("b1", "p1", "c1", map[string]interface{}{"fileName": "a.txt"}) },
+			name: "BoardService.CreateCommentAttachment",
+			call: func(c *Client) {
+				NewBoardService(c).CreateCommentAttachment("b1", "p1", "c1", map[string]interface{}{"fileName": "a.txt"})
+			},
 			wantMethod: "POST",
 			wantPath:   "/boards/b1/posts/p1/comments/c1/attachments",
 		},
@@ -1100,8 +1108,10 @@ func TestServiceMethods(t *testing.T) {
 			wantPath:   "/business-support/business-places/bp1",
 		},
 		{
-			name:       "BusinessPlaceService.UpdateBusinessPlace",
-			call:       func(c *Client) { NewBusinessPlaceService(c).UpdateBusinessPlace("bp1", map[string]interface{}{"name": "x"}) },
+			name: "BusinessPlaceService.UpdateBusinessPlace",
+			call: func(c *Client) {
+				NewBusinessPlaceService(c).UpdateBusinessPlace("bp1", map[string]interface{}{"name": "x"})
+			},
 			wantMethod: "PATCH",
 			wantPath:   "/business-support/business-places/bp1",
 		},
@@ -1132,8 +1142,10 @@ func TestServiceMethods(t *testing.T) {
 			wantPath:   "/users/u1/calendars/cal1/events/ev1",
 		},
 		{
-			name:       "CalendarService.CreateEvent",
-			call:       func(c *Client) { NewCalendarService(c).CreateEvent("u1", "cal1", map[string]interface{}{"summary": "x"}) },
+			name: "CalendarService.CreateEvent",
+			call: func(c *Client) {
+				NewCalendarService(c).CreateEvent("u1", "cal1", map[string]interface{}{"summary": "x"})
+			},
 			wantMethod: "POST",
 			wantPath:   "/users/u1/calendars/cal1/events",
 		},
@@ -1168,8 +1180,10 @@ func TestServiceMethods(t *testing.T) {
 			wantPath:   "/users/u1/calendar-personals/cal1",
 		},
 		{
-			name:       "CalendarService.PatchCalendarPersonal",
-			call:       func(c *Client) { NewCalendarService(c).PatchCalendarPersonal("u1", "cal1", map[string]interface{}{"color": "red"}) },
+			name: "CalendarService.PatchCalendarPersonal",
+			call: func(c *Client) {
+				NewCalendarService(c).PatchCalendarPersonal("u1", "cal1", map[string]interface{}{"color": "red"})
+			},
 			wantMethod: "PATCH",
 			wantPath:   "/users/u1/calendar-personals/cal1",
 		},
@@ -1180,8 +1194,10 @@ func TestServiceMethods(t *testing.T) {
 			wantPath:   "/users/u1/calendars/cal1",
 		},
 		{
-			name:       "CalendarService.UpdateEvent",
-			call:       func(c *Client) { NewCalendarService(c).UpdateEvent("u1", "cal1", "ev1", map[string]interface{}{"summary": "y"}) },
+			name: "CalendarService.UpdateEvent",
+			call: func(c *Client) {
+				NewCalendarService(c).UpdateEvent("u1", "cal1", "ev1", map[string]interface{}{"summary": "y"})
+			},
 			wantMethod: "PUT",
 			wantPath:   "/users/u1/calendars/cal1/events/ev1",
 		},
@@ -1192,8 +1208,10 @@ func TestServiceMethods(t *testing.T) {
 			wantPath:   "/users/u1/calendars/cal1/events/ev1",
 		},
 		{
-			name:       "CalendarService.CreateDefaultEvent",
-			call:       func(c *Client) { NewCalendarService(c).CreateDefaultEvent("u1", map[string]interface{}{"summary": "x"}) },
+			name: "CalendarService.CreateDefaultEvent",
+			call: func(c *Client) {
+				NewCalendarService(c).CreateDefaultEvent("u1", map[string]interface{}{"summary": "x"})
+			},
 			wantMethod: "POST",
 			wantPath:   "/users/u1/calendar/events",
 		},
@@ -1210,8 +1228,10 @@ func TestServiceMethods(t *testing.T) {
 			wantPath:   "/users/u1/calendar/events/ev1",
 		},
 		{
-			name:       "CalendarService.UpdateDefaultEvent",
-			call:       func(c *Client) { NewCalendarService(c).UpdateDefaultEvent("u1", "ev1", map[string]interface{}{"summary": "y"}) },
+			name: "CalendarService.UpdateDefaultEvent",
+			call: func(c *Client) {
+				NewCalendarService(c).UpdateDefaultEvent("u1", "ev1", map[string]interface{}{"summary": "y"})
+			},
 			wantMethod: "PUT",
 			wantPath:   "/users/u1/calendar/events/ev1",
 		},
@@ -1328,8 +1348,10 @@ func TestServiceMethods(t *testing.T) {
 			wantPath:   "/users/u1/clear-leave-of-absence",
 		},
 		{
-			name:       "DirectoryService.CreateUserPhoto",
-			call:       func(c *Client) { NewDirectoryService(c).CreateUserPhoto("u1", map[string]interface{}{"fileName": "photo.jpg"}) },
+			name: "DirectoryService.CreateUserPhoto",
+			call: func(c *Client) {
+				NewDirectoryService(c).CreateUserPhoto("u1", map[string]interface{}{"fileName": "photo.jpg"})
+			},
 			wantMethod: "POST",
 			wantPath:   "/users/u1/photo",
 		},
@@ -2050,14 +2072,18 @@ func TestServiceMethods(t *testing.T) {
 			wantPath:   "/users/u1/drive/files/f1",
 		},
 		{
-			name:       "DriveService.CreateUploadURL",
-			call:       func(c *Client) { NewDriveService(c).CreateUploadURL("u1", map[string]interface{}{"fileName": "a.txt"}, 100) },
+			name: "DriveService.CreateUploadURL",
+			call: func(c *Client) {
+				NewDriveService(c).CreateUploadURL("u1", map[string]interface{}{"fileName": "a.txt"}, 100)
+			},
 			wantMethod: "POST",
 			wantPath:   "/users/u1/drive/files",
 		},
 		{
-			name:       "DriveService.CreateUploadURLInFolder",
-			call:       func(c *Client) { NewDriveService(c).CreateUploadURLInFolder("u1", "f1", map[string]interface{}{"fileName": "a.txt"}, 100) },
+			name: "DriveService.CreateUploadURLInFolder",
+			call: func(c *Client) {
+				NewDriveService(c).CreateUploadURLInFolder("u1", "f1", map[string]interface{}{"fileName": "a.txt"}, 100)
+			},
 			wantMethod: "POST",
 			wantPath:   "/users/u1/drive/files/f1",
 		},
@@ -2240,8 +2266,12 @@ func TestServiceMethods(t *testing.T) {
 		{name: "GroupFolderService.CreateFolderInRoot", call: func(c *Client) { NewGroupFolderService(c).CreateFolderInRoot("g1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/groups/g1/folder/files/createfolder"},
 		{name: "GroupFolderService.CreateSubFolder", call: func(c *Client) { NewGroupFolderService(c).CreateSubFolder("g1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/groups/g1/folder/files/f1/createfolder"},
 		{name: "GroupFolderService.DeleteFile", call: func(c *Client) { NewGroupFolderService(c).DeleteFile("g1", "f1") }, wantMethod: "DELETE", wantPath: "/groups/g1/folder/files/f1"},
-		{name: "GroupFolderService.CreateUploadURL", call: func(c *Client) { NewGroupFolderService(c).CreateUploadURL("g1", "f1", map[string]interface{}{"fileName": "a.txt"}, 100) }, wantMethod: "POST", wantPath: "/groups/g1/folder/files/f1"},
-		{name: "GroupFolderService.CreateRootUploadURL", call: func(c *Client) { NewGroupFolderService(c).CreateRootUploadURL("g1", map[string]interface{}{"fileName": "a.txt"}, 100) }, wantMethod: "POST", wantPath: "/groups/g1/folder/files"},
+		{name: "GroupFolderService.CreateUploadURL", call: func(c *Client) {
+			NewGroupFolderService(c).CreateUploadURL("g1", "f1", map[string]interface{}{"fileName": "a.txt"}, 100)
+		}, wantMethod: "POST", wantPath: "/groups/g1/folder/files/f1"},
+		{name: "GroupFolderService.CreateRootUploadURL", call: func(c *Client) {
+			NewGroupFolderService(c).CreateRootUploadURL("g1", map[string]interface{}{"fileName": "a.txt"}, 100)
+		}, wantMethod: "POST", wantPath: "/groups/g1/folder/files"},
 		{name: "GroupFolderService.CopyFile", call: func(c *Client) { NewGroupFolderService(c).CopyFile("g1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/groups/g1/folder/files/f1/copy"},
 		{name: "GroupFolderService.RenameFile", call: func(c *Client) { NewGroupFolderService(c).RenameFile("g1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/groups/g1/folder/files/f1/rename"},
 		{name: "GroupFolderService.MoveFile", call: func(c *Client) { NewGroupFolderService(c).MoveFile("g1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/groups/g1/folder/files/f1/move"},
@@ -2273,14 +2303,18 @@ func TestServiceMethods(t *testing.T) {
 		{name: "SharedDriveService.ListFiles", call: func(c *Client) { NewSharedDriveService(c).ListFiles("d1", "", 10) }, wantMethod: "GET", wantPath: "/sharedrives/d1/files"},
 		{name: "SharedDriveService.ListFolderChildren", call: func(c *Client) { NewSharedDriveService(c).ListFolderChildren("d1", "f1", "", 10) }, wantMethod: "GET", wantPath: "/sharedrives/d1/files/f1/children"},
 		{name: "SharedDriveService.GetFile", call: func(c *Client) { NewSharedDriveService(c).GetFile("d1", "f1") }, wantMethod: "GET", wantPath: "/sharedrives/d1/files/f1"},
-		{name: "SharedDriveService.CreateUploadURL", call: func(c *Client) { NewSharedDriveService(c).CreateUploadURL("d1", map[string]interface{}{"fileName": "a.txt"}, 100) }, wantMethod: "POST", wantPath: "/sharedrives/d1/files"},
+		{name: "SharedDriveService.CreateUploadURL", call: func(c *Client) {
+			NewSharedDriveService(c).CreateUploadURL("d1", map[string]interface{}{"fileName": "a.txt"}, 100)
+		}, wantMethod: "POST", wantPath: "/sharedrives/d1/files"},
 		{name: "SharedDriveService.CreateDrive", call: func(c *Client) { NewSharedDriveService(c).CreateDrive([]byte(`{}`)) }, wantMethod: "POST", wantPath: "/sharedrives"},
 		{name: "SharedDriveService.PatchDrive", call: func(c *Client) { NewSharedDriveService(c).PatchDrive("d1", []byte(`{}`)) }, wantMethod: "PATCH", wantPath: "/sharedrives/d1"},
 		{name: "SharedDriveService.DeleteDrive", call: func(c *Client) { NewSharedDriveService(c).DeleteDrive("d1") }, wantMethod: "DELETE", wantPath: "/sharedrives/d1"},
 		{name: "SharedDriveService.CreateFolderInRoot", call: func(c *Client) { NewSharedDriveService(c).CreateFolderInRoot("d1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/sharedrives/d1/files/createfolder"},
 		{name: "SharedDriveService.CreateSubFolder", call: func(c *Client) { NewSharedDriveService(c).CreateSubFolder("d1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/sharedrives/d1/files/f1/createfolder"},
 		{name: "SharedDriveService.DeleteFile", call: func(c *Client) { NewSharedDriveService(c).DeleteFile("d1", "f1") }, wantMethod: "DELETE", wantPath: "/sharedrives/d1/files/f1"},
-		{name: "SharedDriveService.CreateUploadURLInFolder", call: func(c *Client) { NewSharedDriveService(c).CreateUploadURLInFolder("d1", "f1", map[string]interface{}{"fileName": "a.txt"}, 100) }, wantMethod: "POST", wantPath: "/sharedrives/d1/files/f1"},
+		{name: "SharedDriveService.CreateUploadURLInFolder", call: func(c *Client) {
+			NewSharedDriveService(c).CreateUploadURLInFolder("d1", "f1", map[string]interface{}{"fileName": "a.txt"}, 100)
+		}, wantMethod: "POST", wantPath: "/sharedrives/d1/files/f1"},
 		{name: "SharedDriveService.CopyFile", call: func(c *Client) { NewSharedDriveService(c).CopyFile("d1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/sharedrives/d1/files/f1/copy"},
 		{name: "SharedDriveService.RenameFile", call: func(c *Client) { NewSharedDriveService(c).RenameFile("d1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/sharedrives/d1/files/f1/rename"},
 		{name: "SharedDriveService.MoveFile", call: func(c *Client) { NewSharedDriveService(c).MoveFile("d1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/sharedrives/d1/files/f1/move"},
@@ -2321,13 +2355,17 @@ func TestServiceMethods(t *testing.T) {
 		{name: "SharedFolderService.LeaveFolder", call: func(c *Client) { NewSharedFolderService(c).LeaveFolder("u1", "sf1") }, wantMethod: "DELETE", wantPath: "/users/u1/drive/sharedfolders/sf1"},
 		{name: "SharedFolderService.ListMembers", call: func(c *Client) { NewSharedFolderService(c).ListMembers("u1", "sf1") }, wantMethod: "GET", wantPath: "/users/u1/drive/sharedfolders/sf1/members"},
 		{name: "SharedFolderService.ListFiles", call: func(c *Client) { NewSharedFolderService(c).ListFiles("u1", "sf1", "", 10) }, wantMethod: "GET", wantPath: "/users/u1/drive/sharedfolders/sf1/files"},
-		{name: "SharedFolderService.CreateUploadURLInRoot", call: func(c *Client) { NewSharedFolderService(c).CreateUploadURLInRoot("u1", "sf1", map[string]interface{}{"fileName": "a.txt"}, 100) }, wantMethod: "POST", wantPath: "/users/u1/drive/sharedfolders/sf1/files"},
+		{name: "SharedFolderService.CreateUploadURLInRoot", call: func(c *Client) {
+			NewSharedFolderService(c).CreateUploadURLInRoot("u1", "sf1", map[string]interface{}{"fileName": "a.txt"}, 100)
+		}, wantMethod: "POST", wantPath: "/users/u1/drive/sharedfolders/sf1/files"},
 		{name: "SharedFolderService.CreateFolderInRoot", call: func(c *Client) { NewSharedFolderService(c).CreateFolderInRoot("u1", "sf1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/users/u1/drive/sharedfolders/sf1/files/createfolder"},
 		{name: "SharedFolderService.CreateSubFolder", call: func(c *Client) { NewSharedFolderService(c).CreateSubFolder("u1", "sf1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/users/u1/drive/sharedfolders/sf1/files/f1/createfolder"},
 		{name: "SharedFolderService.GetFile", call: func(c *Client) { NewSharedFolderService(c).GetFile("u1", "sf1", "f1") }, wantMethod: "GET", wantPath: "/users/u1/drive/sharedfolders/sf1/files/f1"},
 		{name: "SharedFolderService.ListFolderChildren", call: func(c *Client) { NewSharedFolderService(c).ListFolderChildren("u1", "sf1", "f1", "", 10) }, wantMethod: "GET", wantPath: "/users/u1/drive/sharedfolders/sf1/files/f1/children"},
 		{name: "SharedFolderService.DeleteFile", call: func(c *Client) { NewSharedFolderService(c).DeleteFile("u1", "sf1", "f1") }, wantMethod: "DELETE", wantPath: "/users/u1/drive/sharedfolders/sf1/files/f1"},
-		{name: "SharedFolderService.CreateUploadURL", call: func(c *Client) { NewSharedFolderService(c).CreateUploadURL("u1", "sf1", "f1", map[string]interface{}{"fileName": "a.txt"}, 100) }, wantMethod: "POST", wantPath: "/users/u1/drive/sharedfolders/sf1/files/f1"},
+		{name: "SharedFolderService.CreateUploadURL", call: func(c *Client) {
+			NewSharedFolderService(c).CreateUploadURL("u1", "sf1", "f1", map[string]interface{}{"fileName": "a.txt"}, 100)
+		}, wantMethod: "POST", wantPath: "/users/u1/drive/sharedfolders/sf1/files/f1"},
 		{name: "SharedFolderService.CopyFile", call: func(c *Client) { NewSharedFolderService(c).CopyFile("u1", "sf1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/users/u1/drive/sharedfolders/sf1/files/f1/copy"},
 		{name: "SharedFolderService.RenameFile", call: func(c *Client) { NewSharedFolderService(c).RenameFile("u1", "sf1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/users/u1/drive/sharedfolders/sf1/files/f1/rename"},
 		{name: "SharedFolderService.MoveFile", call: func(c *Client) { NewSharedFolderService(c).MoveFile("u1", "sf1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/users/u1/drive/sharedfolders/sf1/files/f1/move"},

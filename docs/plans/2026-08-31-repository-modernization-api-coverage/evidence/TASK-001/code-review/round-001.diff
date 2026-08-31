@@ -1,0 +1,466 @@
+diff --git a/.github/workflows/api-monitor.yml b/.github/workflows/api-monitor.yml
+index 0e36486..17dee44 100644
+--- a/.github/workflows/api-monitor.yml
++++ b/.github/workflows/api-monitor.yml
+@@ -14,10 +14,10 @@ jobs:
+     runs-on: ubuntu-latest
+ 
+     steps:
+-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
++      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+ 
+       - name: Set up Go
+-        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
++        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+         with:
+           go-version-file: go.mod
+           cache: true
+@@ -70,7 +70,7 @@ jobs:
+ 
+       - name: Upload monitor artifacts
+         if: always()
+-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
++        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+         with:
+           name: api-monitor-log
+           path: |
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 89e404b..d057fd7 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -10,28 +10,17 @@ jobs:
+   test:
+     runs-on: ubuntu-latest
+     steps:
+-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
++      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+ 
+-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
++      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+         with:
+-          go-version: "1.25"
++          go-version: "1.26.7"
+ 
+       - name: Reuse Guardrails
+         run: scripts/check-reuse-guardrails.sh .
+ 
+-      - name: Fast Test
+-        if: github.event_name == 'pull_request'
+-        run: make test-fast
+-
+-      - name: Full Test
+-        if: github.event_name == 'push'
+-        run: make test-full
+-
+-      - name: Build
+-        run: go build -o naverworks .
+-
+-      - name: Vet
+-        run: go vet ./...
++      - name: Verify maintenance baseline
++        run: make verify-maintenance
+ 
+   # Credential file protection is enforced through Windows ACLs, which cannot be
+   # exercised on Linux. Without this job the icacls inspection, foreign-ACE
+@@ -39,17 +28,15 @@ jobs:
+   test-windows:
+     runs-on: windows-latest
+     steps:
+-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
++      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+ 
+-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
++      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+         with:
+-          go-version: "1.25"
+-
+-      - name: Vet
+-        run: go vet ./...
++          go-version: "1.26.7"
+ 
+-      - name: Test
+-        run: go test ./...
++      - name: Add MSYS2 tools to PATH
++        shell: pwsh
++        run: '"C:\msys64\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append'
+ 
+-      - name: Build
+-        run: go build -o naverworks.exe .
++      - name: Verify maintenance baseline
++        run: make verify-maintenance
+diff --git a/.github/workflows/release.yml b/.github/workflows/release.yml
+index 599f3f3..531ddb2 100644
+--- a/.github/workflows/release.yml
++++ b/.github/workflows/release.yml
+@@ -13,25 +13,25 @@ jobs:
+   release:
+     runs-on: ubuntu-latest
+     steps:
+-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
++      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+         with:
+           fetch-depth: 0
+ 
+-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
++      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+         with:
+-          go-version: "1.25"
++          go-version: "1.26.7"
+ 
+-      - name: Binary canary
+-        run: make test-canary
++      - name: Maintenance preflight
++        run: make verify-maintenance
+ 
+-      - uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
++      - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+         with:
+           version: "~> v2"
+           args: release --clean
+         env:
+           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+ 
+-      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
++      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+         with:
+           node-version: "24"
+           registry-url: "https://registry.npmjs.org"
+diff --git a/.github/workflows/weekly-health.yml b/.github/workflows/weekly-health.yml
+index 28cebe9..1a9e9ff 100644
+--- a/.github/workflows/weekly-health.yml
++++ b/.github/workflows/weekly-health.yml
+@@ -14,10 +14,10 @@ jobs:
+     runs-on: ubuntu-latest
+ 
+     steps:
+-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
++      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+ 
+       - name: Set up Go
+-        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
++        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+         with:
+           go-version-file: go.mod
+           cache: true
+@@ -77,7 +77,7 @@ jobs:
+ 
+       - name: Upload weekly health artifacts
+         if: always()
+-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
++        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+         with:
+           name: weekly-health-artifacts
+           path: |
+diff --git a/.gitignore b/.gitignore
+index fb3c8ba..7a133b7 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -37,3 +37,4 @@ docs/reviews/
+ .kilocode/
+ .playwright-mcp/
+ .worktrees/
++/.worktrees/
+diff --git a/.goreleaser.yml b/.goreleaser.yml
+index 52f34b2..115df81 100644
+--- a/.goreleaser.yml
++++ b/.goreleaser.yml
+@@ -4,8 +4,7 @@ project_name: naverworks
+ 
+ before:
+   hooks:
+-    - go mod tidy
+-    - go test ./...
++    - make verify-maintenance
+ 
+ builds:
+   - main: .
+diff --git a/AGENTS.md b/AGENTS.md
+index 7aec12e..9b1516f 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -4,7 +4,7 @@ naverworks-cli — A Go CLI for NAVER WORKS REST API v1.0.
+ 
+ ## Project Context
+ 
+-- Go 1.25, Cobra CLI framework, minimal external dependencies
++- Go 1.26.7, Cobra CLI framework, minimal external dependencies
+ - Profile-based multi-auth (OAuth + JWT) with automatic token refresh
+ - `cmd/` for Cobra commands, `internal/` for business logic separation
+ - `npm/` wrapper for cross-platform distribution (goreleaser + GitHub Actions)
+diff --git a/Makefile b/Makefile
+index 6d790a6..6d120b7 100644
+--- a/Makefile
++++ b/Makefile
+@@ -6,7 +6,7 @@ LDFLAGS := -s -w \
+ 	-X github.com/physics91/naverworks-cli/cmd.commit=$(COMMIT) \
+ 	-X github.com/physics91/naverworks-cli/cmd.buildDate=$(BUILD_DATE)
+ 
+-.PHONY: build test test-fast test-full test-canary clean
++.PHONY: build test test-fast test-full test-canary format-check vulncheck verify-maintenance clean
+ 
+ build:
+ 	go build -ldflags "$(LDFLAGS)" -o naverworks .
+@@ -25,5 +25,25 @@ test-full:
+ test-canary:
+ 	go test ./cmd -run TestBinaryCanaryVersion -v -count=1
+ 
++format-check:
++	@unformatted="$$(gofmt -l .)"; \
++	if [ -n "$$unformatted" ]; then \
++		printf '%s\n' "$$unformatted"; \
++		exit 1; \
++	fi
++
++vulncheck:
++	go run golang.org/x/vuln/cmd/govulncheck@v1.7.0 ./...
++
++verify-maintenance:
++	go mod tidy -diff
++	$(MAKE) format-check
++	go vet ./...
++	$(MAKE) test-fast
++	$(MAKE) test-full
++	$(MAKE) test-canary
++	$(MAKE) build
++	$(MAKE) vulncheck
++
+ clean:
+ 	rm -f naverworks
+diff --git a/go.mod b/go.mod
+index 9d24d2c..3a7212b 100644
+--- a/go.mod
++++ b/go.mod
+@@ -1,6 +1,6 @@
+ module github.com/physics91/naverworks-cli
+ 
+-go 1.25.0
++go 1.26.7
+ 
+ require (
+ 	github.com/spf13/cobra v1.10.2
+diff --git a/internal/api/service_test.go b/internal/api/service_test.go
+index ad7f3c1..932a1ae 100644
+--- a/internal/api/service_test.go
++++ b/internal/api/service_test.go
+@@ -472,8 +472,10 @@ func TestServiceMethods(t *testing.T) {
+ 			wantPath:   "/contact-tags/tag1",
+ 		},
+ 		{
+-			name:       "ContactService.CreateUserTags",
+-			call:       func(c *Client) { NewContactService(c).CreateUserTags("u1", map[string]interface{}{"tagIds": []string{"t1"}}) },
++			name: "ContactService.CreateUserTags",
++			call: func(c *Client) {
++				NewContactService(c).CreateUserTags("u1", map[string]interface{}{"tagIds": []string{"t1"}})
++			},
+ 			wantMethod: "POST",
+ 			wantPath:   "/users/u1/contact-tags",
+ 		},
+@@ -772,8 +774,10 @@ func TestServiceMethods(t *testing.T) {
+ 			wantPath:   "/boards/must/posts",
+ 		},
+ 		{
+-			name:       "BoardService.CreatePostAttachment",
+-			call:       func(c *Client) { NewBoardService(c).CreatePostAttachment("b1", "p1", map[string]interface{}{"fileName": "a.txt"}) },
++			name: "BoardService.CreatePostAttachment",
++			call: func(c *Client) {
++				NewBoardService(c).CreatePostAttachment("b1", "p1", map[string]interface{}{"fileName": "a.txt"})
++			},
+ 			wantMethod: "POST",
+ 			wantPath:   "/boards/b1/posts/p1/attachments",
+ 		},
+@@ -802,8 +806,10 @@ func TestServiceMethods(t *testing.T) {
+ 			wantPath:   "/boards/b1/posts/p1/comments/c1",
+ 		},
+ 		{
+-			name:       "BoardService.UpdateComment",
+-			call:       func(c *Client) { NewBoardService(c).UpdateComment("b1", "p1", "c1", map[string]interface{}{"body": "up"}) },
++			name: "BoardService.UpdateComment",
++			call: func(c *Client) {
++				NewBoardService(c).UpdateComment("b1", "p1", "c1", map[string]interface{}{"body": "up"})
++			},
+ 			wantMethod: "PUT",
+ 			wantPath:   "/boards/b1/posts/p1/comments/c1",
+ 		},
+@@ -814,8 +820,10 @@ func TestServiceMethods(t *testing.T) {
+ 			wantPath:   "/boards/b1/posts/p1/comments/c1",
+ 		},
+ 		{
+-			name:       "BoardService.CreateCommentAttachment",
+-			call:       func(c *Client) { NewBoardService(c).CreateCommentAttachment("b1", "p1", "c1", map[string]interface{}{"fileName": "a.txt"}) },
++			name: "BoardService.CreateCommentAttachment",
++			call: func(c *Client) {
++				NewBoardService(c).CreateCommentAttachment("b1", "p1", "c1", map[string]interface{}{"fileName": "a.txt"})
++			},
+ 			wantMethod: "POST",
+ 			wantPath:   "/boards/b1/posts/p1/comments/c1/attachments",
+ 		},
+@@ -1100,8 +1108,10 @@ func TestServiceMethods(t *testing.T) {
+ 			wantPath:   "/business-support/business-places/bp1",
+ 		},
+ 		{
+-			name:       "BusinessPlaceService.UpdateBusinessPlace",
+-			call:       func(c *Client) { NewBusinessPlaceService(c).UpdateBusinessPlace("bp1", map[string]interface{}{"name": "x"}) },
++			name: "BusinessPlaceService.UpdateBusinessPlace",
++			call: func(c *Client) {
++				NewBusinessPlaceService(c).UpdateBusinessPlace("bp1", map[string]interface{}{"name": "x"})
++			},
+ 			wantMethod: "PATCH",
+ 			wantPath:   "/business-support/business-places/bp1",
+ 		},
+@@ -1132,8 +1142,10 @@ func TestServiceMethods(t *testing.T) {
+ 			wantPath:   "/users/u1/calendars/cal1/events/ev1",
+ 		},
+ 		{
+-			name:       "CalendarService.CreateEvent",
+-			call:       func(c *Client) { NewCalendarService(c).CreateEvent("u1", "cal1", map[string]interface{}{"summary": "x"}) },
++			name: "CalendarService.CreateEvent",
++			call: func(c *Client) {
++				NewCalendarService(c).CreateEvent("u1", "cal1", map[string]interface{}{"summary": "x"})
++			},
+ 			wantMethod: "POST",
+ 			wantPath:   "/users/u1/calendars/cal1/events",
+ 		},
+@@ -1168,8 +1180,10 @@ func TestServiceMethods(t *testing.T) {
+ 			wantPath:   "/users/u1/calendar-personals/cal1",
+ 		},
+ 		{
+-			name:       "CalendarService.PatchCalendarPersonal",
+-			call:       func(c *Client) { NewCalendarService(c).PatchCalendarPersonal("u1", "cal1", map[string]interface{}{"color": "red"}) },
++			name: "CalendarService.PatchCalendarPersonal",
++			call: func(c *Client) {
++				NewCalendarService(c).PatchCalendarPersonal("u1", "cal1", map[string]interface{}{"color": "red"})
++			},
+ 			wantMethod: "PATCH",
+ 			wantPath:   "/users/u1/calendar-personals/cal1",
+ 		},
+@@ -1180,8 +1194,10 @@ func TestServiceMethods(t *testing.T) {
+ 			wantPath:   "/users/u1/calendars/cal1",
+ 		},
+ 		{
+-			name:       "CalendarService.UpdateEvent",
+-			call:       func(c *Client) { NewCalendarService(c).UpdateEvent("u1", "cal1", "ev1", map[string]interface{}{"summary": "y"}) },
++			name: "CalendarService.UpdateEvent",
++			call: func(c *Client) {
++				NewCalendarService(c).UpdateEvent("u1", "cal1", "ev1", map[string]interface{}{"summary": "y"})
++			},
+ 			wantMethod: "PUT",
+ 			wantPath:   "/users/u1/calendars/cal1/events/ev1",
+ 		},
+@@ -1192,8 +1208,10 @@ func TestServiceMethods(t *testing.T) {
+ 			wantPath:   "/users/u1/calendars/cal1/events/ev1",
+ 		},
+ 		{
+-			name:       "CalendarService.CreateDefaultEvent",
+-			call:       func(c *Client) { NewCalendarService(c).CreateDefaultEvent("u1", map[string]interface{}{"summary": "x"}) },
++			name: "CalendarService.CreateDefaultEvent",
++			call: func(c *Client) {
++				NewCalendarService(c).CreateDefaultEvent("u1", map[string]interface{}{"summary": "x"})
++			},
+ 			wantMethod: "POST",
+ 			wantPath:   "/users/u1/calendar/events",
+ 		},
+@@ -1210,8 +1228,10 @@ func TestServiceMethods(t *testing.T) {
+ 			wantPath:   "/users/u1/calendar/events/ev1",
+ 		},
+ 		{
+-			name:       "CalendarService.UpdateDefaultEvent",
+-			call:       func(c *Client) { NewCalendarService(c).UpdateDefaultEvent("u1", "ev1", map[string]interface{}{"summary": "y"}) },
++			name: "CalendarService.UpdateDefaultEvent",
++			call: func(c *Client) {
++				NewCalendarService(c).UpdateDefaultEvent("u1", "ev1", map[string]interface{}{"summary": "y"})
++			},
+ 			wantMethod: "PUT",
+ 			wantPath:   "/users/u1/calendar/events/ev1",
+ 		},
+@@ -1328,8 +1348,10 @@ func TestServiceMethods(t *testing.T) {
+ 			wantPath:   "/users/u1/clear-leave-of-absence",
+ 		},
+ 		{
+-			name:       "DirectoryService.CreateUserPhoto",
+-			call:       func(c *Client) { NewDirectoryService(c).CreateUserPhoto("u1", map[string]interface{}{"fileName": "photo.jpg"}) },
++			name: "DirectoryService.CreateUserPhoto",
++			call: func(c *Client) {
++				NewDirectoryService(c).CreateUserPhoto("u1", map[string]interface{}{"fileName": "photo.jpg"})
++			},
+ 			wantMethod: "POST",
+ 			wantPath:   "/users/u1/photo",
+ 		},
+@@ -2050,14 +2072,18 @@ func TestServiceMethods(t *testing.T) {
+ 			wantPath:   "/users/u1/drive/files/f1",
+ 		},
+ 		{
+-			name:       "DriveService.CreateUploadURL",
+-			call:       func(c *Client) { NewDriveService(c).CreateUploadURL("u1", map[string]interface{}{"fileName": "a.txt"}, 100) },
++			name: "DriveService.CreateUploadURL",
++			call: func(c *Client) {
++				NewDriveService(c).CreateUploadURL("u1", map[string]interface{}{"fileName": "a.txt"}, 100)
++			},
+ 			wantMethod: "POST",
+ 			wantPath:   "/users/u1/drive/files",
+ 		},
+ 		{
+-			name:       "DriveService.CreateUploadURLInFolder",
+-			call:       func(c *Client) { NewDriveService(c).CreateUploadURLInFolder("u1", "f1", map[string]interface{}{"fileName": "a.txt"}, 100) },
++			name: "DriveService.CreateUploadURLInFolder",
++			call: func(c *Client) {
++				NewDriveService(c).CreateUploadURLInFolder("u1", "f1", map[string]interface{}{"fileName": "a.txt"}, 100)
++			},
+ 			wantMethod: "POST",
+ 			wantPath:   "/users/u1/drive/files/f1",
+ 		},
+@@ -2240,8 +2266,12 @@ func TestServiceMethods(t *testing.T) {
+ 		{name: "GroupFolderService.CreateFolderInRoot", call: func(c *Client) { NewGroupFolderService(c).CreateFolderInRoot("g1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/groups/g1/folder/files/createfolder"},
+ 		{name: "GroupFolderService.CreateSubFolder", call: func(c *Client) { NewGroupFolderService(c).CreateSubFolder("g1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/groups/g1/folder/files/f1/createfolder"},
+ 		{name: "GroupFolderService.DeleteFile", call: func(c *Client) { NewGroupFolderService(c).DeleteFile("g1", "f1") }, wantMethod: "DELETE", wantPath: "/groups/g1/folder/files/f1"},
+-		{name: "GroupFolderService.CreateUploadURL", call: func(c *Client) { NewGroupFolderService(c).CreateUploadURL("g1", "f1", map[string]interface{}{"fileName": "a.txt"}, 100) }, wantMethod: "POST", wantPath: "/groups/g1/folder/files/f1"},
+-		{name: "GroupFolderService.CreateRootUploadURL", call: func(c *Client) { NewGroupFolderService(c).CreateRootUploadURL("g1", map[string]interface{}{"fileName": "a.txt"}, 100) }, wantMethod: "POST", wantPath: "/groups/g1/folder/files"},
++		{name: "GroupFolderService.CreateUploadURL", call: func(c *Client) {
++			NewGroupFolderService(c).CreateUploadURL("g1", "f1", map[string]interface{}{"fileName": "a.txt"}, 100)
++		}, wantMethod: "POST", wantPath: "/groups/g1/folder/files/f1"},
++		{name: "GroupFolderService.CreateRootUploadURL", call: func(c *Client) {
++			NewGroupFolderService(c).CreateRootUploadURL("g1", map[string]interface{}{"fileName": "a.txt"}, 100)
++		}, wantMethod: "POST", wantPath: "/groups/g1/folder/files"},
+ 		{name: "GroupFolderService.CopyFile", call: func(c *Client) { NewGroupFolderService(c).CopyFile("g1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/groups/g1/folder/files/f1/copy"},
+ 		{name: "GroupFolderService.RenameFile", call: func(c *Client) { NewGroupFolderService(c).RenameFile("g1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/groups/g1/folder/files/f1/rename"},
+ 		{name: "GroupFolderService.MoveFile", call: func(c *Client) { NewGroupFolderService(c).MoveFile("g1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/groups/g1/folder/files/f1/move"},
+@@ -2273,14 +2303,18 @@ func TestServiceMethods(t *testing.T) {
+ 		{name: "SharedDriveService.ListFiles", call: func(c *Client) { NewSharedDriveService(c).ListFiles("d1", "", 10) }, wantMethod: "GET", wantPath: "/sharedrives/d1/files"},
+ 		{name: "SharedDriveService.ListFolderChildren", call: func(c *Client) { NewSharedDriveService(c).ListFolderChildren("d1", "f1", "", 10) }, wantMethod: "GET", wantPath: "/sharedrives/d1/files/f1/children"},
+ 		{name: "SharedDriveService.GetFile", call: func(c *Client) { NewSharedDriveService(c).GetFile("d1", "f1") }, wantMethod: "GET", wantPath: "/sharedrives/d1/files/f1"},
+-		{name: "SharedDriveService.CreateUploadURL", call: func(c *Client) { NewSharedDriveService(c).CreateUploadURL("d1", map[string]interface{}{"fileName": "a.txt"}, 100) }, wantMethod: "POST", wantPath: "/sharedrives/d1/files"},
++		{name: "SharedDriveService.CreateUploadURL", call: func(c *Client) {
++			NewSharedDriveService(c).CreateUploadURL("d1", map[string]interface{}{"fileName": "a.txt"}, 100)
++		}, wantMethod: "POST", wantPath: "/sharedrives/d1/files"},
+ 		{name: "SharedDriveService.CreateDrive", call: func(c *Client) { NewSharedDriveService(c).CreateDrive([]byte(`{}`)) }, wantMethod: "POST", wantPath: "/sharedrives"},
+ 		{name: "SharedDriveService.PatchDrive", call: func(c *Client) { NewSharedDriveService(c).PatchDrive("d1", []byte(`{}`)) }, wantMethod: "PATCH", wantPath: "/sharedrives/d1"},
+ 		{name: "SharedDriveService.DeleteDrive", call: func(c *Client) { NewSharedDriveService(c).DeleteDrive("d1") }, wantMethod: "DELETE", wantPath: "/sharedrives/d1"},
+ 		{name: "SharedDriveService.CreateFolderInRoot", call: func(c *Client) { NewSharedDriveService(c).CreateFolderInRoot("d1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/sharedrives/d1/files/createfolder"},
+ 		{name: "SharedDriveService.CreateSubFolder", call: func(c *Client) { NewSharedDriveService(c).CreateSubFolder("d1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/sharedrives/d1/files/f1/createfolder"},
+ 		{name: "SharedDriveService.DeleteFile", call: func(c *Client) { NewSharedDriveService(c).DeleteFile("d1", "f1") }, wantMethod: "DELETE", wantPath: "/sharedrives/d1/files/f1"},
+-		{name: "SharedDriveService.CreateUploadURLInFolder", call: func(c *Client) { NewSharedDriveService(c).CreateUploadURLInFolder("d1", "f1", map[string]interface{}{"fileName": "a.txt"}, 100) }, wantMethod: "POST", wantPath: "/sharedrives/d1/files/f1"},
++		{name: "SharedDriveService.CreateUploadURLInFolder", call: func(c *Client) {
++			NewSharedDriveService(c).CreateUploadURLInFolder("d1", "f1", map[string]interface{}{"fileName": "a.txt"}, 100)
++		}, wantMethod: "POST", wantPath: "/sharedrives/d1/files/f1"},
+ 		{name: "SharedDriveService.CopyFile", call: func(c *Client) { NewSharedDriveService(c).CopyFile("d1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/sharedrives/d1/files/f1/copy"},
+ 		{name: "SharedDriveService.RenameFile", call: func(c *Client) { NewSharedDriveService(c).RenameFile("d1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/sharedrives/d1/files/f1/rename"},
+ 		{name: "SharedDriveService.MoveFile", call: func(c *Client) { NewSharedDriveService(c).MoveFile("d1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/sharedrives/d1/files/f1/move"},
+@@ -2321,13 +2355,17 @@ func TestServiceMethods(t *testing.T) {
+ 		{name: "SharedFolderService.LeaveFolder", call: func(c *Client) { NewSharedFolderService(c).LeaveFolder("u1", "sf1") }, wantMethod: "DELETE", wantPath: "/users/u1/drive/sharedfolders/sf1"},
+ 		{name: "SharedFolderService.ListMembers", call: func(c *Client) { NewSharedFolderService(c).ListMembers("u1", "sf1") }, wantMethod: "GET", wantPath: "/users/u1/drive/sharedfolders/sf1/members"},
+ 		{name: "SharedFolderService.ListFiles", call: func(c *Client) { NewSharedFolderService(c).ListFiles("u1", "sf1", "", 10) }, wantMethod: "GET", wantPath: "/users/u1/drive/sharedfolders/sf1/files"},
+-		{name: "SharedFolderService.CreateUploadURLInRoot", call: func(c *Client) { NewSharedFolderService(c).CreateUploadURLInRoot("u1", "sf1", map[string]interface{}{"fileName": "a.txt"}, 100) }, wantMethod: "POST", wantPath: "/users/u1/drive/sharedfolders/sf1/files"},
++		{name: "SharedFolderService.CreateUploadURLInRoot", call: func(c *Client) {
++			NewSharedFolderService(c).CreateUploadURLInRoot("u1", "sf1", map[string]interface{}{"fileName": "a.txt"}, 100)
++		}, wantMethod: "POST", wantPath: "/users/u1/drive/sharedfolders/sf1/files"},
+ 		{name: "SharedFolderService.CreateFolderInRoot", call: func(c *Client) { NewSharedFolderService(c).CreateFolderInRoot("u1", "sf1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/users/u1/drive/sharedfolders/sf1/files/createfolder"},
+ 		{name: "SharedFolderService.CreateSubFolder", call: func(c *Client) { NewSharedFolderService(c).CreateSubFolder("u1", "sf1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/users/u1/drive/sharedfolders/sf1/files/f1/createfolder"},
+ 		{name: "SharedFolderService.GetFile", call: func(c *Client) { NewSharedFolderService(c).GetFile("u1", "sf1", "f1") }, wantMethod: "GET", wantPath: "/users/u1/drive/sharedfolders/sf1/files/f1"},
+ 		{name: "SharedFolderService.ListFolderChildren", call: func(c *Client) { NewSharedFolderService(c).ListFolderChildren("u1", "sf1", "f1", "", 10) }, wantMethod: "GET", wantPath: "/users/u1/drive/sharedfolders/sf1/files/f1/children"},
+ 		{name: "SharedFolderService.DeleteFile", call: func(c *Client) { NewSharedFolderService(c).DeleteFile("u1", "sf1", "f1") }, wantMethod: "DELETE", wantPath: "/users/u1/drive/sharedfolders/sf1/files/f1"},
+-		{name: "SharedFolderService.CreateUploadURL", call: func(c *Client) { NewSharedFolderService(c).CreateUploadURL("u1", "sf1", "f1", map[string]interface{}{"fileName": "a.txt"}, 100) }, wantMethod: "POST", wantPath: "/users/u1/drive/sharedfolders/sf1/files/f1"},
++		{name: "SharedFolderService.CreateUploadURL", call: func(c *Client) {
++			NewSharedFolderService(c).CreateUploadURL("u1", "sf1", "f1", map[string]interface{}{"fileName": "a.txt"}, 100)
++		}, wantMethod: "POST", wantPath: "/users/u1/drive/sharedfolders/sf1/files/f1"},
+ 		{name: "SharedFolderService.CopyFile", call: func(c *Client) { NewSharedFolderService(c).CopyFile("u1", "sf1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/users/u1/drive/sharedfolders/sf1/files/f1/copy"},
+ 		{name: "SharedFolderService.RenameFile", call: func(c *Client) { NewSharedFolderService(c).RenameFile("u1", "sf1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/users/u1/drive/sharedfolders/sf1/files/f1/rename"},
+ 		{name: "SharedFolderService.MoveFile", call: func(c *Client) { NewSharedFolderService(c).MoveFile("u1", "sf1", "f1", []byte(`{}`)) }, wantMethod: "POST", wantPath: "/users/u1/drive/sharedfolders/sf1/files/f1/move"},

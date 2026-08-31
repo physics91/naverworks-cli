@@ -9,6 +9,12 @@ type ContactService struct {
 	client *Client
 }
 
+type ContactSearchOptions struct {
+	Query        string
+	QueryFilters string
+	OrderBy      string
+}
+
 func NewContactService(client *Client) *ContactService {
 	return &ContactService{client: client}
 }
@@ -19,6 +25,15 @@ func (s *ContactService) ListContacts(cursor string, count int) (*Response, erro
 
 func (s *ContactService) ListUserContacts(userID string, cursor string, count int) (*Response, error) {
 	return s.client.Get(fmt.Sprintf("/users/%s/contacts", url.PathEscape(userID)) + BuildPaginationQuery(cursor, count))
+}
+
+func (s *ContactService) SearchContacts(userID, cursor string, count int, options ContactSearchOptions) (*Response, error) {
+	path := fmt.Sprintf("/users/%s/contacts/search", url.PathEscape(userID))
+	return s.client.Get(path + BuildListQuery(cursor, count, map[string]string{
+		"query":        options.Query,
+		"queryFilters": options.QueryFilters,
+		"orderBy":      options.OrderBy,
+	}))
 }
 
 func (s *ContactService) GetContact(contactID string) (*Response, error) {

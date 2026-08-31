@@ -743,7 +743,7 @@ func TestSmoke_CalendarHelp(t *testing.T) {
 		}
 	}
 	for _, sub := range []string{"create-calendar", "get-calendar", "update-calendar", "delete-calendar",
-		"get-personal", "update-personal", "remove-user", "update-event", "delete-event"} {
+		"get-personal", "update-personal", "remove-user", "search-events", "update-event", "delete-event"} {
 		if !strings.Contains(out, sub) {
 			t.Errorf("calendar --help missing subcommand %q", sub)
 		}
@@ -793,7 +793,7 @@ func TestSmoke_BoardHelp(t *testing.T) {
 		}
 	}
 	for _, sub := range []string{
-		"list-readers", "list-recent", "list-my", "list-must",
+		"search-posts", "list-readers", "list-recent", "list-my", "list-must",
 		"create-attachment", "list-attachments", "get-attachment", "delete-attachment",
 		"create-comment", "get-comment", "update-comment", "delete-comment",
 		"create-comment-attachment", "list-comment-attachments", "get-comment-attachment", "delete-comment-attachment",
@@ -1049,7 +1049,7 @@ func TestSmoke_ContactHelp(t *testing.T) {
 		}
 	}
 	for _, sub := range []string{
-		"list-user", "full-update", "force-delete",
+		"list-user", "search", "full-update", "force-delete",
 		"upload-photo", "get-photo", "delete-photo",
 		"list-tags", "list-user-tags",
 		"custom-property",
@@ -1105,7 +1105,7 @@ func TestSmoke_NoteHelp(t *testing.T) {
 		}
 	}
 	for _, sub := range []string{
-		"list-posts", "get-post",
+		"list-posts", "search-posts", "get-post",
 		"create-post", "update-post", "delete-post",
 		"patch-post",
 		"create-attachment", "list-attachments", "get-attachment", "delete-attachment",
@@ -1137,6 +1137,31 @@ func TestSmoke_NoteCreateAttachment_MissingFile(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "--file 플래그가 필요합니다") {
 		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSmoke_SearchCommandAuthorizationHelp(t *testing.T) {
+	setupTestEnv(t)
+	tests := []struct {
+		args []string
+		want []string
+	}{
+		{args: []string{"board", "search-posts", "--help"}, want: []string{"구성원 계정", "서비스 계정", "board.read"}},
+		{args: []string{"note", "search-posts", "--help"}, want: []string{"구성원 계정", "서비스 계정 사용 불가", "group.note.read"}},
+		{args: []string{"calendar", "search-events", "--help"}, want: []string{"구성원 계정", "서비스 계정", "calendar.read"}},
+		{args: []string{"contact", "search", "--help"}, want: []string{"구성원 계정", "서비스 계정", "contact.read"}},
+	}
+
+	for _, test := range tests {
+		help, err := runCLI(t, test.args...)
+		if err != nil {
+			t.Fatalf("%v failed: %v", test.args, err)
+		}
+		for _, want := range test.want {
+			if !strings.Contains(help, want) {
+				t.Errorf("%v help missing %q", test.args, want)
+			}
+		}
 	}
 }
 

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/physics91/naverworks-cli/internal/api"
 	"github.com/spf13/cobra"
@@ -11,6 +12,8 @@ var contactCmd = &cobra.Command{
 	Use:   "contact",
 	Short: "연락처 관리",
 }
+
+const contactSearchHelp = "인증: 구성원 계정 또는 서비스 계정 Access Token\n최소 scope: contact.read"
 
 type contactIDCall func(*api.ContactService, string) (*api.Response, error)
 type contactBodyReader func(*cobra.Command) (map[string]interface{}, error)
@@ -180,6 +183,36 @@ var contactListUserCmd = &cobra.Command{
 	Use:   "list-user",
 	Short: "사용자별 연락처 목록 조회",
 	RunE:  contactUserRunListE([]string{"contactId", "name", "email"}, "contacts", (*api.ContactService).ListUserContacts),
+}
+
+var contactSearchCmd = &cobra.Command{
+	Use:   "search <query>",
+	Short: "사용자가 접근 가능한 연락처 검색",
+	Long:  "사용자가 접근 가능한 연락처 검색\n\n" + contactSearchHelp,
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		query := strings.TrimSpace(args[0])
+		if query == "" {
+			return fmt.Errorf("query는 비어 있을 수 없습니다")
+		}
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		queryFilters, _ := cmd.Flags().GetString("query-filters")
+		orderBy, _ := cmd.Flags().GetString("order-by")
+		options := api.ContactSearchOptions{Query: query, QueryFilters: queryFilters, OrderBy: orderBy}
+		svc := api.NewContactService(client)
+		columns := []string{
+			"contactId",
+			"lastName=contactName.lastName",
+			"firstName=contactName.firstName",
+			"email=emails.0.email",
+		}
+		return runListCmd(cmd, columns, "contacts", func(cursor string, count int) (*api.Response, error) {
+			return svc.SearchContacts(userID, cursor, count, options)
+		})
+	},
 }
 
 var contactGetCmd = &cobra.Command{
@@ -388,10 +421,12 @@ var contactTagCreateUserTagsCmd = &cobra.Command{
 }
 
 func init() {
-	addListFlags(contactListCmd, contactListUserCmd, contactListTagsCmd, contactListUserTagsCmd, contactCustomPropertyListCmd)
-	for _, c := range []*cobra.Command{contactListUserCmd, contactListUserTagsCmd, contactTagCreateUserTagsCmd} {
+	addListFlags(contactListCmd, contactListUserCmd, contactSearchCmd, contactListTagsCmd, contactListUserTagsCmd, contactCustomPropertyListCmd)
+	for _, c := range []*cobra.Command{contactListUserCmd, contactSearchCmd, contactListUserTagsCmd, contactTagCreateUserTagsCmd} {
 		c.Flags().String("user-id", "", "사용자 ID (OAuth: me 허용)")
 	}
+	contactSearchCmd.Flags().String("query-filters", "", "검색 대상 필드 (contactName,emails,telephones,organizations,contactTagName; 쉼표 구분)")
+	contactSearchCmd.Flags().String("order-by", "", "정렬 기준과 순서 (예: name asc)")
 
 	contactCreateCmd.Flags().String("name", "", "연락처 이름 (필수)")
 	contactCreateCmd.Flags().String("email", "", "이메일")
@@ -424,7 +459,7 @@ func init() {
 	contactTagCmd.AddCommand(contactTagCreateCmd, contactTagGetCmd, contactTagUpdateCmd,
 		contactTagPatchCmd, contactTagDeleteCmd, contactTagCreateUserTagsCmd)
 
-	contactCmd.AddCommand(contactListCmd, contactListUserCmd, contactGetCmd, contactCreateCmd,
+	contactCmd.AddCommand(contactListCmd, contactListUserCmd, contactSearchCmd, contactGetCmd, contactCreateCmd,
 		contactUpdateCmd, contactFullUpdateCmd, contactDeleteCmd, contactForceDeleteCmd,
 		contactUploadPhotoCmd, contactGetPhotoCmd, contactDeletePhotoCmd,
 		contactListTagsCmd, contactListUserTagsCmd,

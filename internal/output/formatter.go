@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 )
@@ -70,14 +71,57 @@ func (f *Formatter) printAsTable(data []byte) {
 	rows := make([][]string, 0, len(items))
 	for _, item := range items {
 		row := make([]string, len(f.columns))
-		for i, col := range f.columns {
-			if v, ok := item[col]; ok {
-				row[i] = fmt.Sprintf("%v", v)
+		for i, column := range f.columns {
+			_, path := tableColumn(column)
+			if value, ok := tableValue(item, path); ok && value != nil {
+				switch value.(type) {
+				case map[string]interface{}, []interface{}:
+					if encoded, err := json.Marshal(value); err == nil {
+						row[i] = string(encoded)
+					}
+				default:
+					row[i] = fmt.Sprintf("%v", value)
+				}
 			}
 		}
 		rows = append(rows, row)
 	}
-	f.PrintTable(f.columns, rows)
+	headers := make([]string, len(f.columns))
+	for i, column := range f.columns {
+		headers[i], _ = tableColumn(column)
+	}
+	f.PrintTable(headers, rows)
+}
+
+func tableColumn(column string) (header, path string) {
+	header, path, found := strings.Cut(column, "=")
+	if !found || header == "" || path == "" {
+		return column, column
+	}
+	return header, path
+}
+
+func tableValue(item map[string]interface{}, path string) (interface{}, bool) {
+	var current interface{} = item
+	for _, segment := range strings.Split(path, ".") {
+		switch value := current.(type) {
+		case map[string]interface{}:
+			var ok bool
+			current, ok = value[segment]
+			if !ok {
+				return nil, false
+			}
+		case []interface{}:
+			index, err := strconv.Atoi(segment)
+			if err != nil || index < 0 || index >= len(value) {
+				return nil, false
+			}
+			current = value[index]
+		default:
+			return nil, false
+		}
+	}
+	return current, true
 }
 
 func (f *Formatter) PrintTable(headers []string, rows [][]string) {

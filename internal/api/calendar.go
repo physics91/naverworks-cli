@@ -9,6 +9,13 @@ type CalendarService struct {
 	client *Client
 }
 
+type CalendarEventSearchOptions struct {
+	Query        string
+	QueryFilters string
+	StartTime    string
+	EndTime      string
+}
+
 func NewCalendarService(client *Client) *CalendarService {
 	return &CalendarService{client: client}
 }
@@ -27,6 +34,16 @@ func (s *CalendarService) ListEvents(userID, calendarID, from, until string) (*R
 		"untilDateTime": {until},
 	}
 	return s.client.Get(fmt.Sprintf("/users/%s/calendars/%s/events?%s", url.PathEscape(userID), url.PathEscape(calendarID), params.Encode()))
+}
+
+func (s *CalendarService) SearchEvents(userID, cursor string, count int, options CalendarEventSearchOptions) (*Response, error) {
+	path := fmt.Sprintf("/users/%s/calendars/events/search", url.PathEscape(userID))
+	return s.client.Get(path + BuildListQuery(cursor, count, map[string]string{
+		"query":        options.Query,
+		"queryFilters": options.QueryFilters,
+		"startTime":    options.StartTime,
+		"endTime":      options.EndTime,
+	}))
 }
 
 func (s *CalendarService) GetEvent(userID, calendarID, eventID string) (*Response, error) {

@@ -92,6 +92,19 @@ naverworks directory list-user-groups USER_ID --membership-type DIRECT
 naverworks directory list-user-orgunits USER_ID --membership-type ALL
 ```
 
+### Board·Note·Calendar·Contact 검색
+
+Board·Calendar·Contact 검색은 구성원 계정 또는 서비스 계정 Access Token을 사용할 수 있으며 최소 `board.read`, `calendar.read`, `contact.read` scope가 각각 필요합니다. Note 검색은 구성원 계정 Access Token 전용이며 최소 `group.note.read` scope가 필요합니다.
+
+```bash
+naverworks board search-posts "회의록" --board-ids "1,2" --has-attachment
+naverworks note search-posts GROUP_ID "회의록"
+naverworks calendar search-events "주간 회의" --user-id me --query-filters "summary,attendee"
+naverworks contact search "홍길동" --user-id me --query-filters "contactName,emails" --order-by "name asc"
+```
+
+Calendar 검색은 query 없이 기간만 지정할 수 있지만 `--query-filters`를 쓰려면 query가 필요합니다. 각 검색 명령은 `--cursor`, `--count`, `--all` 페이지네이션을 지원합니다.
+
 ## 문서
 
 - [User Guide Home](https://github.com/physics91/naverworks-cli/wiki)
@@ -125,14 +138,15 @@ naverworks <command> --help
   - `directory search-users|search-groups|search-orgunits`: Directory 리소스 검색
   - `directory list-user-groups|list-user-orgunits`: 구성원 소속 그룹·조직 조회
   - 구성원 profile-status 응답의 `delegates` 필드 passthrough 검증
+  - `board search-posts`, `note search-posts`, `calendar search-events`, `contact search`: 도메인 검색 API
 - **응답 변경 (passthrough, 코드 변경 없음)**
   - 구성원/연락처 messenger type: 응답 값이 `X`로 통일될 수 있음 (기존 `TWITTER` 포함)
   - 공용 드라이브 목록 `quota.trash` 필드 제거 가능
   - 휴지통 목록에서 종료된 `orderBy` 값(`deletedDate`, `name`) 사용 불가 — CLI는 orderBy 미노출
 - **미반영 (developers 문서 미등재, #27 잔여)**
-  - Board/Note/Calendar/Contact/Task/Approval **검색 API**
+  - Task/Approval **검색 API**
   - 채널 폴더 API
-  - 검색 `queryFilters`, 메시지 content download `channelId`, 결재 `type`
+  - 메시지 content download `channelId`, 결재 `type`
 
 ## 개발 검증
 

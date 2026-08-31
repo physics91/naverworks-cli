@@ -37,6 +37,8 @@ var calendarCmd = &cobra.Command{
 	Short: "캘린더 관리",
 }
 
+const calendarSearchHelp = "인증: 구성원 계정 또는 서비스 계정 Access Token\n최소 scope: calendar.read"
+
 var calListCalendarsCmd = &cobra.Command{
 	Use:   "list-calendars",
 	Short: "캘린더 목록 조회",
@@ -94,6 +96,48 @@ var calListEventsCmd = &cobra.Command{
 			WithTable([]string{"eventId", "summary", "start", "end"}, "events").
 			PrintRaw(resp.Body)
 		return nil
+	},
+}
+
+var calSearchEventsCmd = &cobra.Command{
+	Use:   "search-events [query]",
+	Short: "사용자의 전체 캘린더 일정 검색",
+	Long:  "사용자의 전체 캘린더 일정 검색\n\n" + calendarSearchHelp,
+	Args:  cobra.MaximumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		query := ""
+		if len(args) == 1 {
+			query = strings.TrimSpace(args[0])
+			if query == "" {
+				return fmt.Errorf("query는 비어 있을 수 없습니다")
+			}
+		}
+		queryFilters, _ := cmd.Flags().GetString("query-filters")
+		if strings.TrimSpace(queryFilters) != "" && query == "" {
+			return fmt.Errorf("--query-filters를 사용하려면 query를 지정하세요")
+		}
+		client, userID, err := newAPIClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		startTime, _ := cmd.Flags().GetString("start-time")
+		endTime, _ := cmd.Flags().GetString("end-time")
+		options := api.CalendarEventSearchOptions{
+			Query:        query,
+			QueryFilters: queryFilters,
+			StartTime:    startTime,
+			EndTime:      endTime,
+		}
+		cal := api.NewCalendarService(client)
+		columns := []string{
+			"eventId=eventComponents.0.eventId",
+			"summary=eventComponents.0.summary",
+			"start=eventComponents.0.start",
+			"end=eventComponents.0.end",
+		}
+		return runListCmd(cmd, columns, "events", func(cursor string, count int) (*api.Response, error) {
+			return cal.SearchEvents(userID, cursor, count, options)
+		})
 	},
 }
 
@@ -521,11 +565,14 @@ var calDefaultDeleteEventCmd = &cobra.Command{
 
 func init() {
 	// Existing commands: user-id flag
-	for _, cmd := range []*cobra.Command{calListCalendarsCmd, calListEventsCmd, calGetEventCmd, calCreateEventCmd} {
+	for _, cmd := range []*cobra.Command{calListCalendarsCmd, calListEventsCmd, calSearchEventsCmd, calGetEventCmd, calCreateEventCmd} {
 		cmd.Flags().String("user-id", "", "사용자 ID (OAuth: me 허용)")
 	}
 	calListCalendarsCmd.Flags().Bool("default", false, "기본 캘린더만 조회")
-	addListFlags(calListCalendarsCmd)
+	addListFlags(calListCalendarsCmd, calSearchEventsCmd)
+	calSearchEventsCmd.Flags().String("query-filters", "", "검색 대상 필드 (summary,attendee,location,description; 쉼표 구분)")
+	calSearchEventsCmd.Flags().String("start-time", "", "검색 시작 일시 (RFC3339)")
+	calSearchEventsCmd.Flags().String("end-time", "", "검색 종료 일시 (RFC3339)")
 
 	calListEventsCmd.Flags().String("calendar-id", "", "캘린더 ID (필수)")
 	calListEventsCmd.Flags().String("from", "", "시작 시간 RFC3339 (필수)")
@@ -575,7 +622,7 @@ func init() {
 	calDefaultCmd.AddCommand(calDefaultListEventsCmd, calDefaultGetEventCmd, calDefaultCreateEventCmd, calDefaultUpdateEventCmd, calDefaultDeleteEventCmd)
 
 	// Register all to calendarCmd
-	calendarCmd.AddCommand(calListCalendarsCmd, calListEventsCmd, calGetEventCmd, calCreateEventCmd,
+	calendarCmd.AddCommand(calListCalendarsCmd, calListEventsCmd, calSearchEventsCmd, calGetEventCmd, calCreateEventCmd,
 		calCreateCalendarCmd, calGetCalendarCmd, calUpdateCalendarCmd, calDeleteCalendarCmd,
 		calGetPersonalCmd, calUpdatePersonalCmd, calRemoveUserCmd,
 		calUpdateEventCmd, calDeleteEventCmd,

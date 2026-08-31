@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/physics91/naverworks-cli/internal/api"
 	"github.com/spf13/cobra"
@@ -11,6 +12,8 @@ var boardCmd = &cobra.Command{
 	Use:   "board",
 	Short: "게시판 관리",
 }
+
+const boardSearchHelp = "인증: 구성원 계정 또는 서비스 계정 Access Token\n최소 scope: board.read"
 
 type boardIDCall func(*api.BoardService, string) (*api.Response, error)
 type boardTwoIDCall func(*api.BoardService, string, string) (*api.Response, error)
@@ -244,6 +247,39 @@ var boardListPostsCmd = &cobra.Command{
 	RunE:  boardIDRunListE([]string{"postId", "title"}, "posts", (*api.BoardService).ListPosts),
 }
 
+var boardSearchPostsCmd = &cobra.Command{
+	Use:   "search-posts <query>",
+	Short: "전체 게시판의 게시글 검색",
+	Long:  "전체 게시판의 게시글 검색\n\n" + boardSearchHelp,
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		query := strings.TrimSpace(args[0])
+		if query == "" {
+			return fmt.Errorf("query는 비어 있을 수 없습니다")
+		}
+		svc, err := newSvc(api.NewBoardService)
+		if err != nil {
+			return err
+		}
+		boardIDs, _ := cmd.Flags().GetString("board-ids")
+		hasAttachment, _ := cmd.Flags().GetBool("has-attachment")
+		writerID, _ := cmd.Flags().GetString("writer-id")
+		startTime, _ := cmd.Flags().GetString("start-time")
+		endTime, _ := cmd.Flags().GetString("end-time")
+		options := api.BoardPostSearchOptions{
+			Query:         query,
+			BoardIDs:      boardIDs,
+			HasAttachment: hasAttachment,
+			WriterID:      writerID,
+			StartTime:     startTime,
+			EndTime:       endTime,
+		}
+		return runListCmd(cmd, []string{"postId", "title", "boardName", "snippet"}, "posts", func(cursor string, count int) (*api.Response, error) {
+			return svc.SearchPosts(cursor, count, options)
+		})
+	},
+}
+
 var boardGetPostCmd = &cobra.Command{
 	Use:   "get-post <boardId> <postId>",
 	Short: "게시글 상세 조회",
@@ -459,7 +495,13 @@ var boardDeleteCommentAttachmentCmd = &cobra.Command{
 func init() {
 	// Pagination flags
 	addListFlags(boardListCmd, boardListPostsCmd, boardListCommentsCmd,
-		boardListReadersCmd, boardListRecentCmd, boardListMyCmd, boardListMustCmd)
+		boardListReadersCmd, boardListRecentCmd, boardListMyCmd, boardListMustCmd,
+		boardSearchPostsCmd)
+	boardSearchPostsCmd.Flags().String("board-ids", "", "검색 대상 게시판 ID 목록 (쉼표 구분, 최대 50개)")
+	boardSearchPostsCmd.Flags().Bool("has-attachment", false, "첨부 파일이 있는 게시글만 검색")
+	boardSearchPostsCmd.Flags().String("writer-id", "", "작성자 사용자 ID")
+	boardSearchPostsCmd.Flags().String("start-time", "", "검색 시작 날짜 (YYYY-MM-DD)")
+	boardSearchPostsCmd.Flags().String("end-time", "", "검색 종료 날짜 (YYYY-MM-DD)")
 
 	// Post flags
 	boardCreatePostCmd.Flags().String("title", "", "게시글 제목 (필수)")
@@ -481,7 +523,7 @@ func init() {
 		// Board CRUD
 		boardListCmd, boardGetCmd, boardCreateCmd, boardUpdateCmd, boardDeleteCmd,
 		// Posts
-		boardListPostsCmd, boardGetPostCmd, boardCreatePostCmd, boardUpdatePostCmd, boardDeletePostCmd,
+		boardListPostsCmd, boardSearchPostsCmd, boardGetPostCmd, boardCreatePostCmd, boardUpdatePostCmd, boardDeletePostCmd,
 		// Post readers
 		boardListReadersCmd,
 		// Aggregation queries

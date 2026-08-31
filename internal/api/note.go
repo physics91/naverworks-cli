@@ -25,6 +25,11 @@ func (s *NoteService) ListPosts(groupID string, cursor string, count int) (*Resp
 	return s.client.Get(fmt.Sprintf("/groups/%s/note/posts", url.PathEscape(groupID)) + BuildPaginationQuery(cursor, count))
 }
 
+func (s *NoteService) SearchPosts(groupID, query, cursor string, count int) (*Response, error) {
+	path := fmt.Sprintf("/groups/%s/note/posts/search", url.PathEscape(groupID))
+	return s.client.Get(path + BuildListQuery(cursor, count, map[string]string{"query": query}))
+}
+
 func (s *NoteService) GetPost(groupID, postID string) (*Response, error) {
 	return s.client.Get(fmt.Sprintf("/groups/%s/note/posts/%s", url.PathEscape(groupID), url.PathEscape(postID)))
 }

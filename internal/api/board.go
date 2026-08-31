@@ -9,6 +9,15 @@ type BoardService struct {
 	client *Client
 }
 
+type BoardPostSearchOptions struct {
+	Query         string
+	BoardIDs      string
+	HasAttachment bool
+	WriterID      string
+	StartTime     string
+	EndTime       string
+}
+
 func NewBoardService(client *Client) *BoardService {
 	return &BoardService{client: client}
 }
@@ -23,6 +32,21 @@ func (s *BoardService) GetBoard(boardID string) (*Response, error) {
 
 func (s *BoardService) ListPosts(boardID string, cursor string, count int) (*Response, error) {
 	return s.client.Get(fmt.Sprintf("/boards/%s/posts", url.PathEscape(boardID)) + BuildPaginationQuery(cursor, count))
+}
+
+func (s *BoardService) SearchPosts(cursor string, count int, options BoardPostSearchOptions) (*Response, error) {
+	hasAttachment := ""
+	if options.HasAttachment {
+		hasAttachment = "true"
+	}
+	return s.client.Get("/boards/posts/search" + BuildListQuery(cursor, count, map[string]string{
+		"query":         options.Query,
+		"boardIds":      options.BoardIDs,
+		"hasAttachment": hasAttachment,
+		"writerId":      options.WriterID,
+		"startTime":     options.StartTime,
+		"endTime":       options.EndTime,
+	}))
 }
 
 func (s *BoardService) GetPost(boardID, postID string) (*Response, error) {

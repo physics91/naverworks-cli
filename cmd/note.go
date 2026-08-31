@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/physics91/naverworks-cli/internal/api"
 	"github.com/spf13/cobra"
@@ -11,6 +12,8 @@ var noteCmd = &cobra.Command{
 	Use:   "note",
 	Short: "노트 관리",
 }
+
+const noteSearchHelp = "인증: 구성원 계정 Access Token 전용 (서비스 계정 사용 불가)\n최소 scope: group.note.read"
 
 var noteCreateCmd = &cobra.Command{
 	Use:   "create <groupId>",
@@ -59,6 +62,26 @@ var noteListPostsCmd = &cobra.Command{
 		}
 		return runListCmd(cmd, []string{"postId", "title"}, "posts", func(c string, n int) (*api.Response, error) {
 			return svc.ListPosts(args[0], c, n)
+		})
+	},
+}
+
+var noteSearchPostsCmd = &cobra.Command{
+	Use:   "search-posts <groupId> <query>",
+	Short: "조직·그룹 노트 게시글 검색",
+	Long:  "조직·그룹 노트 게시글 검색\n\n" + noteSearchHelp,
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		query := strings.TrimSpace(args[1])
+		if query == "" {
+			return fmt.Errorf("query는 비어 있을 수 없습니다")
+		}
+		svc, err := newSvc(api.NewNoteService)
+		if err != nil {
+			return err
+		}
+		return runListCmd(cmd, []string{"postId", "title", "snippet"}, "posts", func(cursor string, count int) (*api.Response, error) {
+			return svc.SearchPosts(args[0], query, cursor, count)
 		})
 	},
 }
@@ -237,7 +260,7 @@ var noteDeleteAttachmentCmd = &cobra.Command{
 }
 
 func init() {
-	addListFlags(noteListPostsCmd)
+	addListFlags(noteListPostsCmd, noteSearchPostsCmd)
 
 	noteCreatePostCmd.Flags().String("title", "", "게시글 제목 (필수)")
 	noteCreatePostCmd.Flags().String("body", "", "게시글 본문")
@@ -249,7 +272,7 @@ func init() {
 
 	noteCreateAttachmentCmd.Flags().String("file", "", "업로드 파일 경로")
 
-	noteCmd.AddCommand(noteCreateCmd, noteDeleteCmd, noteListPostsCmd, noteGetPostCmd,
+	noteCmd.AddCommand(noteCreateCmd, noteDeleteCmd, noteListPostsCmd, noteSearchPostsCmd, noteGetPostCmd,
 		noteCreatePostCmd, noteUpdatePostCmd, noteDeletePostCmd,
 		notePatchPostCmd,
 		noteCreateAttachmentCmd, noteListAttachmentsCmd, noteGetAttachmentCmd, noteDeleteAttachmentCmd)

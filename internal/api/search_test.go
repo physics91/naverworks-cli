@@ -59,6 +59,24 @@ func TestSearchServiceRequests(t *testing.T) {
 			},
 		},
 		{
+			name:        "tasks",
+			escapedPath: "/users/" + url.PathEscape(userID) + "/tasks/search",
+			rawQuery:    "assigneeId=assignee%2Fone&assignorId=assignor%2Fone&count=100&cursor=next%2Bcursor&endTime=2026-06-03T11%3A00%3A00%2B09%3A00&hasAttachment=true&hasDueDate=false&orderBy=createdTime+desc&query=weekly+%26+meeting&startTime=2026-06-03T10%3A00%3A00%2B09%3A00&status=TODO",
+			call: func(client *Client) (*Response, error) {
+				return NewTaskService(client).SearchTasks(userID, "next+cursor", 100, TaskSearchOptions{
+					Query:         "weekly & meeting",
+					AssignorID:    "assignor/one",
+					AssigneeID:    "assignee/one",
+					StartTime:     "2026-06-03T10:00:00+09:00",
+					EndTime:       "2026-06-03T11:00:00+09:00",
+					Status:        "TODO",
+					HasDueDate:    "false",
+					HasAttachment: "true",
+					OrderBy:       "createdTime desc",
+				})
+			},
+		},
+		{
 			name:        "contacts",
 			escapedPath: "/users/" + url.PathEscape(userID) + "/contacts/search",
 			rawQuery:    "count=100&cursor=next%2Bcursor&orderBy=name+desc&query=kim+%26+lee&queryFilters=contactName%2Cemails",

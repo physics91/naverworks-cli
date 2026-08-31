@@ -72,6 +72,7 @@ func TestApprovalService_ListDocuments_Filters(t *testing.T) {
 		FromDateTime:   "2026-01-01T00:00:00Z",
 		UntilDateTime:  "2026-01-31T00:00:00Z",
 		DocumentFormID: "form1",
+		Type:           "approved",
 		OrderBy:        "createdTime",
 	})
 	if err != nil {
@@ -81,6 +82,7 @@ func TestApprovalService_ListDocuments_Filters(t *testing.T) {
 		"fromDateTime=2026-01-01T00%3A00%3A00Z",
 		"untilDateTime=2026-01-31T00%3A00%3A00Z",
 		"documentFormId=form1",
+		"type=approved",
 		"orderBy=createdTime",
 		"cursor=n",
 		"count=50",
@@ -88,5 +90,26 @@ func TestApprovalService_ListDocuments_Filters(t *testing.T) {
 		if !strings.Contains(uri, want) {
 			t.Fatalf("missing %q in %q", want, uri)
 		}
+	}
+}
+
+func TestApprovalService_ListDocuments_OmitsTypeWhenUnset(t *testing.T) {
+	var uri string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		uri = r.URL.RequestURI()
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"documents":[]}`))
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, &auth.Token{AccessToken: "t", ExpiresAt: time.Now().Add(time.Hour)}, nil)
+	if _, err := NewApprovalService(client).ListDocuments("", 0, DocumentListOptions{
+		FromDateTime:  "2026-01-01",
+		UntilDateTime: "2026-01-20",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(uri, "type=") {
+		t.Fatalf("unset type must be omitted: %q", uri)
 	}
 }

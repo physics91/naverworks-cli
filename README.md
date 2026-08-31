@@ -105,6 +105,21 @@ naverworks contact search "홍길동" --user-id me --query-filters "contactName,
 
 Calendar 검색은 query 없이 기간만 지정할 수 있지만 `--query-filters`를 쓰려면 query가 필요합니다. 각 검색 명령은 `--cursor`, `--count`, `--all` 페이지네이션을 지원합니다.
 
+### Task 검색·관리자 Approval 조회
+
+Task 검색은 구성원 계정 Access Token 전용이며 최소 `task.read` scope가 필요합니다. query를 생략하려면 요청자·담당자·기간 조건 중 하나를 지정해야 합니다.
+
+```bash
+naverworks task search "주간 회의" --user-id me --status TODO --order-by "createdTime desc"
+naverworks task search --user-id me --assignee-id USER_ID --has-due-date=false
+```
+
+관리자용 Approval 문서 조회는 구성원 계정 또는 서비스 계정 Access Token과 관리자 권한, 최소 `businessSupport.approval.read` scope가 필요합니다. `--from`과 `--until`은 필수이며 최대 1개월 범위에서 `--type pending|upcoming|approved|completed`를 선택할 수 있습니다.
+
+```bash
+naverworks approval list-all --from 2026-08-01 --until 2026-08-31 --type approved
+```
+
 ## 문서
 
 - [User Guide Home](https://github.com/physics91/naverworks-cli/wiki)
@@ -139,14 +154,14 @@ naverworks <command> --help
   - `directory list-user-groups|list-user-orgunits`: 구성원 소속 그룹·조직 조회
   - 구성원 profile-status 응답의 `delegates` 필드 passthrough 검증
   - `board search-posts`, `note search-posts`, `calendar search-events`, `contact search`: 도메인 검색 API
+  - `task search`, `approval list-all --type`: Task 검색과 관리자 결재 문서 필터
 - **응답 변경 (passthrough, 코드 변경 없음)**
   - 구성원/연락처 messenger type: 응답 값이 `X`로 통일될 수 있음 (기존 `TWITTER` 포함)
   - 공용 드라이브 목록 `quota.trash` 필드 제거 가능
   - 휴지통 목록에서 종료된 `orderBy` 값(`deletedDate`, `name`) 사용 불가 — CLI는 orderBy 미노출
 - **미반영 (developers 문서 미등재, #27 잔여)**
-  - Task/Approval **검색 API**
   - 채널 폴더 API
-  - 메시지 content download `channelId`, 결재 `type`
+  - 메시지 content download `channelId`
 
 ## 개발 검증
 

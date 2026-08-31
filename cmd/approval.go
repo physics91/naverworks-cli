@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/physics91/naverworks-cli/internal/api"
 	"github.com/spf13/cobra"
@@ -12,6 +13,8 @@ var approvalCmd = &cobra.Command{
 	Use:   "approval",
 	Short: "결재 관리",
 }
+
+const approvalAdminListHelp = "관리자 전용\n인증: 구성원 계정 또는 서비스 계정 Access Token\n최소 scope: businessSupport.approval.read"
 
 type approvalIDCall func(*api.ApprovalService, string) (*api.Response, error)
 type approvalTwoIDCall func(*api.ApprovalService, string, string) (*api.Response, error)
@@ -179,21 +182,29 @@ var approvalListCmd = &cobra.Command{
 
 var approvalListAllCmd = &cobra.Command{
 	Use:   "list-all",
-	Short: "전체 결재 문서 목록 조회",
+	Short: "관리자용 전체 결재 문서 목록 조회",
+	Long:  "관리자용 전체 결재 문서 목록 조회\n\n" + approvalAdminListHelp,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewApprovalService)
-		if err != nil {
-			return err
+		fromValue, _ := cmd.Flags().GetString("from")
+		untilValue, _ := cmd.Flags().GetString("until")
+		from := strings.TrimSpace(fromValue)
+		until := strings.TrimSpace(untilValue)
+		if from == "" || until == "" {
+			return fmt.Errorf("--from과 --until은 필수입니다")
 		}
-		from, _ := cmd.Flags().GetString("from")
-		until, _ := cmd.Flags().GetString("until")
 		formID, _ := cmd.Flags().GetString("document-form-id")
+		documentType, _ := cmd.Flags().GetString("type")
 		orderBy, _ := cmd.Flags().GetString("order-by")
 		opts := api.DocumentListOptions{
 			FromDateTime:   from,
 			UntilDateTime:  until,
 			DocumentFormID: formID,
+			Type:           documentType,
 			OrderBy:        orderBy,
+		}
+		svc, err := newSvc(api.NewApprovalService)
+		if err != nil {
+			return err
 		}
 		return runListCmd(cmd, []string{"approvalDocumentId", "title"}, "documents", func(cursor string, count int) (*api.Response, error) {
 			return svc.ListDocuments(cursor, count, opts)
@@ -428,9 +439,10 @@ func init() {
 		approvalLinkageCodeListCmd, approvalLinkageCodeItemListCmd)
 
 	approvalListCmd.Flags().String("user-id", "", "사용자 ID (OAuth: me 허용)")
-	approvalListAllCmd.Flags().String("from", "", "조회 시작 시각 (fromDateTime)")
-	approvalListAllCmd.Flags().String("until", "", "조회 종료 시각 (untilDateTime)")
+	approvalListAllCmd.Flags().String("from", "", "조회 시작일 YYYY-MM-DD (fromDateTime)")
+	approvalListAllCmd.Flags().String("until", "", "조회 종료일 YYYY-MM-DD (untilDateTime)")
 	approvalListAllCmd.Flags().String("document-form-id", "", "문서 양식 ID (documentFormId)")
+	approvalListAllCmd.Flags().String("type", "", "문서 종류 (pending|upcoming|approved|completed)")
 	approvalListAllCmd.Flags().String("order-by", "", "정렬 (orderBy)")
 	for _, c := range []*cobra.Command{approvalCreateDocumentCmd, approvalCreateDocumentLinkCmd, approvalUploadAttachmentCmd} {
 		c.Flags().String("user-id", "", "사용자 ID (OAuth: me 허용)")

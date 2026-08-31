@@ -940,15 +940,37 @@ func TestSmoke_TaskList_HelpFilters(t *testing.T) {
 	}
 }
 
+func TestSmoke_TaskSearch_HelpContract(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "task", "search", "--help")
+	if err != nil {
+		t.Fatalf("task search --help failed: %v", err)
+	}
+	for _, value := range []string{
+		"--user-id", "--assignor-id", "--assignee-id", "--start-time", "--end-time",
+		"--status", "--has-due-date", "--has-attachment", "--order-by",
+		"--cursor", "--count", "--all", "구성원 계정", "서비스 계정 사용 불가", "task.read",
+	} {
+		if !strings.Contains(out, value) {
+			t.Errorf("task search --help missing %q; got: %s", value, out)
+		}
+	}
+}
+
 func TestSmoke_ApprovalListAll_HelpFilters(t *testing.T) {
 	setupTestEnv(t)
 	out, err := runCLI(t, "approval", "list-all", "--help")
 	if err != nil {
 		t.Fatalf("approval list-all --help failed: %v", err)
 	}
-	for _, flag := range []string{"--from", "--until", "--document-form-id", "--order-by"} {
+	for _, flag := range []string{"--from", "--until", "--document-form-id", "--type", "--order-by"} {
 		if !strings.Contains(out, flag) {
 			t.Errorf("approval list-all --help missing %s; got: %s", flag, out)
+		}
+	}
+	for _, value := range []string{"관리자 전용", "구성원 계정", "서비스 계정", "businessSupport.approval.read"} {
+		if !strings.Contains(out, value) {
+			t.Errorf("approval list-all --help missing %q; got: %s", value, out)
 		}
 	}
 }
@@ -984,7 +1006,7 @@ func TestSmoke_TaskHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("task --help failed: %v", err)
 	}
-	for _, sub := range []string{"list", "get", "create", "update", "delete", "move", "complete", "incomplete"} {
+	for _, sub := range []string{"list", "search", "get", "create", "update", "delete", "move", "complete", "incomplete"} {
 		if !containsCommand(out, sub) {
 			t.Errorf("task --help missing subcommand %q", sub)
 		}

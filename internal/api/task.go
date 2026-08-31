@@ -20,6 +20,18 @@ type TaskListOptions struct {
 	SearchFilterType string // ALL | ASSIGNEE | ASSIGNOR
 }
 
+type TaskSearchOptions struct {
+	Query         string
+	AssignorID    string
+	AssigneeID    string
+	StartTime     string
+	EndTime       string
+	Status        string
+	HasDueDate    string
+	HasAttachment string
+	OrderBy       string
+}
+
 func (s *TaskService) ListTasks(userID string, cursor string, count int, opts TaskListOptions) (*Response, error) {
 	extra := map[string]string{
 		"categoryId":       opts.CategoryID,
@@ -27,6 +39,21 @@ func (s *TaskService) ListTasks(userID string, cursor string, count int, opts Ta
 		"searchFilterType": opts.SearchFilterType,
 	}
 	return s.client.Get(fmt.Sprintf("/users/%s/tasks", url.PathEscape(userID)) + BuildListQuery(cursor, count, extra))
+}
+
+func (s *TaskService) SearchTasks(userID, cursor string, count int, opts TaskSearchOptions) (*Response, error) {
+	path := fmt.Sprintf("/users/%s/tasks/search", url.PathEscape(userID))
+	return s.client.Get(path + BuildListQuery(cursor, count, map[string]string{
+		"query":         opts.Query,
+		"assignorId":    opts.AssignorID,
+		"assigneeId":    opts.AssigneeID,
+		"startTime":     opts.StartTime,
+		"endTime":       opts.EndTime,
+		"status":        opts.Status,
+		"hasDueDate":    opts.HasDueDate,
+		"hasAttachment": opts.HasAttachment,
+		"orderBy":       opts.OrderBy,
+	}))
 }
 
 func (s *TaskService) GetTask(taskID string) (*Response, error) {

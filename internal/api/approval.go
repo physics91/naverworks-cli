@@ -23,6 +23,7 @@ type DocumentListOptions struct {
 	FromDateTime   string
 	UntilDateTime  string
 	DocumentFormID string
+	Type           string
 	OrderBy        string
 }
 
@@ -31,6 +32,7 @@ func (s *ApprovalService) ListDocuments(cursor string, count int, opts DocumentL
 		"fromDateTime":   opts.FromDateTime,
 		"untilDateTime":  opts.UntilDateTime,
 		"documentFormId": opts.DocumentFormID,
+		"type":           opts.Type,
 		"orderBy":        opts.OrderBy,
 	}
 	return s.client.Get("/business-support/approval/documents" + BuildListQuery(cursor, count, extra))

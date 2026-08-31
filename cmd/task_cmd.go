@@ -2,14 +2,34 @@ package cmd
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/physics91/naverworks-cli/internal/api"
+	"github.com/physics91/naverworks-cli/internal/auth"
 	"github.com/spf13/cobra"
 )
 
 var taskCmd = &cobra.Command{
 	Use:   "task",
 	Short: "태스크 관리",
+}
+
+const taskSearchHelp = "인증: 구성원 계정 Access Token 전용 (서비스 계정 사용 불가)\n최소 scope: task.read"
+
+func newTaskSearchClientWithUser(cmd *cobra.Command) (*api.Client, string, error) {
+	client, cfg, token, err := newAPIClient()
+	if err != nil {
+		return nil, "", err
+	}
+	if token.AuthMethod == auth.AuthMethodJWT {
+		return nil, "", fmt.Errorf("Task 검색은 구성원 계정 Access Token만 지원합니다")
+	}
+	userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
+	if err != nil {
+		return nil, "", err
+	}
+	return client, userID, nil
 }
 
 var taskListCmd = &cobra.Command{
@@ -31,6 +51,58 @@ var taskListCmd = &cobra.Command{
 		}
 		return runListCmd(cmd, []string{"taskId", "title"}, "tasks", func(c string, n int) (*api.Response, error) {
 			return svc.ListTasks(userID, c, n, opts)
+		})
+	},
+}
+
+var taskSearchCmd = &cobra.Command{
+	Use:   "search [query]",
+	Short: "사용자 할 일 검색",
+	Long:  "사용자 할 일 검색\n\n" + taskSearchHelp,
+	Args:  cobra.MaximumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		query := ""
+		if len(args) == 1 {
+			query = strings.TrimSpace(args[0])
+			if query == "" {
+				return fmt.Errorf("query는 비어 있을 수 없습니다")
+			}
+		}
+		assignorID, _ := cmd.Flags().GetString("assignor-id")
+		assigneeID, _ := cmd.Flags().GetString("assignee-id")
+		startTime, _ := cmd.Flags().GetString("start-time")
+		endTime, _ := cmd.Flags().GetString("end-time")
+		if query == "" && strings.TrimSpace(assignorID) == "" && strings.TrimSpace(assigneeID) == "" && strings.TrimSpace(startTime) == "" && strings.TrimSpace(endTime) == "" {
+			return fmt.Errorf("query 또는 --assignor-id, --assignee-id, --start-time, --end-time 중 하나가 필요합니다")
+		}
+
+		client, userID, err := newTaskSearchClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		status, _ := cmd.Flags().GetString("status")
+		orderBy, _ := cmd.Flags().GetString("order-by")
+		hasDueDate, _ := cmd.Flags().GetBool("has-due-date")
+		hasAttachment, _ := cmd.Flags().GetBool("has-attachment")
+		opts := api.TaskSearchOptions{
+			Query:      query,
+			AssignorID: assignorID,
+			AssigneeID: assigneeID,
+			StartTime:  startTime,
+			EndTime:    endTime,
+			Status:     status,
+			OrderBy:    orderBy,
+		}
+		if cmd.Flags().Changed("has-due-date") {
+			opts.HasDueDate = strconv.FormatBool(hasDueDate)
+		}
+		if cmd.Flags().Changed("has-attachment") {
+			opts.HasAttachment = strconv.FormatBool(hasAttachment)
+		}
+
+		svc := api.NewTaskService(client)
+		return runListCmd(cmd, []string{"taskId", "title", "status", "dueDate"}, "tasks", func(cursor string, count int) (*api.Response, error) {
+			return svc.SearchTasks(userID, cursor, count, opts)
 		})
 	},
 }
@@ -333,11 +405,20 @@ var taskIncompleteAssigneeCmd = &cobra.Command{
 }
 
 func init() {
-	addListFlags(taskListCmd, taskListCategoriesCmd)
+	addListFlags(taskListCmd, taskSearchCmd, taskListCategoriesCmd)
 	for _, c := range []*cobra.Command{taskListCmd, taskCreateCmd, taskListCategoriesCmd,
 		taskCreateCategoryCmd, taskGetCategoryCmd, taskUpdateCategoryCmd, taskDeleteCategoryCmd, taskMoveCmd} {
 		c.Flags().String("user-id", "", "사용자 ID (OAuth: me 허용)")
 	}
+	taskSearchCmd.Flags().String("user-id", "", "사용자 ID (OAuth: me 허용)")
+	taskSearchCmd.Flags().String("assignor-id", "", "요청자 사용자 ID")
+	taskSearchCmd.Flags().String("assignee-id", "", "담당자 사용자 ID")
+	taskSearchCmd.Flags().String("start-time", "", "검색 시작 일시 (ISO-8601)")
+	taskSearchCmd.Flags().String("end-time", "", "검색 종료 일시 (ISO-8601)")
+	taskSearchCmd.Flags().String("status", "", "할 일 상태 (DONE|TODO)")
+	taskSearchCmd.Flags().Bool("has-due-date", false, "마감일 존재 여부")
+	taskSearchCmd.Flags().Bool("has-attachment", false, "첨부 파일 존재 여부")
+	taskSearchCmd.Flags().String("order-by", "", "정렬 기준과 순서 (createdTime|dueDate, asc|desc)")
 
 	taskListCmd.Flags().String("category-id", "", "카테고리 ID (categoryId)")
 	taskListCmd.Flags().String("status", "", "상태 필터 (status)")
@@ -357,7 +438,7 @@ func init() {
 
 	taskMoveCmd.Flags().String("category", "", "이동할 카테고리 ID (필수)")
 
-	taskCmd.AddCommand(taskListCmd, taskGetCmd, taskCreateCmd, taskUpdateCmd, taskDeleteCmd, taskListCategoriesCmd,
+	taskCmd.AddCommand(taskListCmd, taskSearchCmd, taskGetCmd, taskCreateCmd, taskUpdateCmd, taskDeleteCmd, taskListCategoriesCmd,
 		taskCreateCategoryCmd, taskGetCategoryCmd, taskUpdateCategoryCmd, taskDeleteCategoryCmd,
 		taskMoveCmd, taskCompleteCmd, taskIncompleteCmd, taskCompleteAssigneeCmd, taskIncompleteAssigneeCmd)
 	rootCmd.AddCommand(taskCmd)

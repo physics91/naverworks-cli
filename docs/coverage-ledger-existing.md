@@ -3,6 +3,8 @@
 > 자동 생성일: 2026-03-30
 > 총 endpoint: **116개**
 
+이 문서는 2026-03-30 당시 기존 구현의 역사적 기준선이다. 2026-08-31 공식 채널 폴더 38개 endpoint와 API 계층의 현재 일대일 기준선은 `docs/baselines/channel-folder-api-coverage.json`에서 관리한다.
+
 ## 요약
 
 | 도메인 | 수량 |

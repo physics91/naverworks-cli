@@ -1,0 +1,12 @@
+{
+  "schema_version": "task-plan-review-package-v1",
+  "task_id": "TASK-002",
+  "loop_id": "2026-08-31-repository-modernization-api-coverage-TASK-002-plan",
+  "review_round": 1,
+  "big_plan_sha256": "319235e0e9e6e4b16e57de8b941ee43a35f7e0253cb39d4690a55816a64f30be",
+  "task_plan_path": "tasks/TASK-002.md",
+  "task_plan_sha256": "06b2b6f2fed597d4226dd1002cd808c461c3f9d5ab6365c63c09c9cc58559315",
+  "reviewer": "plan-review",
+  "report_path": "evidence/TASK-002/plan-review/round-001.md",
+  "report_sha256": "2fbe2787d2f7137baeeab9b58247e5dec7adc88487bc319e383964e5815dd645"
+}

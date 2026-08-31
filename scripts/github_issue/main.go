@@ -7,20 +7,25 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
+	"regexp"
+	"sort"
 	"strings"
 	"time"
 )
 
 type issue struct {
-	Number  int    `json:"number"`
-	Title   string `json:"title"`
-	HTMLURL string `json:"html_url"`
+	Number  int          `json:"number"`
+	Title   string       `json:"title"`
+	State   string       `json:"state"`
+	Labels  []issueLabel `json:"labels"`
+	HTMLURL string       `json:"html_url"`
+	// GitHub's repository issues endpoint also returns pull requests.
+	PullRequest json.RawMessage `json:"pull_request,omitempty"`
 }
 
-type searchResponse struct {
-	Items []issue `json:"items"`
+type issueLabel struct {
+	Name string `json:"name"`
 }
 
 func main() {
@@ -30,6 +35,7 @@ func main() {
 		title    = flag.String("title", "", "issue title")
 		bodyFile = flag.String("body-file", "", "path to issue body markdown")
 		labels   = flag.String("labels", "", "comma-separated labels")
+		state    = flag.String("state", "open", "desired issue state: open or closed")
 	)
 	flag.Parse()
 
@@ -41,75 +47,168 @@ func main() {
 	if strings.TrimSpace(*repo) == "" || resolvedToken == "" {
 		fatalf("--repo와 GITHUB_TOKEN(또는 --token)이 필요합니다")
 	}
+	if _, _, err := parseRepository(*repo); err != nil {
+		fatalf("저장소 형식 오류: %v", err)
+	}
 	if strings.TrimSpace(*title) == "" {
 		fatalf("--title이 필요합니다")
 	}
-	if strings.TrimSpace(*bodyFile) == "" {
-		fatalf("--body-file이 필요합니다")
+	desiredState := strings.ToLower(strings.TrimSpace(*state))
+	if desiredState != "open" && desiredState != "closed" {
+		fatalf("--state는 open 또는 closed여야 합니다")
+	}
+	expectedLabels, err := normalizeLabels(splitLabels(*labels))
+	if err != nil {
+		fatalf("--labels 오류: %v", err)
+	}
+	if len(expectedLabels) == 0 {
+		fatalf("자동화 소유권 확인을 위해 --labels가 필요합니다")
 	}
 
-	body, err := os.ReadFile(*bodyFile)
-	if err != nil {
-		fatalf("이슈 본문 읽기 실패: %v", err)
+	var body string
+	if desiredState == "open" {
+		if strings.TrimSpace(*bodyFile) == "" {
+			fatalf("--state=open에서는 --body-file이 필요합니다")
+		}
+		rawBody, err := os.ReadFile(*bodyFile)
+		if err != nil {
+			fatalf("이슈 본문 읽기 실패: %v", err)
+		}
+		body = string(rawBody)
 	}
 
 	client := &http.Client{Timeout: 30 * time.Second}
-	existing, err := findOpenIssueByExactTitle(client, *repo, resolvedToken, *title)
+	action, reconciled, err := reconcileIssue(
+		client,
+		*repo,
+		resolvedToken,
+		*title,
+		body,
+		expectedLabels,
+		desiredState,
+	)
 	if err != nil {
-		fatalf("기존 이슈 조회 실패: %v", err)
+		fatalf("이슈 reconcile 실패: %v", err)
 	}
-	if existing != nil {
-		updated, err := updateIssueBody(client, *repo, resolvedToken, existing.Number, string(body))
-		if err != nil {
-			fatalf("이슈 본문 갱신 실패: %v", err)
-		}
-		fmt.Printf("updated %s\n", updated.HTMLURL)
+	if reconciled == nil {
+		fmt.Printf("%s: 일치하는 열린 이슈 없음\n", action)
 		return
 	}
-
-	created, err := createIssue(client, *repo, resolvedToken, *title, string(body), splitLabels(*labels))
-	if err != nil {
-		fatalf("이슈 생성 실패: %v", err)
-	}
-	fmt.Printf("created %s\n", created.HTMLURL)
+	fmt.Printf("%s %s\n", action, reconciled.HTMLURL)
 }
 
-func findOpenIssueByExactTitle(client *http.Client, repo, token, title string) (*issue, error) {
-	query := fmt.Sprintf(`repo:%s is:issue is:open "%s"`, repo, title)
-	endpoint := "https://api.github.com/search/issues?q=" + url.QueryEscape(query) + "&per_page=10"
+func reconcileIssue(client *http.Client, repo, token, title, body string, labels []string, desiredState string) (string, *issue, error) {
+	existing, err := findOwnedOpenIssue(client, repo, token, title, labels)
+	if err != nil {
+		return "", nil, err
+	}
 
-	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	switch desiredState {
+	case "open":
+		if existing == nil {
+			created, err := createIssue(client, repo, token, title, body, labels)
+			return "created", created, err
+		}
+		updated, err := updateIssueBody(client, repo, token, existing.Number, body)
+		return "updated", updated, err
+	case "closed":
+		if existing == nil {
+			return "unchanged", nil, nil
+		}
+		closed, err := updateIssueState(client, repo, token, existing.Number, "closed")
+		return "closed", closed, err
+	default:
+		return "", nil, fmt.Errorf("invalid desired state: %s", desiredState)
+	}
+}
+
+func findOwnedOpenIssue(client *http.Client, repo, token, title string, expectedLabels []string) (*issue, error) {
+	owner, name, err := parseRepository(repo)
 	if err != nil {
 		return nil, err
 	}
-	setGitHubHeaders(req, token)
-
-	resp, err := client.Do(req)
+	expectedLabels, err = normalizeLabels(expectedLabels)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 400 {
-		body, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
-		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	if len(expectedLabels) == 0 {
+		return nil, fmt.Errorf("at least one ownership label is required")
 	}
 
-	var payload searchResponse
-	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
-		return nil, err
-	}
-	for _, candidate := range payload.Items {
-		if candidate.Title == title {
-			return &candidate, nil
+	exactMatches := make([]issue, 0, 1)
+	for page := 1; ; page++ {
+		endpoint := fmt.Sprintf(
+			"https://api.github.com/repos/%s/%s/issues?state=open&per_page=100&page=%d",
+			owner,
+			name,
+			page,
+		)
+		req, err := http.NewRequest(http.MethodGet, endpoint, nil)
+		if err != nil {
+			return nil, err
+		}
+		setGitHubHeaders(req, token)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode >= 400 {
+			body, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
+			resp.Body.Close()
+			return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+		}
+
+		var candidates []issue
+		decodeErr := json.NewDecoder(resp.Body).Decode(&candidates)
+		closeErr := resp.Body.Close()
+		if decodeErr != nil {
+			return nil, decodeErr
+		}
+		if closeErr != nil {
+			return nil, closeErr
+		}
+		for _, candidate := range candidates {
+			if len(candidate.PullRequest) != 0 {
+				continue
+			}
+			if candidate.Title == title && strings.EqualFold(candidate.State, "open") {
+				exactMatches = append(exactMatches, candidate)
+			}
+		}
+		if len(candidates) < 100 {
+			break
 		}
 	}
-	return nil, nil
+	if len(exactMatches) == 0 {
+		return nil, nil
+	}
+	if len(exactMatches) > 1 {
+		return nil, fmt.Errorf("ambiguous automation target: %d open issues have the exact title", len(exactMatches))
+	}
+	actualLabels := make([]string, 0, len(exactMatches[0].Labels))
+	for _, label := range exactMatches[0].Labels {
+		actualLabels = append(actualLabels, label.Name)
+	}
+	actualLabels, err = normalizeLabels(actualLabels)
+	if err != nil {
+		return nil, fmt.Errorf("invalid labels on issue #%d: %w", exactMatches[0].Number, err)
+	}
+	if !equalStrings(actualLabels, expectedLabels) {
+		return nil, fmt.Errorf(
+			"automation ownership mismatch on issue #%d: expected labels %v, observed %v",
+			exactMatches[0].Number,
+			expectedLabels,
+			actualLabels,
+		)
+	}
+	return &exactMatches[0], nil
 }
 
 func createIssue(client *http.Client, repo, token, title, body string, labels []string) (*issue, error) {
-	parts := strings.SplitN(repo, "/", 2)
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid repo: %s", repo)
+	owner, name, err := parseRepository(repo)
+	if err != nil {
+		return nil, err
 	}
 
 	payload := struct {
@@ -126,7 +225,7 @@ func createIssue(client *http.Client, repo, token, title, body string, labels []
 		return nil, err
 	}
 
-	endpoint := fmt.Sprintf("https://api.github.com/repos/%s/%s/issues", parts[0], parts[1])
+	endpoint := fmt.Sprintf("https://api.github.com/repos/%s/%s/issues", owner, name)
 	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(data))
 	if err != nil {
 		return nil, err
@@ -152,23 +251,35 @@ func createIssue(client *http.Client, repo, token, title, body string, labels []
 }
 
 func updateIssueBody(client *http.Client, repo, token string, number int, body string) (*issue, error) {
+	return updateIssue(client, repo, token, number, &body, "")
+}
+
+func updateIssueState(client *http.Client, repo, token string, number int, state string) (*issue, error) {
+	if state != "open" && state != "closed" {
+		return nil, fmt.Errorf("invalid issue state: %s", state)
+	}
+	return updateIssue(client, repo, token, number, nil, state)
+}
+
+func updateIssue(client *http.Client, repo, token string, number int, body *string, state string) (*issue, error) {
 	if number <= 0 {
 		return nil, fmt.Errorf("invalid issue number: %d", number)
 	}
-	parts := strings.SplitN(repo, "/", 2)
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid repo: %s", repo)
+	owner, name, err := parseRepository(repo)
+	if err != nil {
+		return nil, err
 	}
 
 	payload := struct {
-		Body string `json:"body"`
-	}{Body: body}
+		Body  *string `json:"body,omitempty"`
+		State string  `json:"state,omitempty"`
+	}{Body: body, State: state}
 	data, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
 	}
 
-	endpoint := fmt.Sprintf("https://api.github.com/repos/%s/%s/issues/%d", parts[0], parts[1], number)
+	endpoint := fmt.Sprintf("https://api.github.com/repos/%s/%s/issues/%d", owner, name, number)
 	req, err := http.NewRequest(http.MethodPatch, endpoint, bytes.NewReader(data))
 	if err != nil {
 		return nil, err
@@ -207,6 +318,53 @@ func splitLabels(raw string) []string {
 		labels = append(labels, part)
 	}
 	return labels
+}
+
+var repositoryPartRE = regexp.MustCompile(`^[A-Za-z0-9_.-]+$`)
+
+func parseRepository(repo string) (string, string, error) {
+	repo = strings.TrimSpace(repo)
+	parts := strings.Split(repo, "/")
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid repo: %s", repo)
+	}
+	for _, part := range parts {
+		if part == "" || part == "." || part == ".." || !repositoryPartRE.MatchString(part) {
+			return "", "", fmt.Errorf("invalid repo: %s", repo)
+		}
+	}
+	return parts[0], parts[1], nil
+}
+
+func normalizeLabels(labels []string) ([]string, error) {
+	seen := make(map[string]struct{}, len(labels))
+	normalized := make([]string, 0, len(labels))
+	for _, label := range labels {
+		label = strings.TrimSpace(label)
+		if label == "" {
+			continue
+		}
+		key := strings.ToLower(label)
+		if _, exists := seen[key]; exists {
+			return nil, fmt.Errorf("duplicate label: %s", label)
+		}
+		seen[key] = struct{}{}
+		normalized = append(normalized, key)
+	}
+	sort.Strings(normalized)
+	return normalized, nil
+}
+
+func equalStrings(left, right []string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for i := range left {
+		if left[i] != right[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func setGitHubHeaders(req *http.Request, token string) {

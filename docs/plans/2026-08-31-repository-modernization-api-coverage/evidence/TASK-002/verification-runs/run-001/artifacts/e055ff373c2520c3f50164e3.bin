@@ -1,0 +1,3 @@
+TASK_002_NETWORKING_OK
+command: go test ./scripts/github_issue -count=1; inspect git diff and remote issue states read-only
+result: exit=0; all mutation tests used httptest, invalid repository and ownership mismatch failed before mutation, no remote issue mutation was performed

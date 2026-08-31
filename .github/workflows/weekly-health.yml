@@ -101,6 +101,18 @@ jobs:
             --labels "$ISSUE_LABELS" \
             --body-file weekly-health-issue.md
 
+      - name: Close recovered weekly health ops issue
+        if: steps.report.outcome == 'success' && steps.report.outputs.should_fail != 'true'
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          go run ./scripts/github_issue \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "[Ops Error] weekly health check failed" \
+            --labels "ops-error" \
+            --state closed
+
       - name: Mark workflow failed on command errors
         if: steps.report.outputs.should_fail == 'true'
         run: exit 1

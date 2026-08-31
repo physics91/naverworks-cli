@@ -1,0 +1,3 @@
+TASK_002_INTEGRATION_OK
+command: make verify-maintenance
+result: exit=0; tidy diff clean, format and go vet passed, fast/full/canary tests passed, build passed, govulncheck reported no vulnerabilities

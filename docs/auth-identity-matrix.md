@@ -163,6 +163,21 @@ CLI 구현 시 각 도메인 커맨드의 인증 분기, userId 처리, scope �
 | listFiles | `group.folder.read` | ✓ | ✗ | N/A | (none) |
 | getFile | `group.folder.read` | ✓ | ✗ | N/A | (none) |
 
+### ChannelFolder
+
+| Operation family | Scope | OAuth | JWT | userId=me | CLI identity |
+|------------------|-------|-------|-----|-----------|--------------|
+| list/get channel folders | `file.read`, `group.folder.read` | ✓ | ✗ | N/A | `drive channel list|get` |
+| list/get files | `file.read`, `group.folder.read` | ✓ | ✗ | N/A | `drive channel files|get-file` |
+| download file/revision | `file.read`, `group.folder.read` | ✓ | ✗ | N/A | `drive channel download`, `drive channel revision download` |
+| list/get revisions, links, trash, permissions | `file.read`, `group.folder.read` | ✓ | ✗ | N/A | `drive channel revision|link|trash-list|permission` |
+| upload/create folder/change file | `file`, `group.folder` | ✓ | ✗ | N/A | `drive channel upload|mkdir|copy|rename|move` |
+| protect/lock file | `file`, `group.folder` | ✓ | ✗ | N/A | `drive channel protect|unprotect|lock|unlock` |
+| restore revision/trash | `file`, `group.folder` | ✓ | ✗ | N/A | `drive channel revision restore`, `drive channel trash-restore` |
+| delete file/trash/link | `file`, `group.folder` | ✓ | ✗ | N/A | `drive channel delete|trash-delete`, `drive channel link delete` |
+| create/update/delete permissions | `file`, `group.folder` | ✓ | ✗ | N/A | `drive channel permission create|update|delete|delete-all` |
+| enable/disable permissions | `file`, `group.folder` | ✓ | ✗ | N/A | `drive channel permission enable|disable` |
+
 ### SharedFolder
 
 | Operation | Scope | OAuth | JWT | userId=me | CLI identity |
@@ -392,6 +407,7 @@ CLI 구현 시 각 도메인 커맨드의 인증 분기, userId 처리, scope �
 | Board | `board` | `board.read` |
 | Drive (파일) | `file` | `file.read` |
 | Drive (그룹 폴더) | `group.folder` | `group.folder.read` |
+| Drive (채널 폴더) | `file`, `group.folder` | `file.read`, `group.folder.read` |
 | Contact | `contact` | `contact.read` |
 | Mail | `mail` | `mail.read` |
 | Note | `group.note` | `group.note.read` |

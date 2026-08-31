@@ -120,13 +120,28 @@ naverworks task search --user-id me --assignee-id USER_ID --has-due-date=false
 naverworks approval list-all --from 2026-08-01 --until 2026-08-31 --type approved
 ```
 
-### Drive 검색·Monitoring 채널 다운로드
+### Drive 검색·채널 폴더·Monitoring 채널 다운로드
 
 Drive 검색은 구성원 계정 Access Token 전용이며 서비스 계정 토큰은 사용할 수 없습니다. 최소 `file.read` scope가 필요하고, 채널 폴더를 포함하면 `group.folder.read` scope도 필요합니다. `--query-filters fileName,content`로 파일명과 본문 검색 범위를 지정할 수 있습니다.
 
 ```bash
 naverworks drive search "분기 보고서" --user-id me --query-filters "fileName,content" --drive-type-filters "MY_DRIVE,CHANNEL_FOLDER"
 ```
+
+채널 폴더는 구성원 계정 Access Token 전용입니다. 조회·다운로드에는 최소 `file.read`, `group.folder.read` scope가, 업로드·폴더 생성·파일 변경·복원·권한 변경에는 `file`, `group.folder` scope가 필요합니다. 파일 목록(`files`), 버전 목록(`revision list`), 휴지통 목록(`trash-list`)은 `--cursor`, `--count`, `--all`과 JSON·table 출력을 지원합니다. 공식 API에 페이지네이션이 없는 채널 목록(`channel list`)과 권한 목록(`permission list`)은 JSON·table 출력만 지원합니다.
+
+```bash
+naverworks drive channel list
+naverworks drive channel files CHANNEL_FOLDER_ID --all --output table
+naverworks drive channel revision list CHANNEL_FOLDER_ID FILE_ID --count 20
+naverworks drive channel permission list CHANNEL_FOLDER_ID FILE_ID
+naverworks drive channel upload CHANNEL_FOLDER_ID --folder FOLDER_ID --file ./report.pdf
+
+# 쓰기 요청을 보내지 않고 method·path·body 확인
+naverworks --dry-run drive channel delete CHANNEL_FOLDER_ID FILE_ID
+```
+
+업로드 URL은 HTTPS·허용 호스트 검증을 거치며 stdout에 노출하지 않습니다. 다운로드 명령은 API redirect를 자동으로 따라가지 않고 URL만 반환합니다. 실제 쓰기 전에 `--dry-run` 또는 `--plan-out`으로 요청을 확인할 수 있습니다.
 
 Monitoring 메시지 콘텐츠 다운로드는 관리자 또는 Service Account 권한과 `monitoring.read` scope가 필요합니다. 기존 기간 조회에 `--channel-id`를 지정하면 특정 메시지방만 대상으로 다운로드 URL을 요청합니다.
 
@@ -170,12 +185,13 @@ naverworks <command> --help
   - `board search-posts`, `note search-posts`, `calendar search-events`, `contact search`: 도메인 검색 API
   - `task search`, `approval list-all --type`: Task 검색과 관리자 결재 문서 필터
   - `drive search --query-filters`, `monitoring download-messages --channel-id`: Drive 검색과 채널별 메시지 콘텐츠 다운로드
+  - `drive channel ...`: 채널 폴더 목록·파일·버전·링크·휴지통·권한 전체 명령군
 - **응답 변경 (passthrough, 코드 변경 없음)**
   - 구성원/연락처 messenger type: 응답 값이 `X`로 통일될 수 있음 (기존 `TWITTER` 포함)
   - 공용 드라이브 목록 `quota.trash` 필드 제거 가능
   - 휴지통 목록에서 종료된 `orderBy` 값(`deletedDate`, `name`) 사용 불가 — CLI는 orderBy 미노출
-- **미반영 (developers 문서 미등재, #27 잔여)**
-  - 채널 폴더 API
+- **미반영**
+  - 없음 (2026-08-31 공식 Developers 문서 기준)
 
 ## 개발 검증
 

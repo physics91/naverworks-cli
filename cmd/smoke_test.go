@@ -1771,7 +1771,7 @@ func TestSmoke_DriveHelp(t *testing.T) {
 		t.Fatalf("drive --help failed: %v", err)
 	}
 	for _, sub := range []string{
-		"info", "list", "get", "download", "upload", "mkdir", "delete",
+		"info", "list", "search", "get", "download", "upload", "mkdir", "delete",
 		"copy", "rename", "move", "protect", "unprotect", "lock", "unlock",
 		"revision", "link", "share", "shared", "group",
 	} {
@@ -1785,6 +1785,36 @@ func TestSmoke_DriveHelp(t *testing.T) {
 	} {
 		if !strings.Contains(out, sub) {
 			t.Errorf("drive --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_DriveSearchHelpContract(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "drive", "search", "--help")
+	if err != nil {
+		t.Fatalf("drive search --help failed: %v", err)
+	}
+	for _, value := range []string{
+		"--user-id", "--query-filters", "--parent-file-id", "--file-types", "--start-time", "--end-time",
+		"--drive-type-filters", "--order-by", "--cursor", "--count", "--all", "구성원 계정", "서비스 계정 사용 불가",
+		"file.read", "group.folder.read",
+	} {
+		if !strings.Contains(out, value) {
+			t.Errorf("drive search --help missing %q; got: %s", value, out)
+		}
+	}
+}
+
+func TestSmoke_MonitoringDownloadMessagesHelpContract(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "monitoring", "download-messages", "--help")
+	if err != nil {
+		t.Fatalf("monitoring download-messages --help failed: %v", err)
+	}
+	for _, value := range []string{"--start-time", "--end-time", "--channel-id", "관리자", "Service Account", "monitoring.read"} {
+		if !strings.Contains(out, value) {
+			t.Errorf("monitoring download-messages --help missing %q; got: %s", value, out)
 		}
 	}
 }

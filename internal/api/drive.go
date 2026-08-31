@@ -9,6 +9,17 @@ type DriveService struct {
 	client *Client
 }
 
+type DriveSearchOptions struct {
+	Query            string
+	QueryFilters     string
+	ParentFileID     string
+	FileTypes        string
+	StartTime        string
+	EndTime          string
+	DriveTypeFilters string
+	OrderBy          string
+}
+
 func NewDriveService(client *Client) *DriveService {
 	return &DriveService{client: client}
 }
@@ -21,6 +32,20 @@ func (s *DriveService) GetDriveInfo(userID string) (*Response, error) {
 
 func (s *DriveService) ListFiles(userID string, cursor string, count int) (*Response, error) {
 	return s.client.Get(fmt.Sprintf("/users/%s/drive/files", url.PathEscape(userID)) + BuildPaginationQuery(cursor, count))
+}
+
+func (s *DriveService) SearchFiles(userID, cursor string, count int, opts DriveSearchOptions) (*Response, error) {
+	path := fmt.Sprintf("/users/%s/drive/search", url.PathEscape(userID))
+	return s.client.Get(path + BuildListQuery(cursor, count, map[string]string{
+		"query":            opts.Query,
+		"queryFilters":     opts.QueryFilters,
+		"parentFileId":     opts.ParentFileID,
+		"fileTypes":        opts.FileTypes,
+		"startTime":        opts.StartTime,
+		"endTime":          opts.EndTime,
+		"driveTypeFilters": opts.DriveTypeFilters,
+		"orderBy":          opts.OrderBy,
+	}))
 }
 
 func (s *DriveService) ListFolderChildren(userID, folderID string, cursor string, count int) (*Response, error) {

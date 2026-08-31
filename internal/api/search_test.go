@@ -59,6 +59,23 @@ func TestSearchServiceRequests(t *testing.T) {
 			},
 		},
 		{
+			name:        "drive files",
+			escapedPath: "/users/" + url.PathEscape(userID) + "/drive/search",
+			rawQuery:    "count=200&cursor=next%2Bcursor&driveTypeFilters=MY_DRIVE%2CCHANNEL_FOLDER&endTime=2026-06-03T11%3A00%3A00%2B09%3A00&fileTypes=DOC%2CFOLDER&orderBy=modifiedTime+desc&parentFileId=folder%2Fone&query=weekly+%26+notes&queryFilters=fileName%2Ccontent&startTime=2026-06-03T10%3A00%3A00%2B09%3A00",
+			call: func(client *Client) (*Response, error) {
+				return NewDriveService(client).SearchFiles(userID, "next+cursor", 200, DriveSearchOptions{
+					Query:            "weekly & notes",
+					QueryFilters:     "fileName,content",
+					ParentFileID:     "folder/one",
+					FileTypes:        "DOC,FOLDER",
+					StartTime:        "2026-06-03T10:00:00+09:00",
+					EndTime:          "2026-06-03T11:00:00+09:00",
+					DriveTypeFilters: "MY_DRIVE,CHANNEL_FOLDER",
+					OrderBy:          "modifiedTime desc",
+				})
+			},
+		},
+		{
 			name:        "tasks",
 			escapedPath: "/users/" + url.PathEscape(userID) + "/tasks/search",
 			rawQuery:    "assigneeId=assignee%2Fone&assignorId=assignor%2Fone&count=100&cursor=next%2Bcursor&endTime=2026-06-03T11%3A00%3A00%2B09%3A00&hasAttachment=true&hasDueDate=false&orderBy=createdTime+desc&query=weekly+%26+meeting&startTime=2026-06-03T10%3A00%3A00%2B09%3A00&status=TODO",
@@ -115,5 +132,23 @@ func TestSearchServiceRequests(t *testing.T) {
 				t.Errorf("status = %d, want %d", response.StatusCode, http.StatusOK)
 			}
 		})
+	}
+}
+
+func TestDriveServiceSearchFilesOmitsQueryFiltersWhenUnset(t *testing.T) {
+	var rawQuery string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		rawQuery = request.URL.RawQuery
+		_, _ = w.Write([]byte(`{"files":[]}`))
+	}))
+	defer server.Close()
+
+	token := &auth.Token{AccessToken: "t", ExpiresAt: time.Now().Add(time.Hour)}
+	_, err := NewDriveService(NewClient(server.URL, token, nil)).SearchFiles("user-1", "", 0, DriveSearchOptions{Query: "weekly"})
+	if err != nil {
+		t.Fatalf("SearchFiles failed: %v", err)
+	}
+	if rawQuery != "query=weekly" {
+		t.Fatalf("raw query = %q, want query only", rawQuery)
 	}
 }

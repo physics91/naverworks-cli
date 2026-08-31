@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/physics91/naverworks-cli/internal/api"
 	"github.com/spf13/cobra"
@@ -60,19 +61,23 @@ var monitoringCmd = &cobra.Command{
 	Short: "모니터링 관리",
 }
 
+const monitoringDownloadHelp = "관리자 또는 Service Account 권한 필요\n최소 scope: monitoring.read"
+
 var monitoringDownloadMessagesCmd = &cobra.Command{
 	Use:   "download-messages",
 	Short: "메시지 콘텐츠 다운로드",
+	Long:  "메시지 콘텐츠 다운로드\n\n" + monitoringDownloadHelp,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		svc, err := newSvc(api.NewMonitoringService)
-		if err != nil {
-			return err
-		}
 		startTime, endTime, err := requireTimeRange(cmd)
 		if err != nil {
 			return err
 		}
-		downloadURL, err := svc.DownloadMessages(startTime, endTime)
+		svc, err := newSvc(api.NewMonitoringService)
+		if err != nil {
+			return err
+		}
+		channelID, _ := cmd.Flags().GetString("channel-id")
+		downloadURL, err := svc.DownloadMessages(startTime, endTime, strings.TrimSpace(channelID))
 		if err != nil {
 			return err
 		}
@@ -199,6 +204,7 @@ func init() {
 		c.Flags().String("start-time", "", "시작 시간 (필수)")
 		c.Flags().String("end-time", "", "종료 시간 (필수)")
 	}
+	monitoringDownloadMessagesCmd.Flags().String("channel-id", "", "특정 메시지방의 채널 ID")
 	auditDownloadLogsCmd.Flags().String("service", "", "서비스 필터 (예: approval)")
 
 	addListFlags(auditListPolicyGroupsCmd, auditListPolicyMembersCmd)

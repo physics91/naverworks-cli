@@ -2,14 +2,33 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/physics91/naverworks-cli/internal/api"
+	"github.com/physics91/naverworks-cli/internal/auth"
 	"github.com/spf13/cobra"
 )
 
 var driveCmd = &cobra.Command{
 	Use:   "drive",
 	Short: "드라이브 관리",
+}
+
+const driveSearchHelp = "인증: 구성원 계정 Access Token 전용 (서비스 계정 사용 불가)\n최소 scope: file.read (채널 폴더 포함 시 group.folder.read)"
+
+func newDriveSearchClientWithUser(cmd *cobra.Command) (*api.Client, string, error) {
+	client, cfg, token, err := newAPIClient()
+	if err != nil {
+		return nil, "", err
+	}
+	if token.AuthMethod == auth.AuthMethodJWT {
+		return nil, "", fmt.Errorf("Drive 검색은 구성원 계정 Access Token만 지원합니다")
+	}
+	userID, err := resolveUserID(cmd, cfg.DefaultCalendarUserID, token.AuthMethod)
+	if err != nil {
+		return nil, "", err
+	}
+	return client, userID, nil
 }
 
 // ─── MyDrive ───
@@ -41,6 +60,44 @@ var driveListCmd = &cobra.Command{
 			return err
 		}
 		return listFilesWithFolder(cmd, userID, api.NewDriveService(client))
+	},
+}
+
+var driveSearchCmd = &cobra.Command{
+	Use:   "search <query>",
+	Short: "접근 가능한 드라이브 파일·폴더 검색",
+	Long:  "접근 가능한 드라이브 파일·폴더 검색\n\n" + driveSearchHelp,
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		query := strings.TrimSpace(args[0])
+		if query == "" {
+			return fmt.Errorf("query는 비어 있을 수 없습니다")
+		}
+		client, userID, err := newDriveSearchClientWithUser(cmd)
+		if err != nil {
+			return err
+		}
+		queryFilters, _ := cmd.Flags().GetString("query-filters")
+		parentFileID, _ := cmd.Flags().GetString("parent-file-id")
+		fileTypes, _ := cmd.Flags().GetString("file-types")
+		startTime, _ := cmd.Flags().GetString("start-time")
+		endTime, _ := cmd.Flags().GetString("end-time")
+		driveTypeFilters, _ := cmd.Flags().GetString("drive-type-filters")
+		orderBy, _ := cmd.Flags().GetString("order-by")
+		opts := api.DriveSearchOptions{
+			Query:            query,
+			QueryFilters:     queryFilters,
+			ParentFileID:     parentFileID,
+			FileTypes:        fileTypes,
+			StartTime:        startTime,
+			EndTime:          endTime,
+			DriveTypeFilters: driveTypeFilters,
+			OrderBy:          orderBy,
+		}
+		svc := api.NewDriveService(client)
+		return runListCmd(cmd, []string{"fileId", "fileName", "fileType", "modifiedTime"}, "files", func(cursor string, count int) (*api.Response, error) {
+			return svc.SearchFiles(userID, cursor, count, opts)
+		})
 	},
 }
 
@@ -2761,7 +2818,7 @@ func listFilesWithFolder(cmd *cobra.Command, id string, svc driveLister) error {
 func init() {
 	// MyDrive commands with --user-id
 	for _, c := range []*cobra.Command{
-		driveInfoCmd, driveListCmd, driveGetCmd, driveDownloadCmd,
+		driveInfoCmd, driveListCmd, driveSearchCmd, driveGetCmd, driveDownloadCmd,
 		driveUploadCmd, driveMkdirCmd, driveDeleteCmd,
 		driveTrashListCmd, driveTrashRestoreCmd,
 		// Task 5-1: File operations
@@ -2810,6 +2867,7 @@ func init() {
 
 	// Pagination flags for list commands that use runListCmd (cursor + count + all)
 	addListFlags(
+		driveSearchCmd,
 		driveSharedListDrivesCmd,
 		driveTrashListCmd,
 		driveRevisionListCmd, driveShareListSubFoldersCmd,
@@ -2869,6 +2927,13 @@ func init() {
 	driveSFListFilesCmd.Flags().String("folder", "", "폴더 ID (하위 파일 조회)")
 
 	driveUploadCmd.Flags().String("folder", "", "업로드 대상 폴더 ID")
+	driveSearchCmd.Flags().String("query-filters", "", "검색 대상 필드 (fileName,content; 쉼표 구분)")
+	driveSearchCmd.Flags().String("parent-file-id", "", "검색 대상 상위 폴더 ID")
+	driveSearchCmd.Flags().String("file-types", "", "파일 유형 (AUDIO,FILE,DOC,ETC,EXE,FOLDER,IMAGE,VIDEO,ZIP)")
+	driveSearchCmd.Flags().String("start-time", "", "수정일 검색 시작 시각 (RFC3339)")
+	driveSearchCmd.Flags().String("end-time", "", "수정일 검색 종료 시각 (RFC3339)")
+	driveSearchCmd.Flags().String("drive-type-filters", "", "드라이브 유형 (MY_DRIVE,SHARE_DRIVE,CHANNEL_FOLDER,SHARED_FOLDER)")
+	driveSearchCmd.Flags().String("order-by", "", "정렬 기준과 순서 (modifiedTime|fileName, asc|desc)")
 	driveMkdirCmd.Flags().String("name", "", "폴더 이름 (필수)")
 	driveMkdirCmd.Flags().String("parent", "", "상위 폴더 ID")
 
@@ -2890,7 +2955,7 @@ func init() {
 		c.Flags().Bool("resume", false, "서버 resumable 업로드 세션 요청 및 이어올리기")
 	}
 
-	driveCmd.AddCommand(driveInfoCmd, driveListCmd, driveGetCmd, driveDownloadCmd,
+	driveCmd.AddCommand(driveInfoCmd, driveListCmd, driveSearchCmd, driveGetCmd, driveDownloadCmd,
 		driveUploadCmd, driveMkdirCmd, driveDeleteCmd, driveTrashListCmd, driveTrashRestoreCmd)
 
 	// Task 5-1: File operations

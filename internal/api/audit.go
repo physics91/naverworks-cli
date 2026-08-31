@@ -67,13 +67,16 @@ func NewMonitoringService(client *Client) *MonitoringService {
 	return &MonitoringService{client: client}
 }
 
-func (s *MonitoringService) DownloadMessages(startTime, endTime string) (string, error) {
+func (s *MonitoringService) DownloadMessages(startTime, endTime, channelID string) (string, error) {
 	params := url.Values{}
 	if startTime != "" {
 		params.Set("startTime", startTime)
 	}
 	if endTime != "" {
 		params.Set("endTime", endTime)
+	}
+	if channelID != "" {
+		params.Set("channelId", channelID)
 	}
 	return s.client.GetDownloadURL("/monitoring/message-contents/download" + encodeQueryFromValues(params))
 }

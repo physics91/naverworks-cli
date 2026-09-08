@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -156,6 +157,27 @@ func TestAuthDoctorVerifyRemoteChecksScimWhenConfigured(t *testing.T) {
 	checks := indexDoctorChecks(payload.Checks)
 	if got := checks["scim.endpoint_reachable"].Status; got != authdoctor.StatusPass {
 		t.Fatalf("scim.endpoint_reachable status = %q, want %q", got, authdoctor.StatusPass)
+	}
+}
+
+func TestCallbackListenerCheck_UsesSamePortRuleAsLogin(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	port := ln.Addr().(*net.TCPAddr).Port
+
+	if err := callbackListenerCheck(auth.AuthMethodJWT, port); err != nil {
+		t.Fatalf("JWT callback check should skip listener: %v", err)
+	}
+	if err := callbackListenerCheck(auth.AuthMethodOAuth, port); err == nil {
+		t.Fatal("OAuth callback check should fail when the fixed port is in use")
+	}
+	if err := ln.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := callbackListenerCheck(auth.AuthMethodOAuth, port); err != nil {
+		t.Fatalf("OAuth callback check on free fixed port: %v", err)
 	}
 }
 

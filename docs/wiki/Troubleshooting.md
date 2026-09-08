@@ -15,6 +15,7 @@ naverworks auth status
 - JWT를 쓰는 경우 `service_account_id`, `private_key_path`가 맞는지
 - JWT를 쓰는 경우 개인키 파일 권한이 Linux/macOS에서는 `0600`, Windows에서는 현재 사용자 전용 ACL인지
 - 환경변수(`NW_CLIENT_ID`, `NW_CLIENT_SECRET`, `NW_PROFILE`)가 다른 값을 덮어쓰고 있지 않은지
+- OAuth `redirect_uri_mismatch`면 Developer Console Redirect URL이 `http://127.0.0.1:8484/callback`~`8494`와 일치하는지. URL을 하나만 등록했다면 `--callback-port`로 그 포트를 고정한다. `auth doctor --callback-port`도 같은 규칙을 쓴다.
 
 ## 엉뚱한 프로필로 호출됨
 

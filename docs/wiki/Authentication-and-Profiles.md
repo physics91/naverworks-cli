@@ -11,8 +11,17 @@
 
 ```bash
 naverworks auth setup
-naverworks auth login
 naverworks auth status
+```
+
+OAuth `auth setup`은 Client ID와 Client Secret만 묻고 바로 브라우저 로그인을 진행합니다. Scope·Calendar User ID·로그인 전 Bot ID는 묻지 않으며, 로그인 후 Bot이 여러 개면 목록에서 고릅니다. 셋업에서 이미 로그인했다면 `auth login`을 다시 할 필요는 없습니다.
+
+Developer Console Redirect URL은 콜백 주소와 완전히 같아야 합니다. 기본은 `http://127.0.0.1:8484/callback`부터 `8494`까지입니다. URL을 하나만 등록하려면 포트를 고정하세요. `auth setup`, `auth login`, `auth doctor`의 `--callback-port`는 같은 규칙입니다.
+
+```bash
+naverworks auth setup --callback-port 8484
+naverworks auth login --callback-port 8484
+naverworks auth doctor --callback-port 8484
 ```
 
 ## 수동 설정

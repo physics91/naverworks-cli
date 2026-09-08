@@ -22,10 +22,15 @@ import (
 var authDoctorCmd = &cobra.Command{
 	Use:   "doctor",
 	Short: "인증 진단",
+	Long:  "로컬 인증 설정을 진단합니다.\nOAuth 콜백 포트 점검은 --callback-port와 같은 규칙입니다. 0(기본)이면 8484-8494를 탐색하고, 양수면 해당 포트만 확인합니다.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		verifyRemote, _ := cmd.Flags().GetBool("verify-remote")
+		callbackPort, err := callbackPortFromCmd(cmd)
+		if err != nil {
+			return err
+		}
 
-		input, err := buildAuthDoctorInput()
+		input, err := buildAuthDoctorInput(callbackPort)
 		if err != nil {
 			return err
 		}
@@ -46,10 +51,11 @@ type readonlyHTTPTransport struct {
 
 func init() {
 	authDoctorCmd.Flags().Bool("verify-remote", false, "읽기 전용 원격 검증 실행")
+	addOAuthCallbackPortFlag(authDoctorCmd)
 	authCmd.AddCommand(authDoctorCmd)
 }
 
-func buildAuthDoctorInput() (authdoctor.Input, error) {
+func buildAuthDoctorInput(callbackPort int) (authdoctor.Input, error) {
 	configPath, err := config.DefaultPathOrError()
 	if err != nil {
 		return authdoctor.Input{}, err
@@ -84,7 +90,7 @@ func buildAuthDoctorInput() (authdoctor.Input, error) {
 	sourceMap := buildDoctorSourceMap(pc, selectedProfile)
 	inferredMethod := inferAuthMethod(effectiveConfig, token)
 	effectiveScope, effectiveScopeSource := effectiveScopeForDoctor(effectiveConfig, token, sourceMap)
-	callbackErr := callbackListenerCheck(inferredMethod)
+	callbackErr := callbackListenerCheck(inferredMethod, callbackPort)
 
 	return authdoctor.Input{
 		SelectedProfile:       selectedProfile,
@@ -133,11 +139,12 @@ func effectiveScopeForDoctor(cfg *config.Config, token *auth.Token, sourceMap ma
 	return defaultOAuthScope, "default"
 }
 
-func callbackListenerCheck(method auth.AuthMethod) error {
+func callbackListenerCheck(method auth.AuthMethod, callbackPort int) error {
 	if method == auth.AuthMethodJWT {
 		return nil
 	}
-	ln, _, err := auth.FindAvailableListener(8484, 8494)
+	start, end := oauthCallbackPortRange(callbackPort)
+	ln, _, err := auth.FindAvailableListener(start, end)
 	if err != nil {
 		return err
 	}

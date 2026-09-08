@@ -317,6 +317,92 @@ func TestLoadProfileConfigForSetup_ReturnsMalformedConfigError(t *testing.T) {
 	}
 }
 
+func TestOAuthCallbackPortRange(t *testing.T) {
+	start, end := oauthCallbackPortRange(0)
+	if start != 8484 || end != 8494 {
+		t.Fatalf("default range = %d-%d, want 8484-8494", start, end)
+	}
+
+	start, end = oauthCallbackPortRange(8484)
+	if start != 8484 || end != 8484 {
+		t.Fatalf("fixed port range = %d-%d, want 8484-8484", start, end)
+	}
+}
+
+func TestAuthSetupLong_DescribesOAuthPromptSet(t *testing.T) {
+	long := authSetupCmd.Long
+	if !strings.Contains(long, "Client ID") || !strings.Contains(long, "Client Secret") {
+		t.Fatalf("setup Long missing OAuth credentials: %q", long)
+	}
+	if !strings.Contains(long, "Scope·Calendar User ID·로그인 전 Bot ID는 묻지 않습니다") {
+		t.Fatalf("setup Long missing OAuth omitted prompts: %q", long)
+	}
+	if !strings.Contains(long, "서비스 계정 ID") || !strings.Contains(long, "개인키") {
+		t.Fatalf("setup Long missing JWT required prompts: %q", long)
+	}
+}
+
+func TestNewSetupPromptSet_OAuthOmitsPreLoginOptionals(t *testing.T) {
+	oauth := newSetupPromptSet("oauth")
+	if !oauth.ClientID || !oauth.ClientSecret || !oauth.LoginNow {
+		t.Fatalf("oauth prompts = %+v, want client id/secret and login", oauth)
+	}
+	if oauth.ServiceAccountID || oauth.PrivateKeyPath || oauth.BotID || oauth.Scope || oauth.CalendarUserID {
+		t.Fatalf("oauth prompts = %+v, want no JWT or pre-login bot/scope/calendar", oauth)
+	}
+
+	jwt := newSetupPromptSet("jwt")
+	if !jwt.ClientID || !jwt.ClientSecret || !jwt.LoginNow {
+		t.Fatalf("jwt prompts = %+v, want client id/secret and login", jwt)
+	}
+	if !jwt.ServiceAccountID || !jwt.PrivateKeyPath || !jwt.BotID || !jwt.Scope || !jwt.CalendarUserID {
+		t.Fatalf("jwt prompts = %+v, want service account, key, bot, scope, calendar", jwt)
+	}
+}
+
+func TestCollectJWTSetupFields_OAuthDoesNotReadOptionalPrompts(t *testing.T) {
+	cfg := &config.Config{BotID: "keep-bot", Scope: "keep-scope", DefaultCalendarUserID: "keep-cal"}
+	reader := bufio.NewReader(strings.NewReader("should-not-consume\n"))
+
+	if err := collectJWTSetupFields(reader, cfg, newSetupPromptSet("oauth")); err != nil {
+		t.Fatal(err)
+	}
+	if cfg.BotID != "keep-bot" || cfg.Scope != "keep-scope" || cfg.DefaultCalendarUserID != "keep-cal" {
+		t.Fatalf("oauth collect mutated optional fields: %+v", cfg)
+	}
+	rest, err := reader.ReadString('\n')
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rest != "should-not-consume\n" {
+		t.Fatalf("oauth collect consumed stdin: %q", rest)
+	}
+}
+
+func TestCollectJWTSetupFields_JWTReadsServiceAccountAndOptionals(t *testing.T) {
+	cfg := &config.Config{}
+	reader := bufio.NewReader(strings.NewReader("sa@example.com\n/tmp/key.pem\nbot-1\nbot directory\nme\n"))
+
+	if err := collectJWTSetupFields(reader, cfg, newSetupPromptSet("jwt")); err != nil {
+		t.Fatal(err)
+	}
+	if cfg.ServiceAccountID != "sa@example.com" {
+		t.Fatalf("service_account_id = %q", cfg.ServiceAccountID)
+	}
+	if cfg.PrivateKeyPath != "/tmp/key.pem" {
+		t.Fatalf("private_key_path = %q", cfg.PrivateKeyPath)
+	}
+	if cfg.BotID != "bot-1" {
+		t.Fatalf("bot_id = %q", cfg.BotID)
+	}
+	if cfg.Scope != "bot directory" {
+		t.Fatalf("scope = %q", cfg.Scope)
+	}
+	if cfg.DefaultCalendarUserID != "me" {
+		t.Fatalf("calendar user = %q", cfg.DefaultCalendarUserID)
+	}
+}
+
 func TestApplySetupAuthMethod_ClearsJWTFieldsForOAuth(t *testing.T) {
 	cfg := &config.Config{
 		ServiceAccountID: "svc@example.com",

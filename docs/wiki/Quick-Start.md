@@ -1,6 +1,6 @@
 # Quick Start
 
-가장 덜 귀찮은 시작 순서는 `auth setup` → `auth login` → 첫 API 호출입니다.
+가장 덜 귀찮은 시작 순서는 `auth setup` → 첫 API 호출입니다. OAuth 셋업은 Client ID/Secret만 묻고 바로 로그인까지 이어지므로, 그 다음에 `auth login`을 다시 할 필요는 없습니다.
 
 ## 1. 대화형 설정
 
@@ -8,20 +8,16 @@
 naverworks auth setup
 ```
 
-설정 저장 후 바로 로그인까지 이어서 진행할 수 있습니다.
+OAuth는 Client ID/Secret만 입력하면 바로 로그인까지 이어집니다. Redirect URL을 하나만 쓰려면 `--callback-port 8484`를 붙이세요.
 
-## 2. 로그인
+## 2. 로그인 (setup에서 건너뛴 경우)
 
-OAuth 2.0:
-
-```bash
-naverworks auth login
-```
-
-JWT Service Account:
+JWT Service Account, 또는 OAuth 셋업에서 로그인을 건너뛴 경우에만 따로 로그인합니다.
 
 ```bash
 naverworks auth login --jwt
+naverworks auth login
+naverworks auth login --callback-port 8484
 ```
 
 JWT 개인키는 Linux/macOS에서 `0600`, Windows에서 현재 사용자 전용 ACL이어야 합니다.

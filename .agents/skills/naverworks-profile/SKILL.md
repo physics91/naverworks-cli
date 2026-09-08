@@ -57,14 +57,15 @@ description: Use when setting up or troubleshooting naverworks CLI multi-profile
 
 1. 사용자에게 프로필명과 인증 방식 확인
 2. `naverworks --profile <name> auth setup` 실행 (대화형)
+   - OAuth는 Client ID/Secret만 묻고 바로 로그인한다. Scope·Calendar·사전 Bot 질문은 생략한다.
+   - Redirect URL을 하나만 등록했다면 `--callback-port 8484`를 붙인다.
    - 또는 수동:
      ```bash
      naverworks --profile <name> config set client_id YOUR_ID
      naverworks --profile <name> config set client_secret --stdin <<< "SECRET"
      ```
-3. `auth setup` 마지막 단계에서 즉시 로그인하지 않았다면 `naverworks --profile <name> auth login` 실행
-4. 브라우저에서 네이버웍스 로그인 완료
-5. `naverworks --profile <name> auth status`로 검증
+3. `auth setup`에서 즉시 로그인하지 않았다면 `naverworks --profile <name> auth login` 실행. 이미 셋업이 브라우저 로그인을 끝냈으면 `auth login`을 다시 할 필요는 없다.
+4. `naverworks --profile <name> auth status`로 검증
    - `auth_method: oauth`와 미래 시각의 `expires_at` 확인 → 완료
    - 실패 → 트러블슈팅 참조
 
@@ -128,6 +129,7 @@ naverworks --profile <name> config get <key> # 개별 조회
 | "프로필 'X'을(를) 찾을 수 없습니다" | config.json에 프로필 없음 | `naverworks --profile X auth setup` |
 | 토큰 만료 | access_token 유효기간 초과 | `auth refresh` 또는 재로그인 |
 | JWT 로그인 실패 | private key 경로/권한 오류 | `private_key_path` 확인, 파일 권한 600 |
+| OAuth `redirect_uri_mismatch` | 콘솔 Redirect URL과 콜백 포트 불일치 | `http://127.0.0.1:8484/callback`~`8494` 등록 또는 `--callback-port`로 고정 |
 | 환경변수가 무시됨 | `--profile` 플래그가 우선 | 플래그 제거 또는 값 변경 |
 
 ## 참고

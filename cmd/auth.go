@@ -27,9 +27,12 @@ var authCmd = &cobra.Command{
 	Short: "인증 관리",
 }
 
+const oauthCallbackPortFlagUsage = "OAuth 콜백 포트 (0이면 8484-8494에서 사용 가능한 포트 탐색, 양수면 해당 포트만 사용)"
+
 var authLoginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "로그인",
+	Long:  "OAuth 브라우저 로그인 또는 --jwt 서비스 계정 로그인.\nOAuth 콜백 포트는 --callback-port로 고정할 수 있습니다. 0(기본)이면 8484-8494에서 사용 가능한 포트를 탐색합니다.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		useJWT, _ := cmd.Flags().GetBool("jwt")
 		cfg, name, err := loadActiveConfig()
@@ -46,7 +49,11 @@ var authLoginCmd = &cobra.Command{
 		if useJWT {
 			return loginJWT(cfg, store)
 		}
-		return loginOAuth(cfg, store)
+		callbackPort, err := callbackPortFromCmd(cmd)
+		if err != nil {
+			return err
+		}
+		return loginOAuth(cfg, store, callbackPort)
 	},
 }
 
@@ -76,12 +83,13 @@ func loginJWT(cfg *config.Config, store *auth.ProfileTokenStore) error {
 	return store.Save(token)
 }
 
-func loginOAuth(cfg *config.Config, store *auth.ProfileTokenStore) error {
+func loginOAuth(cfg *config.Config, store *auth.ProfileTokenStore, callbackPort int) error {
 	if cfg.ClientID == "" || cfg.ClientSecret == "" {
 		return fmt.Errorf("OAuth 인증에 필요한 설정이 누락되었습니다: client_id, client_secret")
 	}
 
-	ln, port, err := auth.FindAvailableListener(8484, 8494)
+	start, end := oauthCallbackPortRange(callbackPort)
+	ln, port, err := auth.FindAvailableListener(start, end)
 	if err != nil {
 		return err
 	}
@@ -292,8 +300,31 @@ var authRefreshCmd = &cobra.Command{
 
 func init() {
 	authLoginCmd.Flags().Bool("jwt", false, "JWT Service Account 인증")
+	addOAuthCallbackPortFlag(authLoginCmd)
 	authCmd.AddCommand(authLoginCmd, authStatusCmd, authLogoutCmd, authRefreshCmd)
 	rootCmd.AddCommand(authCmd)
+}
+
+func addOAuthCallbackPortFlag(cmd *cobra.Command) {
+	cmd.Flags().Int("callback-port", 0, oauthCallbackPortFlagUsage)
+}
+
+func oauthCallbackPortRange(port int) (int, int) {
+	if port > 0 {
+		return port, port
+	}
+	return 8484, 8494
+}
+
+func callbackPortFromCmd(cmd *cobra.Command) (int, error) {
+	port, err := cmd.Flags().GetInt("callback-port")
+	if err != nil {
+		return 0, err
+	}
+	if port < 0 || port > 65535 {
+		return 0, fmt.Errorf("유효하지 않은 callback-port: %d (0 또는 1-65535)", port)
+	}
+	return port, nil
 }
 
 // makeAuthURLValidator creates a URL validator that only allows https

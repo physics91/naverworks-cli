@@ -55,11 +55,8 @@ curl -sSL https://raw.githubusercontent.com/physics91/naverworks-cli/main/instal
 ## 30초 시작
 
 ```bash
-# 대화형 설정
+# 대화형 설정 (OAuth는 Client ID/Secret만 입력)
 naverworks auth setup
-
-# 로그인
-naverworks auth login
 
 # 상태 확인
 naverworks auth status

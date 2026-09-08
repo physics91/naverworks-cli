@@ -72,7 +72,7 @@ func promptSecret(fd int, label string) (string, error) {
 var authSetupCmd = &cobra.Command{
 	Use:   "setup",
 	Short: "대화형 인증 설정",
-	Long:  "질문-답변 형식으로 네이버웍스 인증에 필요한 설정을 구성합니다.",
+	Long:  "질문-답변 형식으로 네이버웍스 인증에 필요한 설정을 구성합니다.\nOAuth는 인증 방식, Client ID, Client Secret, (선택) 지금 로그인만 묻고 바로 브라우저 로그인을 진행합니다. Scope·Calendar User ID·로그인 전 Bot ID는 묻지 않습니다. JWT는 서비스 계정 ID·개인키와 선택적 Bot/Scope/Calendar를 추가로 묻습니다.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fd := int(os.Stdin.Fd())
 		if !term.IsTerminal(fd) {
@@ -103,56 +103,34 @@ var authSetupCmd = &cobra.Command{
 		}
 		applySetupAuthMethod(cfg, authMethod)
 
-		// Step 2: Client ID
-		cfg.ClientID = prompt(reader, "Client ID", cfg.ClientID)
-		if cfg.ClientID == "" {
-			return fmt.Errorf("Client ID는 필수입니다")
+		prompts := newSetupPromptSet(authMethod)
+		if prompts.ClientID {
+			cfg.ClientID = prompt(reader, "Client ID", cfg.ClientID)
+			if cfg.ClientID == "" {
+				return fmt.Errorf("Client ID는 필수입니다")
+			}
 		}
 
-		// Step 3: Client Secret (마스킹 입력)
-		secretHint := "(비어 있음)"
-		if cfg.ClientSecret != "" {
-			secretHint = "(설정됨, 엔터로 유지)"
+		if prompts.ClientSecret {
+			secretHint := "(비어 있음)"
+			if cfg.ClientSecret != "" {
+				secretHint = "(설정됨, 엔터로 유지)"
+			}
+			newSecret, err := promptSecret(fd, fmt.Sprintf("Client Secret %s", secretHint))
+			if err != nil {
+				return err
+			}
+			if newSecret != "" {
+				cfg.ClientSecret = newSecret
+			}
+			if cfg.ClientSecret == "" {
+				return fmt.Errorf("Client Secret은 필수입니다")
+			}
 		}
-		newSecret, err := promptSecret(fd, fmt.Sprintf("Client Secret %s", secretHint))
-		if err != nil {
+
+		if err := collectJWTSetupFields(reader, cfg, prompts); err != nil {
 			return err
 		}
-		if newSecret != "" {
-			cfg.ClientSecret = newSecret
-		}
-		if cfg.ClientSecret == "" {
-			return fmt.Errorf("Client Secret은 필수입니다")
-		}
-
-		// Step 4: JWT 전용 설정
-		if authMethod == "jwt" {
-			cfg.ServiceAccountID = prompt(reader, "Service Account ID", cfg.ServiceAccountID)
-			if cfg.ServiceAccountID == "" {
-				return fmt.Errorf("JWT 인증에는 Service Account ID가 필수입니다")
-			}
-
-			cfg.PrivateKeyPath = prompt(reader, "Private Key 파일 경로", cfg.PrivateKeyPath)
-			if cfg.PrivateKeyPath == "" {
-				return fmt.Errorf("JWT 인증에는 Private Key 경로가 필수입니다")
-			}
-		}
-
-		// Step 5: Bot ID (선택)
-		cfg.BotID = prompt(reader, "Bot ID (선택, 엔터로 건너뛰기)", cfg.BotID)
-
-		// Step 6: Scope (선택)
-		defaultScope := defaultOAuthScope
-		if authMethod == "jwt" {
-			defaultScope = defaultJWTScope
-		}
-		scopeInput := prompt(reader, fmt.Sprintf("Scope (기본값: %s)", defaultScope), cfg.Scope)
-		if scopeInput != "" {
-			cfg.Scope = scopeInput
-		}
-
-		// Step 7: Calendar User ID (선택)
-		cfg.DefaultCalendarUserID = prompt(reader, "기본 Calendar User ID (선택, OAuth면 'me' 가능)", cfg.DefaultCalendarUserID)
 
 		// 저장
 		if err := pc.Save(path); err != nil {
@@ -163,38 +141,43 @@ var authSetupCmd = &cobra.Command{
 		fmt.Printf("설정이 저장되었습니다: %s\n", path)
 		fmt.Println()
 
-		// Step 8: 바로 로그인 할지
-		doLogin := prompt(reader, "지금 바로 로그인하시겠습니까? [Y/n]", "Y")
-		doLogin = strings.ToLower(strings.TrimSpace(doLogin))
-		if doLogin == "" || doLogin == "y" || doLogin == "yes" {
-			fmt.Println()
-			tokenPath, err := auth.DefaultTokenPathOrError()
-			if err != nil {
-				return err
-			}
-			store := auth.NewProfileTokenStore(tokenPath, name)
-			if authMethod == "jwt" {
-				fmt.Println("JWT 인증을 시작합니다...")
-				if err := loginJWT(cfg, store); err != nil {
+		if prompts.LoginNow {
+			doLogin := prompt(reader, "지금 바로 로그인하시겠습니까? [Y/n]", "Y")
+			doLogin = strings.ToLower(strings.TrimSpace(doLogin))
+			if doLogin == "" || doLogin == "y" || doLogin == "yes" {
+				fmt.Println()
+				tokenPath, err := auth.DefaultTokenPathOrError()
+				if err != nil {
 					return err
 				}
-			} else {
-				fmt.Println("OAuth 인증을 시작합니다. 브라우저가 열립니다...")
-				if err := loginOAuth(cfg, store); err != nil {
-					return err
+				store := auth.NewProfileTokenStore(tokenPath, name)
+				if authMethod == "jwt" {
+					fmt.Println("JWT 인증을 시작합니다...")
+					if err := loginJWT(cfg, store); err != nil {
+						return err
+					}
+				} else {
+					callbackPort, err := callbackPortFromCmd(cmd)
+					if err != nil {
+						return err
+					}
+					fmt.Println("OAuth 인증을 시작합니다. 브라우저가 열립니다...")
+					if err := loginOAuth(cfg, store, callbackPort); err != nil {
+						return err
+					}
 				}
+				return runPostLoginBotSelection(
+					reader,
+					os.Stdout,
+					cfg,
+					func() ([]setupBotOption, error) {
+						return fetchSetupBotsForProfile(cfg, name, store)
+					},
+					func() error {
+						return pc.Save(path)
+					},
+				)
 			}
-			return runPostLoginBotSelection(
-				reader,
-				os.Stdout,
-				cfg,
-				func() ([]setupBotOption, error) {
-					return fetchSetupBotsForProfile(cfg, name, store)
-				},
-				func() error {
-					return pc.Save(path)
-				},
-			)
 		}
 
 		fmt.Println()
@@ -220,6 +203,66 @@ func applySetupAuthMethod(cfg *config.Config, authMethod string) {
 	}
 	cfg.ServiceAccountID = ""
 	cfg.PrivateKeyPath = ""
+}
+
+// setupPromptSet is the interactive question set after the auth method is chosen.
+// OAuth omits Scope, Calendar User ID, and pre-login Bot ID.
+type setupPromptSet struct {
+	ClientID         bool
+	ClientSecret     bool
+	ServiceAccountID bool
+	PrivateKeyPath   bool
+	BotID            bool
+	Scope            bool
+	CalendarUserID   bool
+	LoginNow         bool
+}
+
+func newSetupPromptSet(authMethod string) setupPromptSet {
+	set := setupPromptSet{
+		ClientID:     true,
+		ClientSecret: true,
+		LoginNow:     true,
+	}
+	if authMethod == "jwt" {
+		set.ServiceAccountID = true
+		set.PrivateKeyPath = true
+		set.BotID = true
+		set.Scope = true
+		set.CalendarUserID = true
+	}
+	return set
+}
+
+func collectJWTSetupFields(reader *bufio.Reader, cfg *config.Config, prompts setupPromptSet) error {
+	if cfg == nil {
+		return fmt.Errorf("설정이 없습니다")
+	}
+	if prompts.ServiceAccountID {
+		cfg.ServiceAccountID = prompt(reader, "Service Account ID", cfg.ServiceAccountID)
+		if cfg.ServiceAccountID == "" {
+			return fmt.Errorf("JWT 인증에는 Service Account ID가 필수입니다")
+		}
+	}
+	if prompts.PrivateKeyPath {
+		cfg.PrivateKeyPath = prompt(reader, "Private Key 파일 경로", cfg.PrivateKeyPath)
+		if cfg.PrivateKeyPath == "" {
+			return fmt.Errorf("JWT 인증에는 Private Key 경로가 필수입니다")
+		}
+	}
+	if prompts.BotID {
+		cfg.BotID = prompt(reader, "Bot ID (선택, 엔터로 건너뛰기)", cfg.BotID)
+	}
+	if prompts.Scope {
+		scopeInput := prompt(reader, fmt.Sprintf("Scope (기본값: %s)", defaultJWTScope), cfg.Scope)
+		if scopeInput != "" {
+			cfg.Scope = scopeInput
+		}
+	}
+	if prompts.CalendarUserID {
+		cfg.DefaultCalendarUserID = prompt(reader, "기본 Calendar User ID (선택)", cfg.DefaultCalendarUserID)
+	}
+	return nil
 }
 
 func prompt(reader *bufio.Reader, question string, defaultVal string) string {
@@ -405,5 +448,6 @@ func runPostLoginBotSelection(
 }
 
 func init() {
+	addOAuthCallbackPortFlag(authSetupCmd)
 	authCmd.AddCommand(authSetupCmd)
 }

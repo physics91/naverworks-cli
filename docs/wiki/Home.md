@@ -30,7 +30,6 @@
 
 ```bash
 naverworks auth setup
-naverworks auth login
 naverworks auth status
 naverworks directory list-users --count 20
 ```

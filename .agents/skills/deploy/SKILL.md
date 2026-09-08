@@ -20,7 +20,7 @@ description: Use when releasing a new version of naverworks — runs preflight c
 | 필드 | 설명 |
 |------|------|
 | `tag` | 생성/푸시한 태그 (`v<version>`) |
-| `preflight` | `go mod tidy`, `go test`, `go vet`, `git status` 결과 |
+| `preflight` | `make verify-maintenance`, 재사용 guardrail, `git status` 결과 |
 | `push_status` | 원격 push 여부 |
 | `release_status` | GitHub Release 확인 결과 |
 | `npm_status` | npm 패키지 버전 확인 결과 |
@@ -49,34 +49,33 @@ description: Use when releasing a new version of naverworks — runs preflight c
 
 ### Phase 1: 사전 검증
 
-아래를 개별 명령으로 순서대로 실행한다. 하나라도 실패하면 태그를 만들지 않고 즉시 중단한다.
+태그를 붙일 정확한 커밋과 작업 상태를 먼저 확인한다. 변경이 있으면 중단한다.
 
 ```bash
-go mod tidy
-```
-```bash
-git diff --exit-code go.mod go.sum
-```
-→ 종료 코드 != 0이면 `go.mod/go.sum이 변경되었습니다. 먼저 검토 후 커밋하세요`로 중단
-
-```bash
-go test ./... -count=1
-```
-```bash
-go vet ./...
+git rev-parse HEAD
 ```
 ```bash
 git status --porcelain
 ```
-→ 출력이 있으면 `워킹 트리가 clean하지 않습니다`로 중단
 
-간결한 보고 예시:
+현재 Linux CI와 Release의 검증 기준을 실행한다. 각 명령의 종료 코드를 확인하고
+하나라도 실패하면 태그를 만들지 않는다.
+
+```bash
+scripts/check-reuse-guardrails.sh .
 ```
-✓ go mod tidy — 변경 없음
-✓ go test — PASS
-✓ go vet — 이상 없음
-✓ git status — clean
+```bash
+make verify-maintenance
 ```
+
+- `verify-maintenance`는 `go mod tidy -diff`, 포맷, vet, fast/full/canary 테스트,
+  로컬 빌드, 취약점 검사를 포함한다. `go mod tidy`로 추적 파일을 수정하지 않는다.
+- 루트 `naverworks` 빌드 경로가 Git 무시 대상인지 먼저 확인한다. 기존 바이너리는
+  저장소 밖 임시 경로에 보존한 뒤 종료 시 복원한다. 소스 수정은 작업 트리 규칙을 따른다.
+- Linux 결과는 Windows ACL 검증을 대신하지 않는다. 자격 증명 저장 관련 변경은
+  대상 커밋의 Windows CI 결과를 확인하고, 미확인 상태면 게시 전에 해결한다.
+- 검사 후 `git status --porcelain`과 `git rev-parse HEAD`를 다시 확인한다.
+  변경이 생겼거나 검증한 커밋과 다르면 중단하고 원인을 보고한다.
 
 ### Phase 2: 로컬 태그 생성
 

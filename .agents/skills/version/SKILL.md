@@ -20,8 +20,8 @@ description: Use when inspecting naverworks version state or creating/pushing re
 
 | 필드 | 설명 |
 |------|------|
-| `latest_tag` | 가장 최근 Git 태그 (`v*`) |
-| `local_build_version` | 현재 워킹트리에서 `make build` 후 `./naverworks version` 결과 |
+| `latest_tag` | 현재 HEAD에서 도달 가능한 가장 가까운 태그 (`v*`) |
+| `local_build_version` | 기존 로컬 바이너리의 `version` 결과 또는 미빌드 |
 | `npm_package_version` | `npm/cli/package.json`에 기록된 버전 |
 | `new_tag` | `bump` 실행 시 생성한 새 태그 |
 | `push_status` | 원격 push 여부 |
@@ -45,25 +45,22 @@ description: Use when inspecting naverworks version state or creating/pushing re
 
 최신 Git 태그 확인:
 ```bash
-git describe --tags --abbrev=0 2>/dev/null
+git describe --tags --match 'v*' --abbrev=0 2>/dev/null
 ```
 → 태그가 없으면 "태그 없음"으로 보고
 
-현재 워킹트리 빌드 메타데이터 확인:
-```bash
-make build
-```
-```bash
-./naverworks version
-```
-```bash
-rm -f naverworks
-```
-→ `Makefile` 기본값 때문에 `VERSION`을 넘기지 않으면 `version` 필드는 보통 `dev`다.
+기존 로컬 빌드 메타데이터 확인:
+
+- 루트의 `naverworks`(Windows에서는 `naverworks.exe`)가 존재하고 실행 가능하면
+  해당 파일의 `version` 명령만 실행한다.
+- 없으면 `local_build_version: 미빌드`로 보고한다. 조회를 위해 빌드하거나
+  기존 바이너리를 덮어쓰거나 삭제하지 않는다.
+- 기존 바이너리는 현재 HEAD와 다를 수 있으므로 결과를 현재 소스 버전으로
+  단정하지 않는다. 현재 소스의 새 빌드를 요청하면 `build` 스킬로 넘긴다.
 
 npm 패키지 버전 확인:
 ```bash
-grep '"version"' npm/cli/package.json
+node -p 'JSON.parse(require("fs").readFileSync("npm/cli/package.json", "utf8")).version'
 ```
 
 보고 예시:
@@ -85,7 +82,7 @@ git tag -l 'v*' --sort=-v:refname
 #### Phase 1: 현재 버전 확인
 
 ```bash
-git describe --tags --abbrev=0 2>/dev/null
+git describe --tags --match 'v*' --abbrev=0 2>/dev/null
 ```
 → 태그가 없으면 `v0.0.0`에서 시작
 → `v` prefix를 제거하여 현재 SemVer 추출

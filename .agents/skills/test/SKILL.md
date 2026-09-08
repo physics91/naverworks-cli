@@ -1,184 +1,105 @@
 ---
 name: test
 description: >
-  Use when verifying the naverworks codebase — runs unit, integration, and
-  e2e test layers with go test, go vet, and build smoke check. Triggers on
-  "테스트", "test", "/test". Covers test pyramid (unit/integration/e2e) with
-  real functionality verification. For local binaries, use build. For releasing,
-  use deploy. For managing existing releases, use release. For version
-  inspection or tag creation, use version.
+  Use when verifying the naverworks codebase with full or focused Go tests,
+  static analysis, and build smoke checks. Triggers on "테스트", "test", "/test".
+  For local binaries use build; for publishing a release use deploy.
 ---
 
 # naverworks 테스트
 
-이 스킬은 AI 에이전트가 직접 실행한다. 모든 명령을 순서대로 실행하고 결과를 보고한다.
+실행 명령의 기준은 `Makefile`과 `.github/workflows/ci.yml`이다.
+테스트 범위를 명시하고, 부분 실행 결과를 전체 통과로 보고하지 않는다.
 
-## 입출력 계약
+## 범위
 
-### 입력
+| scope | 실행 | 의미 |
+|---|---|---|
+| `all` (기본) | `make verify-maintenance` | 모듈·포맷·vet·fast·full·canary·빌드·취약점 검사 |
+| `fast` | `make test-fast` | 공통 CLI harness, API/auth, 주요 CLI 계약·여정 |
+| `unit` | 아래 단위 범위 | 유틸리티·설정 중심 부분 검사 |
+| `integration` | 아래 통합 범위 | API/auth 및 CLI 여정 중심 부분 검사 |
+| `e2e` | 아래 CLI 범위 | 명령·여정·메타데이터 및 실제 바이너리 canary |
+| `coverage` | 아래 커버리지 절차 | 전체 패키지 테스트와 현재 커버리지 측정 |
 
-| 입력 | 필수 여부 | 형식 | 설명 |
-|------|----------|------|------|
-| scope | 선택 | enum: `all`(기본), `unit`, `integration`, `e2e`, `coverage` | 실행할 테스트 범위 |
+## 실행 전
 
-### 출력
+- 저장소 루트와 현재 작업 상태를 확인한다. 소스 수정이 필요하면 상위
+  `AGENTS.md`의 작업 트리 규칙을 먼저 적용한다.
+- `all`은 `make build`로 루트 `naverworks`를 생성하거나 덮어쓴다.
+  실행 전에 `git check-ignore -q -- naverworks`로 무시 경로임을 확인한다.
+  기존 바이너리가 있으면 저장소 밖 임시 경로에 보존하고 종료 시 복원한다.
+- `go mod tidy`로 파일을 자동 수정하지 않는다. 정합성 검사는
+  `go mod tidy -diff`이며, 차이가 있으면 실패와 수정 필요성을 보고한다.
+- 테스트는 모의 HTTP 서버를 사용한다. 실제 NAVER WORKS 호출이나 인증 정보는
+  필요하지 않다. 도구·모듈 설치 및 취약점 DB 조회에는 네트워크가 필요할 수 있다.
 
-| 필드 | 설명 |
-|------|------|
-| `mod_status` | `go mod tidy` 및 `go.mod`/`go.sum` 변경 여부 |
-| `vet_status` | `go vet ./...` 결과 |
-| `layer_results` | Unit/Integration/E2E 각 레이어의 PASS/FAIL과 실패 테스트 상세 |
-| `build_status` | 스모크 빌드 및 `version` 명령 실행 결과 |
+## 기본 전체 검증
 
-### 성공 기준
-
-- 지정된 모든 레이어에서 테스트가 PASS한다.
-- `go vet`이 이상 없다.
-- 스모크 빌드가 성공하고 `naverworks version`이 정상 출력된다.
-
-## 실행 규칙
-
-1. 모든 명령을 직접 Bash로 실행한다.
-2. 각 단계의 결과를 ✓/✗ 형식으로 보고한다.
-3. 실패한 테스트가 있으면 실패 내용을 상세히 보고한다.
-4. 사용자 입력 없이 자동 실행한다.
-
-## Test Pyramid Strategy
-
-각 레이어의 전략만 간략히 기술한다. 실제 실행 명령은 [Run by Layer](#run-by-layer) 섹션이 **단일 source of truth**다.
-
-### Layer 1: Unit Tests
-- Target: 순수 함수, 데이터 모델, 유틸리티 (internal/output, internal/auth/jwt, internal/config, internal/auth/token, cmd/task_cmd, cmd/smoke_test.go 내 헬퍼/파서)
-- Isolation: 파일시스템은 t.TempDir(), HTTP 없음
-- Speed: <1초, 매 커밋마다 실행
-
-### Layer 2: Integration Tests
-- Target: 모듈 경계 — HTTP 클라이언트, OAuth 흐름, API 서비스 엔드포인트 (internal/api/client, internal/auth/oauth, internal/api/* 서비스별 100+ 테이블 기반 케이스)
-- Isolation: httptest.NewServer로 로컬 HTTP 서버, 실제 외부 API 호출 없음
-- Speed: 1~3초, PR 전/CI 전 실행
-
-### Layer 3: E2E Tests
-- Target: CLI 명령 워크플로우 (cmd/smoke_test의 46개 CLI 워크플로우), 보안 검증 (cmd/e2e_security의 atomic write, 동시성, 응답 크기 제한, SHA 핀닝), `.github/workflows/*.yml` SHA 핀닝 검증
-- Entry Points: `naverworks version/help`, `bot send`, `config get/set`, `auth status`, `calendar` 명령
-- Isolation: setupTestEnv로 HOME/환경변수 격리, httptest로 API 모킹
-- Speed: 수초~수십초, 릴리스 전 또는 보안 변경 후 실행
-
-## Procedure
-
-### Run All Tests (피라미드 순서)
-
-1. Phase 1: 모듈 정합성
-   ```bash
-   go mod tidy
-   ```
-   ```bash
-   git diff --exit-code go.mod go.sum
-   ```
-   → 변경이 있으면 ✗ 보고하고 이후 단계는 계속 진행 (중단하지 않음)
-
-2. Phase 2: 정적 분석
-   ```bash
-   go vet ./...
-   ```
-   → 실패 시 실패 패키지와 대표 오류를 보고하고 이후 단계는 계속 진행
-
-3. Phase 3: Unit
-   - Run by Layer의 Unit only 명령을 그대로 실행
-   → 실패 시 FAIL 패키지와 테스트 함수명 보고
-
-4. Phase 4: Integration
-   - Run by Layer의 Integration only 명령을 그대로 실행
-   → 실패 시 FAIL 패키지와 테스트 함수명 보고
-
-5. Phase 5: E2E
-   - Run by Layer의 E2E only 명령을 그대로 실행
-   → 실패 시 FAIL 패키지와 테스트 함수명 보고
-
-6. Phase 6: 빌드 확인
-   ```bash
-   go build -o /tmp/naverworks-test .
-   ```
-   ```bash
-   /tmp/naverworks-test version
-   ```
-   ```bash
-   rm -f /tmp/naverworks-test
-   ```
-
-### Run by Layer
-
-- **Unit only** (각 명령 개별 실행 후 결과를 모두 보고):
-  1. `go test ./internal/output/... ./internal/config/... -v -count=1`
-  2. `go test ./internal/auth/... -run "Test(BuildJWT|CheckKey|Token|ProfileToken|WriteSecure|SaveSecure)" -v -count=1`
-  3. `go test ./cmd/... -run "Test(BuildTask|ResolveUserID|RequireTitleBodyPost|ParseOptionalJSONData|ResolveBotID|ResolveOrCreateProfile)" -v -count=1`
-
-- **Integration only** (각 명령 개별 실행 후 결과를 모두 보고):
-  1. `go test ./internal/api/... -v -count=1`
-  2. `go test ./internal/auth/... -run "Test(BuildAuthorizationURL|ExchangeCode|RefreshToken|RevokeToken|FindAvailableListener|HasScope|GenerateState|RequestToken)" -v -count=1`
-
-- **E2E only**:
-  1. `go test ./cmd/... -run "Test(Smoke|E2E)" -v -count=1`
-
-### Run with Coverage
+각 명령의 종료 코드를 확인한다.
 
 ```bash
-go test ./... -cover -coverprofile=coverage.out
+scripts/check-reuse-guardrails.sh .
 ```
 ```bash
-go tool cover -func=coverage.out
+make verify-maintenance
 ```
 
-### 보고
+두 명령이 Linux CI 기준이다. `verify-maintenance`는 최초 실패에서 멈추므로
+이후 단계를 통과로 표시하지 않는다. 원인 진단에 필요한 독립 검사만 추가 실행한다.
+`make test-full`은 필터 없이 `go test ./... -v -count=1`을 실행하여 새 패키지와
+`TestJourney*`도 포함한다. 고정 정규식 목록으로 전체 실행을 대체하지 않는다.
 
-성공 시:
-```
-테스트 결과:
+## 부분 검증
 
-✓ go mod tidy — 완료
-✓ git diff go.mod go.sum — 변경 없음
-✓ go vet — 이상 없음
-✓ Unit — N 패키지 PASS
-✓ Integration — N 패키지 PASS
-✓ E2E — N 패키지 PASS
-✓ go build — 빌드 성공
-```
+`fast`, `unit`, `integration`, `e2e`, `coverage`는 전체 유지보수 검증이 아니다.
+부분 범위에도 `go mod tidy -diff`와 `go vet ./...`를 실행하고 별도로 보고한다.
 
-실패 시:
-```
-✗ Integration — 1/4 패키지 FAIL
-  FAIL github.com/physics91/naverworks-cli/internal/api
-    TestClient_401_Retry: expected 200, got 401
+단위 범위 (패키지에 파일 I/O 검증도 포함):
 
-다음 단계: 실패한 테스트를 수정하세요.
+```bash
+go test ./internal/output/... ./internal/config/... ./internal/fileutil/... ./internal/httputil/... ./internal/authdoctor/... -v -count=1
 ```
 
-## Test Environment Setup
+통합 범위 (각각 실행):
 
-- 외부 의존성: 없음 (Docker Compose 불필요)
-- 환경 격리: t.TempDir() + t.Setenv() (NW_* 변수 클리어)
-- 테스트 헬퍼:
-  - cmd/smoke_test.go: setupTestEnv(), writeTestConfig(), runCLI(), captureStdout()
-  - internal/auth/jwt_test.go: generateTestKey()
+```bash
+go test ./internal/api/... ./internal/auth/... ./internal/testkit/cli/... -v -count=1
+```
+```bash
+go test ./cmd/... -run '^TestJourney' -v -count=1
+```
 
-## What to Test vs What to Mock
+CLI 범위 (각각 실행):
 
-| Layer | Real | Mocked |
-|-------|------|--------|
-| Unit | 함수 로직, 파일 I/O (TempDir) | HTTP, 외부 서비스, 시간 |
-| Integration | HTTP 클라이언트 + httptest 서버 | 실제 NAVER WORKS API |
-| E2E | CLI 실행, Cobra 명령 라우팅, 보안 검증 | API 서버 (httptest) |
+```bash
+go test ./cmd/... -v -count=1
+```
+```bash
+make test-canary
+```
 
-## Best Practices
+부분 범위의 빌드 확인에는 `make test-canary`를 사용한다. 이미 실행했으면
+반복하지 않는다. 이 테스트는 임시 디렉터리에 실제 바이너리를 빌드해 실행한다.
 
-- 테스트는 -count=1로 캐시를 끄고 실행한다
-- 파일시스템 의존 테스트는 t.TempDir와 t.Setenv로 격리한다
-- 네트워크 의존 테스트는 실제 외부 호출 대신 httptest.NewServer를 사용한다
-- 테이블 기반 테스트(table-driven tests)로 엔드포인트 검증을 구조화한다
+커버리지 파일은 저장소 밖 임시 디렉터리에 생성한다. 아래는 한 Bash 세션에서
+실행하며 실패해도 자신이 만든 임시 디렉터리만 정리한다.
 
-## Caveats
+```bash
+(
+  set -e
+  coverage_dir=$(mktemp -d)
+  trap 'rm -rf -- "$coverage_dir"' EXIT
+  go test ./... -count=1 -cover -coverprofile="$coverage_dir/coverage.out"
+  go tool cover -func="$coverage_dir/coverage.out"
+)
+```
 
-- CI에서 -race 플래그 미사용
-- t.Parallel() 미사용 (순차 실행)
-- cmd/ 커버리지 12.9%로 낮음
-- Docker Compose 없음 (순수 Go 프로젝트라 불필요)
-- e2e_security_test.go는 //go:build !windows 태그 — Windows에서 일부 건너뜀
+## 보고와 한계
+
+- 요청 범위, 실행 명령, PASS/FAIL/미실행, 최초 실패 원인과 다음 조치를 보고한다.
+- 커버리지와 실행 시간은 이번 측정값만 보고한다. 과거 수치를 현재값으로 쓰지 않는다.
+- `git status --short`로 추적 파일 변경 여부를 확인하고 기존 변경과 구분한다.
+- Linux 결과로 Windows ACL 검증을 통과 처리하지 않는다. 자격 증명 파일 보안
+  변경은 Windows CI 결과가 필요하며, 확인하지 못했으면 명시한다.
+- 모의 API 성공을 실제 테넌트 검증 성공으로 표현하지 않는다.

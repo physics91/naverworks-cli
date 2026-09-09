@@ -21,6 +21,13 @@
 | 메시지 콘텐츠 URL | `monitoring download-messages ... [--channel-id <id>]` | 관리자 또는 JWT Service Account; `monitoring.read` |
 | 메일 조회 | `mail list|get|list-folders|get-folder ...` | 구성원 OAuth; `mail.read` |
 | 메일 전송·변경 | `mail send|delete|move|update ...` | 구성원 OAuth; `mail` |
+| 메시지방 단건 조회 | `bot get-channel <channelId>` | OAuth 또는 JWT; `bot`, `bot.read` 또는 `bot.message` |
+
+공식 Bot API에 메시지방 목록·이름 검색은 없다. `channelId`는 메시지방 서랍 메뉴의
+'채널 ID' 또는 봇 콜백 `source.channelId`에서 확인한다. `directory search-groups`와
+`directory search-orgunits`는 그룹·조직 방만 찾고, 일반(`MULTI_USERS`) 방은 이름만으로
+조회할 수 없다. `drive channel list`는 드라이브 메시지방 폴더 목록이며 채팅방 목록이
+아니다.
 
 `approval list-all`의 기간은 최대 1개월이며 `--type`은
 `pending|upcoming|approved|completed`다. 검색 명령의 `--query-filters`,

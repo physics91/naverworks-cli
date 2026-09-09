@@ -436,6 +436,25 @@ func TestSmoke_BotHelp(t *testing.T) {
 	}
 }
 
+func TestSmoke_BotGetChannelHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "bot", "get-channel", "--help")
+	if err != nil {
+		t.Fatalf("bot get-channel --help failed: %v", err)
+	}
+	for _, want := range []string{
+		"목록·이름 검색은 없습니다",
+		"channelId",
+		"서랍 메뉴",
+		"source.channelId",
+		"MULTI_USERS",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("bot get-channel --help missing %q; got: %s", want, out)
+		}
+	}
+}
+
 func TestSmoke_BotDomainHelp(t *testing.T) {
 	setupTestEnv(t)
 	out, err := runCLI(t, "bot", "domain", "--help")
@@ -1804,9 +1823,25 @@ func TestSmoke_DriveChannelHelp(t *testing.T) {
 			t.Errorf("drive channel --help missing subcommand %q", sub)
 		}
 	}
-	for _, want := range []string{"구성원 계정", "서비스 계정 사용 불가", "file.read", "group.folder.read", "file", "group.folder"} {
+	for _, want := range []string{
+		"구성원 계정", "서비스 계정 사용 불가", "file.read", "group.folder.read", "file", "group.folder",
+		"드라이브 메시지방 폴더", "채팅방 목록·이름 검색이 아닙니다",
+	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("drive channel --help missing %q", want)
+		}
+	}
+
+	listHelp, err := runCLI(t, "drive", "channel", "list", "--help")
+	if err != nil {
+		t.Fatalf("drive channel list --help failed: %v", err)
+	}
+	for _, want := range []string{
+		"드라이브에 보이는 메시지방 폴더",
+		"bot get-channel",
+	} {
+		if !strings.Contains(listHelp, want) {
+			t.Errorf("drive channel list --help missing %q; got: %s", want, listHelp)
 		}
 	}
 

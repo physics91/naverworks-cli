@@ -11,6 +11,10 @@ import (
 const (
 	channelFolderReadHelp  = "인증: 구성원 계정 Access Token 전용 (서비스 계정 사용 불가)\n최소 scope: file.read, group.folder.read"
 	channelFolderWriteHelp = "인증: 구성원 계정 Access Token 전용 (서비스 계정 사용 불가)\n최소 scope: file, group.folder"
+	channelFolderScopeHelp = "이 명령군은 드라이브 메시지방 폴더를 다룹니다. 채팅방 목록·이름 검색이 아닙니다."
+	channelFolderListHelp  = channelFolderReadHelp + "\n\n" +
+		"이 목록은 드라이브에 보이는 메시지방 폴더입니다. 채팅방 전체 목록이나 방 이름 검색이 아닙니다.\n" +
+		"방 제목 확인은 bot get-channel <channelId>를 사용하세요."
 )
 
 type channelFolderServiceRun func(*api.ChannelFolderService, *api.Client) error
@@ -112,13 +116,13 @@ func newDriveChannelCommand() *cobra.Command {
 	channelCmd := &cobra.Command{
 		Use:   "channel",
 		Short: "채널 폴더 관리",
-		Long:  "채널 폴더 관리\n\n" + channelFolderReadHelp + "\n쓰기 scope: file, group.folder",
+		Long:  "채널 폴더 관리\n\n" + channelFolderReadHelp + "\n쓰기 scope: file, group.folder\n" + channelFolderScopeHelp,
 	}
 
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "채널 폴더 목록 조회",
-		Long:  "채널 폴더 목록 조회\n\n" + channelFolderReadHelp,
+		Long:  "채널 폴더 목록 조회\n\n" + channelFolderListHelp,
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return withChannelFolderService(func(svc *api.ChannelFolderService, _ *api.Client) error {

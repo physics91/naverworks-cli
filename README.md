@@ -125,7 +125,9 @@ Drive 검색은 구성원 계정 Access Token 전용이며 서비스 계정 토�
 naverworks drive search "분기 보고서" --user-id me --query-filters "fileName,content" --drive-type-filters "MY_DRIVE,CHANNEL_FOLDER"
 ```
 
-채널 폴더는 구성원 계정 Access Token 전용입니다. 조회·다운로드에는 최소 `file.read`, `group.folder.read` scope가, 업로드·폴더 생성·파일 변경·복원·권한 변경에는 `file`, `group.folder` scope가 필요합니다. 파일 목록(`files`), 버전 목록(`revision list`), 휴지통 목록(`trash-list`)은 `--cursor`, `--count`, `--all`과 JSON·table 출력을 지원합니다. 공식 API에 페이지네이션이 없는 채널 목록(`channel list`)과 권한 목록(`permission list`)은 JSON·table 출력만 지원합니다.
+채널 폴더는 구성원 계정 Access Token 전용입니다. `drive channel list`는 드라이브에 보이는 메시지방 폴더 목록이며 채팅방 전체 목록이나 방 이름 검색이 아닙니다. 조회·다운로드에는 최소 `file.read`, `group.folder.read` scope가, 업로드·폴더 생성·파일 변경·복원·권한 변경에는 `file`, `group.folder` scope가 필요합니다. 파일 목록(`files`), 버전 목록(`revision list`), 휴지통 목록(`trash-list`)은 `--cursor`, `--count`, `--all`과 JSON·table 출력을 지원합니다. 공식 API에 페이지네이션이 없는 채널 목록(`channel list`)과 권한 목록(`permission list`)은 JSON·table 출력만 지원합니다.
+
+공식 Bot API에는 메시지방 목록·이름 검색이 없습니다. 방 제목은 `naverworks bot get-channel CHANNEL_ID`로 확인하며, `CHANNEL_ID`는 메시지방 서랍 메뉴의 '채널 ID' 또는 봇 콜백 `source.channelId`에서 얻습니다.
 
 ```bash
 naverworks drive channel list

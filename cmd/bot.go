@@ -377,8 +377,14 @@ var botGetAttachmentCmd = &cobra.Command{
 var botGetChannelCmd = &cobra.Command{
 	Use:   "get-channel <channelId>",
 	Short: "채널 상세 조회",
-	Args:  cobra.ExactArgs(1),
-	RunE:  botScopedIDRunE((*api.BotService).GetChannel, printBotBody),
+	Long: "채널 상세 조회\n\n" +
+		"공식 API에 메시지방 목록·이름 검색은 없습니다. channelId가 필요합니다.\n" +
+		"channelId는 메시지방 서랍 메뉴의 '채널 ID' 또는 봇 콜백의 source.channelId에서 확인합니다.\n" +
+		"그룹 방은 directory search-groups, 조직 방은 directory search-orgunits로 찾을 수 있습니다.\n" +
+		"일반(MULTI_USERS) 방은 이름만으로 조회할 수 없습니다.\n\n" +
+		"인증: 구성원 계정 또는 서비스 계정 Access Token\n최소 scope: bot, bot.read 또는 bot.message",
+	Args: cobra.ExactArgs(1),
+	RunE: botScopedIDRunE((*api.BotService).GetChannel, printBotBody),
 }
 
 var botChannelMembersCmd = &cobra.Command{
@@ -650,7 +656,7 @@ func init() {
 
 	// Send flags
 	botSendCmd.Flags().String("to", "", "수신자 userId")
-	botSendCmd.Flags().String("channel", "", "채널 ID")
+	botSendCmd.Flags().String("channel", "", "채널 ID (목록·이름 검색 API 없음. 서랍 메뉴 또는 콜백 source.channelId)")
 	botSendCmd.Flags().String("text", "", "메시지 텍스트 (- 이면 stdin)")
 	botSendCmd.Flags().String("json", "", "구조화 메시지 JSON (--text와 배타적)")
 

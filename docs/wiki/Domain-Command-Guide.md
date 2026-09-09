@@ -13,8 +13,12 @@ naverworks <command> --help
 
 ```bash
 naverworks bot send --to USER_ID --text "배포 완료"
+naverworks bot send --channel CHANNEL_ID --text "배포 완료"
+naverworks bot get-channel CHANNEL_ID
 naverworks bot list
 ```
+
+공식 API에 메시지방 목록·이름 검색은 없습니다. `CHANNEL_ID`는 메시지방 서랍 메뉴의 '채널 ID' 또는 봇 콜백 `source.channelId`에서 확인합니다. 그룹 방은 `directory search-groups`, 조직 방은 `directory search-orgunits`로 찾을 수 있고, 일반(`MULTI_USERS`) 방은 이름만으로 조회할 수 없습니다.
 
 ## Calendar
 
@@ -55,7 +59,7 @@ naverworks drive channel upload CHANNEL_FOLDER_ID --folder FOLDER_ID --file ./re
 naverworks --dry-run drive channel delete CHANNEL_FOLDER_ID FILE_ID
 ```
 
-Drive 검색과 채널 폴더는 구성원 계정 Access Token 전용입니다. 채널 폴더 조회에는 `file.read`, `group.folder.read`, 쓰기에는 `file`, `group.folder` scope가 필요합니다. 실제 쓰기 전에는 `--dry-run` 또는 `--plan-out`으로 요청을 확인할 수 있고 presigned 업로드 URL은 출력에서 마스킹됩니다.
+Drive 검색과 채널 폴더는 구성원 계정 Access Token 전용입니다. `drive channel list`는 드라이브에 보이는 메시지방 폴더 목록이며 채팅방 전체 목록이 아닙니다. 채널 폴더 조회에는 `file.read`, `group.folder.read`, 쓰기에는 `file`, `group.folder` scope가 필요합니다. 실제 쓰기 전에는 `--dry-run` 또는 `--plan-out`으로 요청을 확인할 수 있고 presigned 업로드 URL은 출력에서 마스킹됩니다.
 
 ## Mail
 

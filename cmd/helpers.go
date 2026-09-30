@@ -199,9 +199,7 @@ func fetchAndPrint(fn func(*api.Client) (*api.Response, error)) error {
 }
 
 func runListCmd(cmd *cobra.Command, columns []string, itemKey string, fetch func(string, int) (*api.Response, error)) error {
-	cursor, _ := cmd.Flags().GetString("cursor")
-	count, _ := cmd.Flags().GetInt("count")
-	all, _ := cmd.Flags().GetBool("all")
+	cursor, count, all := listFlags(cmd)
 
 	formatter := output.NewFormatter(outputFormat, os.Stdout).WithTable(columns, itemKey)
 
@@ -239,6 +237,9 @@ func runListCmd(cmd *cobra.Command, columns []string, itemKey string, fetch func
 			return nil
 		}
 		return paginateAndPrint(func(c string) (*api.Response, error) {
+			if c == "" {
+				c = cursor
+			}
 			return fetch(c, count)
 		}, itemKey, formatter)
 	}
@@ -350,6 +351,14 @@ func addListFlags(cmds ...*cobra.Command) {
 		c.Flags().Int("count", 0, "페이지 크기")
 		c.Flags().Bool("all", false, "전체 페이지 자동 순회")
 	}
+}
+
+// listFlags is shared by live pagination and offline request validation.
+func listFlags(cmd *cobra.Command) (cursor string, count int, all bool) {
+	cursor, _ = cmd.Flags().GetString("cursor")
+	count, _ = cmd.Flags().GetInt("count")
+	all, _ = cmd.Flags().GetBool("all")
+	return
 }
 
 const maxStdinSize int64 = 1 << 20 // 1MB

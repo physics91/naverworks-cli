@@ -1,4 +1,26 @@
 helpers:
+  - id: list-flags
+    path: cmd/helpers.go
+    symbol: listFlags
+    lifecycle: experimental
+    owner: Code Reuse Agent
+    use_when:
+      - live list execution and offline preview need the same cursor/count/all inputs
+    avoid_when:
+      - pagination uses different flag names or typed domain-specific inputs
+    replacement: ""
+  - id: room-management-dispatch
+    path: cmd/room_management.go
+    symbol: enableRoomManagement/runRoomManagement
+    lifecycle: experimental
+    owner: Code Reuse Agent
+    use_when:
+      - note or task command selects the existing API path or the dedicated browser path with room-id
+      - browser operations use the same profile, output boundary, and offline preview contract
+    avoid_when:
+      - command needs browser UI interaction, attachments, or a different authentication contract
+      - a generic API command can use existing newSvc or runListCmd directly
+    replacement: ""
   - id: new-svc
     path: cmd/helpers.go
     symbol: newSvc

@@ -32,9 +32,26 @@ const oauthCallbackPortFlagUsage = "OAuth 콜백 포트 (0이면 8484-8494에서
 var authLoginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "로그인",
-	Long:  "OAuth 브라우저 로그인 또는 --jwt 서비스 계정 로그인.\nOAuth 콜백 포트는 --callback-port로 고정할 수 있습니다. 0(기본)이면 8484-8494에서 사용 가능한 포트를 탐색합니다.",
+	Long:  "OAuth 브라우저 로그인 또는 --jwt 서비스 계정 로그인.\n--method browser는 API 토큰과 별도로 전용 브라우저에 웹 로그인 세션을 저장합니다. Chrome/Chromium이 필요하며 NW_BROWSER_PATH로 실행 파일을 지정할 수 있습니다.\nOAuth 콜백 포트는 --callback-port로 고정할 수 있습니다. 0(기본)이면 8484-8494에서 사용 가능한 포트를 탐색합니다.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		useJWT, _ := cmd.Flags().GetBool("jwt")
+		method, _ := cmd.Flags().GetString("method")
+		if method != "" && method != "oauth" && method != "jwt" && method != "browser" {
+			return fmt.Errorf("유효하지 않은 인증 방식: %s (oauth|jwt|browser)", method)
+		}
+		if useJWT && method != "" && method != "jwt" {
+			return fmt.Errorf("--jwt와 --method %s를 함께 사용할 수 없습니다", method)
+		}
+		if method == "browser" {
+			if cmd.Flags().Changed("callback-port") {
+				return fmt.Errorf("브라우저 세션 로그인에는 --callback-port를 사용할 수 없습니다")
+			}
+			if previewRequested() {
+				return fmt.Errorf("브라우저 로그인에는 미리보기 옵션을 사용할 수 없습니다")
+			}
+			return loginBrowser(cmd)
+		}
+		useJWT = useJWT || method == "jwt"
 		cfg, name, err := loadActiveConfig()
 		if err != nil {
 			return err
@@ -160,7 +177,15 @@ func loginOAuth(cfg *config.Config, store *auth.ProfileTokenStore, callbackPort 
 var authStatusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "인증 상태 확인",
+	Long:  "기본값은 API 토큰 상태입니다. --method browser는 선택 프로필의 웹 로그인 상태를 headless로 확인하며 Chrome/Chromium이 필요합니다.",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		browser, err := browserAuthRequested(cmd)
+		if err != nil {
+			return err
+		}
+		if browser {
+			return statusBrowser(cmd)
+		}
 		_, name, err := loadActiveConfig()
 		if err != nil {
 			// If no config exists, still try the selected/default profile name.
@@ -207,7 +232,18 @@ var authStatusCmd = &cobra.Command{
 var authLogoutCmd = &cobra.Command{
 	Use:   "logout",
 	Short: "로그아웃",
+	Long:  "기본값은 API 토큰 로그아웃입니다. --method browser는 선택 프로필의 로컬 전용 브라우저 세션만 삭제하며, 서버 세션이나 다른 프로필·API 토큰은 변경하지 않습니다. 사용 중인 브라우저·CLI를 먼저 종료하세요.",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if previewRequested() {
+			return fmt.Errorf("로그아웃에는 미리보기 옵션을 사용할 수 없습니다")
+		}
+		browser, err := browserAuthRequested(cmd)
+		if err != nil {
+			return err
+		}
+		if browser {
+			return logoutBrowser()
+		}
 		cfg, name, err := loadActiveConfig()
 		if err != nil {
 			cfg = &config.Config{}
@@ -300,6 +336,10 @@ var authRefreshCmd = &cobra.Command{
 
 func init() {
 	authLoginCmd.Flags().Bool("jwt", false, "JWT Service Account 인증")
+	authLoginCmd.Flags().String("method", "", "인증 방식 (oauth|jwt|browser); browser는 메시지방 웹 세션 로그인")
+	for _, cmd := range []*cobra.Command{authStatusCmd, authLogoutCmd} {
+		cmd.Flags().String("method", "api", "인증 대상 (api|browser); 기본값은 API 토큰")
+	}
 	addOAuthCallbackPortFlag(authLoginCmd)
 	authCmd.AddCommand(authLoginCmd, authStatusCmd, authLogoutCmd, authRefreshCmd)
 	rootCmd.AddCommand(authCmd)

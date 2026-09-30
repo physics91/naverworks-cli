@@ -143,6 +143,29 @@ func TestSmoke_Help(t *testing.T) {
 	}
 }
 
+func TestSmoke_RoomManagementHelp(t *testing.T) {
+	setupTestEnv(t)
+	for _, args := range [][]string{{"note", "list-posts", "--help"}, {"note", "create-post", "--help"}, {"task", "list", "--help"}, {"task", "complete", "--help"}} {
+		out, err := runCLI(t, args...)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(out, "--room-id") || !strings.Contains(out, "browser") {
+			t.Fatalf("missing room help for %v", args)
+		}
+	}
+}
+
+func TestSmoke_BrowserAuthHelp(t *testing.T) {
+	setupTestEnv(t)
+	for _, action := range []string{"login", "status", "logout"} {
+		out, err := runCLI(t, "auth", action, "--help")
+		if err != nil || !strings.Contains(out, "--method") || !strings.Contains(out, "browser") {
+			t.Fatalf("browser auth help missing for %s: %v", action, err)
+		}
+	}
+}
+
 func TestSmoke_ConfigGetInvalidKey(t *testing.T) {
 	setupTestEnv(t)
 	_, err := runCLI(t, "config", "get", "no_such_key")
@@ -171,6 +194,19 @@ func TestSmoke_AuthHelpIncludesDoctor(t *testing.T) {
 	for _, sub := range []string{"login", "status", "logout", "refresh", "setup", "doctor"} {
 		if !containsCommand(out, sub) {
 			t.Errorf("auth --help missing subcommand %q", sub)
+		}
+	}
+}
+
+func TestSmoke_AuthLoginBrowserHelp(t *testing.T) {
+	setupTestEnv(t)
+	out, err := runCLI(t, "auth", "login", "--help")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"--method", "browser", "NW_BROWSER_PATH", "전용 브라우저"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("auth login help missing %q", want)
 		}
 	}
 }

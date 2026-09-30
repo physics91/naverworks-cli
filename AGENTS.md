@@ -19,11 +19,22 @@ naverworks-cli — A Go CLI for NAVER WORKS REST API v1.0.
 
 ## Build & Test
 
+Individual build and checks (via the relevant `build` or `test` skill below):
+
 ```bash
 make build          # Build ./naverworks binary
 make test           # go test ./... -v
 go vet ./...        # Static analysis
 ```
+
+Full Linux CI baseline (via the `test` skill; both commands are required):
+
+```bash
+scripts/check-reuse-guardrails.sh .
+make verify-maintenance
+```
+
+`make verify-maintenance` checks module consistency, formatting, vet, fast/full tests, the binary canary, build, and vulnerabilities.
 
 ## Architecture Rules
 
@@ -31,15 +42,19 @@ go vet ./...        # Static analysis
 - `internal/auth/`: Token issuance (OAuth/JWT), storage, refresh — no dependency on config
 - `internal/config/`: Profile loading, env var overrides — no dependency on auth
 - `cmd/helpers.go`: Common flag handling, API client creation, pagination utilities
-- Errors are written to stderr as JSON: `{"error":{"code":"...","description":"..."}}`
+- Final command failures returned to `main.go` are written to stderr as JSON: `{"error":{"code":"...","description":"..."}}`
+- Authentication prompts, retry guidance, and non-fatal warnings may be written to stderr as Korean text.
 
 ## Local Skill Invocation Rules
 
-In Claude Code, when a trigger condition below is matched, the corresponding skill **must** be invoked via the Skill tool. Do not run the commands directly.
+When a trigger condition below matches, the corresponding skill workflow **must** be followed:
+
+- In Claude Code, invoke the skill via the Skill tool before running its commands.
+- In Codex, read the matching `SKILL.md` before running its commands. Repository skills live in `.agents/skills/<skill>/SKILL.md`; resolve user/system skills such as `commit-work` through the available skills catalog.
 
 | Skill | Triggers | Description |
 |-------|----------|-------------|
-| `test` | "테스트", "test", `/test` | Run go test, go vet, and local build smoke check |
+| `test` | "테스트", "test", `/test` | Run the full Linux CI baseline or focused Go checks and build smoke tests |
 | `build` | "빌드", "build", `/build` | Build local or cross-platform binaries with ldflags version metadata |
 | `version` | "버전", "version", `/version`, "bump" | Inspect version state or create/push release tags |
 | `deploy` | "배포", "릴리스", "deploy", "release", `/deploy` | Preflight checks → release tag → GitHub Actions verification |

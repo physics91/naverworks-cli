@@ -1,0 +1,30 @@
+{
+  "_bootstrap": false,
+  "last_checked": "2026-10-24T00:00:00Z",
+  "known_announcements": [
+    {
+      "url": "https://line-works.com/notice/153784/",
+      "title": "LINE WORKS Service Notice (2026.06.23) - Discontinued features and specification changes",
+      "date": "2026-06-23",
+      "summary": "Service notice announcing discontinued features and specification changes scheduled for late July/August 2026. Includes admin-screen label renames (audit log column names). Assessed as UI/admin-level changes, not developer API changes."
+    },
+    {
+      "url": "https://line-works.com/release-notes/line-works/update-20250724/",
+      "title": "LINE WORKS Service Update 2025-07-24",
+      "date": "2025-07-24",
+      "summary": "General service update release notes. Assessed as non-API product update."
+    },
+    {
+      "url": "https://line-works.com/release-notes/line-works/update-20251127/",
+      "title": "LINE WORKS Service Update 2025-11-27",
+      "date": "2025-11-27",
+      "summary": "Update included AiStudio features for Talk and Board, and a Drive storage detail view. Assessed as non-API product update."
+    },
+    {
+      "url": "https://guide.ncloud-docs.com/docs/en/naverworks-releasenote",
+      "title": "NAVER WORKS Release Notes (NAVER Cloud guide)",
+      "date": "2022-03-26",
+      "summary": "Official release notes page for NAVER WORKS. Last observed entries from March 2022 (guide reorganization). Monitored as canonical source."
+    }
+  ]
+}

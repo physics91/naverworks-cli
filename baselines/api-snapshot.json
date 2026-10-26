@@ -1,6 +1,6 @@
 {
   "_bootstrap": false,
-  "last_checked": "2026-10-24T00:00:00Z",
+  "last_checked": "2026-10-26T00:00:00Z",
   "known_announcements": [
     {
       "url": "https://line-works.com/notice/153784/",
@@ -25,6 +25,30 @@
       "title": "NAVER WORKS Release Notes (NAVER Cloud guide)",
       "date": "2022-03-26",
       "summary": "Official release notes page for NAVER WORKS. Last observed entries from March 2022 (guide reorganization). Monitored as canonical source."
+    },
+    {
+      "url": "https://naver.worksmobile.com/release-notes/core_20260723/",
+      "title": "네이버웍스 코어 정기 업데이트 (2026-07-23)",
+      "date": "2026-07-23",
+      "summary": "New developer APIs added: channel folder API, mail-moving API, task search API, document search API. Messenger type field changed: TWITTER value renamed to X. Message content download API gained channelId parameter. Tracked in GitHub issue #27 (closed)."
+    },
+    {
+      "url": "https://naver.worksmobile.com/notice/94415/",
+      "title": "네이버웍스 코어 & 웍스 드라이브 일부 기능의 사양 변경 및 종료 안내",
+      "date": "2025-06-17",
+      "summary": "Specification changes and discontinued features in NAVER Works Core and Works Drive as part of v4.3 regular update (July 2025). Includes board redirect URL change and low-usage feature adjustments. Assessed as service-level changes; API impact indirect."
+    },
+    {
+      "url": "https://developers.worksmobile.com/en/index",
+      "title": "LINE WORKS Developers — January 2026 update (delegated apps + Partner API)",
+      "date": "2026-01-22",
+      "summary": "Developer Console updated January 22, 2026. Changes include delegated apps in Developer Console and new options-related operations in the Partner API."
+    },
+    {
+      "url": "https://developers.worksmobile.com/kr/docs/user-update-patch",
+      "title": "TWITTER 값 지원종료 예정 — 멤버/연락처 API messenger 타입 필드 (2026-11~12월)",
+      "date": "2026-10-26",
+      "summary": "The TWITTER value in the messenger type field of member and contact APIs will be removed. Korean docs target: mid-November 2026; Japanese docs target: early December 2026. The value was already renamed to X in the July 2026 core update; this notice tracks the final removal. Additionally, zipCode max length will change to 20 in early December 2026. Reported in GitHub issue #40."
     }
   ]
 }

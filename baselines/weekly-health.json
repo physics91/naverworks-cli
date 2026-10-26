@@ -1,0 +1,110 @@
+{
+  "_bootstrap": false,
+  "_date": "2026-10-26",
+  "_notes": "Vulnerability scan unavailable: vuln.go.dev blocked by network proxy. Test failures in cmd package are proxy-related (network calls to worksapis.com/example.com blocked), not code regressions.",
+  "vulnerabilities": null,
+  "dependencies": {
+    "direct_with_updates": [
+      {
+        "path": "golang.org/x/term",
+        "current": "v0.45.0",
+        "latest": "v0.47.0"
+      }
+    ],
+    "indirect_with_updates": [
+      {
+        "path": "github.com/cpuguy83/go-md2man/v2",
+        "current": "v2.0.6",
+        "latest": "v2.0.7"
+      },
+      {
+        "path": "go.yaml.in/yaml/v3",
+        "current": "v3.0.4",
+        "latest": "v3.0.5"
+      },
+      {
+        "path": "golang.org/x/sys",
+        "current": "v0.47.0",
+        "latest": "v0.49.0"
+      },
+      {
+        "path": "gopkg.in/check.v1",
+        "current": "v0.0.0-20161208181325-20d25e280405",
+        "latest": "v1.0.0-20201130134442-10cb98267c6c"
+      }
+    ]
+  },
+  "coverage": {
+    "github.com/physics91/naverworks-cli": {
+      "pct": 0.0,
+      "no_test_files": false,
+      "ok": true
+    },
+    "github.com/physics91/naverworks-cli/cmd": {
+      "pct": 33.2,
+      "no_test_files": false,
+      "ok": false,
+      "fail_reason": "network_proxy_blocked"
+    },
+    "github.com/physics91/naverworks-cli/internal/api": {
+      "pct": 88.8,
+      "no_test_files": false,
+      "ok": true
+    },
+    "github.com/physics91/naverworks-cli/internal/auth": {
+      "pct": 58.8,
+      "no_test_files": false,
+      "ok": true
+    },
+    "github.com/physics91/naverworks-cli/internal/authdoctor": {
+      "pct": 83.6,
+      "no_test_files": false,
+      "ok": true
+    },
+    "github.com/physics91/naverworks-cli/internal/config": {
+      "pct": 72.5,
+      "no_test_files": false,
+      "ok": true
+    },
+    "github.com/physics91/naverworks-cli/internal/fileutil": {
+      "pct": 62.3,
+      "no_test_files": false,
+      "ok": true
+    },
+    "github.com/physics91/naverworks-cli/internal/httputil": {
+      "pct": 80.0,
+      "no_test_files": false,
+      "ok": true
+    },
+    "github.com/physics91/naverworks-cli/internal/output": {
+      "pct": 91.7,
+      "no_test_files": false,
+      "ok": true
+    },
+    "github.com/physics91/naverworks-cli/internal/testkit/cli": {
+      "pct": 77.7,
+      "no_test_files": false,
+      "ok": true
+    },
+    "github.com/physics91/naverworks-cli/scripts": {
+      "pct": 0.0,
+      "no_test_files": true,
+      "ok": true
+    },
+    "github.com/physics91/naverworks-cli/scripts/api_monitor": {
+      "pct": 32.4,
+      "no_test_files": false,
+      "ok": true
+    },
+    "github.com/physics91/naverworks-cli/scripts/github_issue": {
+      "pct": 65.1,
+      "no_test_files": false,
+      "ok": true
+    },
+    "github.com/physics91/naverworks-cli/scripts/weekly_health": {
+      "pct": 63.5,
+      "no_test_files": false,
+      "ok": true
+    }
+  }
+}

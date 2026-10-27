@@ -1,6 +1,6 @@
 {
   "_bootstrap": false,
-  "last_checked": "2026-10-26T00:00:00Z",
+  "last_checked": "2026-10-27T00:11:00Z",
   "known_announcements": [
     {
       "url": "https://line-works.com/notice/153784/",
@@ -46,7 +46,7 @@
     },
     {
       "url": "https://developers.worksmobile.com/kr/docs/user-update-patch",
-      "title": "TWITTER 값 지원종료 예정 — 멤버/연락처 API messenger 타입 필드 (2026-11~12월)",
+      "title": "TWITTER 값 지원종료 예정 — 멤버/연락체 API messenger 타입 필드 (2026-11~12월)",
       "date": "2026-10-26",
       "summary": "The TWITTER value in the messenger type field of member and contact APIs will be removed. Korean docs target: mid-November 2026; Japanese docs target: early December 2026. The value was already renamed to X in the July 2026 core update; this notice tracks the final removal. Additionally, zipCode max length will change to 20 in early December 2026. Reported in GitHub issue #40."
     }

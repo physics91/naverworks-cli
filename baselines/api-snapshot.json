@@ -1,6 +1,6 @@
 {
   "_bootstrap": false,
-  "last_checked": "2026-10-31T00:10:00Z",
+  "last_checked": "2026-11-01T00:00:00Z",
   "known_announcements": [
     {
       "url": "https://line-works.com/notice/153784/",
@@ -61,6 +61,24 @@
       "title": "LINE WORKS Developers 지원종료 기능 목록 — Directory/SSO/OIDC/Drive (2026년 12월 예정)",
       "date": "2026-10-16",
       "summary": "Multiple deprecations effective December 2026: (1) Directory user management APIs deprecated, replace with User Custom Property API. (2) SSO IdP-initiated logout via POST planned for removal. (3) OIDC jwks_uri public key modulus (n) Base64 padding '=' removal per RFC 7515 (announced 2026-10-16). (4) Drive shared-drive access permission feature end-of-service. Reported in GitHub issue #44."
+    },
+    {
+      "url": "https://naver.worksmobile.com/release-notes/ccore_20261015/",
+      "title": "네이버웍스 코어 비정기 업데이트 (2026-10-15)",
+      "date": "2026-10-15",
+      "summary": "비정기 코어 업데이트. API 변경 포함 여부 미확인 (네트워크 접근 불가). GitHub 이슈 #45 참조."
+    },
+    {
+      "url": "https://naver.worksmobile.com/release-notes/core_20261019/",
+      "title": "네이버웍스 코어 업데이트 (2026-10-19)",
+      "date": "2026-10-19",
+      "summary": "코어 업데이트. API 변경 포함 여부 미확인 (네트워크 접근 불가). GitHub 이슈 #45 참조."
+    },
+    {
+      "url": "https://developers.worksmobile.com/jp/news/detail?id=620",
+      "title": "LINE WORKS Developers 뉴스 (id=620)",
+      "date": "2026-10-01",
+      "summary": "웹 검색에서 발견된 개발자 뉴스 항목. 내용 미확인 (네트워크 접근 불가). GitHub 이슈 #45 참조."
     }
   ]
 }

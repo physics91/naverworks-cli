@@ -1,6 +1,6 @@
 {
   "_bootstrap": false,
-  "last_checked": "2026-11-01T00:00:00Z",
+  "last_checked": "2026-11-02T00:00:00Z",
   "known_announcements": [
     {
       "url": "https://line-works.com/notice/153784/",
@@ -79,6 +79,12 @@
       "title": "LINE WORKS Developers 뉴스 (id=620)",
       "date": "2026-10-01",
       "summary": "웹 검색에서 발견된 개발자 뉴스 항목. 내용 미확인 (네트워크 접근 불가). GitHub 이슈 #45 참조."
+    },
+    {
+      "url": "https://developers.worksmobile.com/kr/news",
+      "title": "NAVER WORKS Developers 한국 뉴스 — Drive 공유드라이브 권한 종료 및 Directory customFields 종료 (2026-09~10월)",
+      "date": "2026-10-08",
+      "summary": "Korean developer news page items: (1) 2026-09-21: 공유드라이브 접근 권한 설정/해제 기능 종료 예정 (Drive shared-drive access permission end-of-service). Content overlaps with issue #44. (2) 2026-10-08: Directory customFields 프로퍼티 2027-04-08 종료 예정, customProperties로 이전 권장. April 2027 deadline is more specific than the 'December 2026' summary in issue #44. Assessed as additional detail for existing issue #44, no new issue created."
     }
   ]
 }

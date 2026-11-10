@@ -1,6 +1,6 @@
 {
   "_bootstrap": false,
-  "last_checked": "2026-11-09T00:00:00Z",
+  "last_checked": "2026-11-10T00:00:00Z",
   "known_announcements": [
     {
       "url": "https://line-works.com/notice/153784/",
@@ -28,13 +28,13 @@
     },
     {
       "url": "https://naver.worksmobile.com/release-notes/core_20260723/",
-      "title": "네이버웍크스 코어 정기 업데이트 (2026-07-23)",
+      "title": "네이버웽k스 코어 정기 업데이트 (2026-07-23)",
       "date": "2026-07-23",
       "summary": "New developer APIs added: channel folder API, mail-moving API, task search API, document search API. Messenger type field changed: TWITTER value renamed to X. Message content download API gained channelId parameter. Tracked in GitHub issue #27 (closed)."
     },
     {
       "url": "https://naver.worksmobile.com/notice/94415/",
-      "title": "네이버웍크스 코어 & 웍크스 드라이브 일부 기능의 사양 변경 및 종료 안내",
+      "title": "네이버웽k스 코어 & 웽k스 드라이브 일부 기능의 사양 변경 및 종료 안내",
       "date": "2025-06-17",
       "summary": "Specification changes and discontinued features in NAVER Works Core and Works Drive as part of v4.3 regular update (July 2025). Includes board redirect URL change and low-usage feature adjustments. Assessed as service-level changes; API impact indirect."
     },
@@ -64,13 +64,13 @@
     },
     {
       "url": "https://naver.worksmobile.com/release-notes/ccore_20261015/",
-      "title": "네이버웍크스 코어 비정기 업데이트 (2026-10-15)",
+      "title": "네이버웽k스 코어 비정기 업데이트 (2026-10-15)",
       "date": "2026-10-15",
       "summary": "비정기 코어 업데이트. API 변경 포함 여부 미확인 (네트워크 접근 불가). GitHub 이슈 #45 참조."
     },
     {
       "url": "https://naver.worksmobile.com/release-notes/core_20261019/",
-      "title": "네이버웍크스 코어 업데이트 (2026-10-19)",
+      "title": "네이버웽k스 코어 업데이트 (2026-10-19)",
       "date": "2026-10-19",
       "summary": "코어 업데이트. API 변경 포함 여부 미확인 (네트워크 접근 불가). GitHub 이슈 #45 참조."
     },
@@ -85,6 +85,12 @@
       "title": "NAVER WORKS Developers 한국 뉴스 — Drive 공유드라이브 권한 종료 및 Directory customFields 종료 (2026-09~10월)",
       "date": "2026-10-08",
       "summary": "Korean developer news page items: (1) 2026-09-21: 공유드라이브 접근 권한 설정/해제 기능 종료 예정 (Drive shared-drive access permission end-of-service). Content overlaps with issue #44. (2) 2026-10-08: Directory customFields 프로퍼티 2027-04-08 종료 예정, customProperties로 이전 권장. April 2027 deadline is more specific than the 'December 2026' summary in issue #44. Assessed as additional detail for existing issue #44, no new issue created."
+    },
+    {
+      "url": "https://naver.worksmobile.com/notice/91690/",
+      "title": "WORKPLACE(구) 인증 및 API 서비스 종료 사전 안내 (25.11.30)",
+      "date": "2025-11-30",
+      "summary": "Legacy WORKPLACE (old product, not NAVER WORKS API 2.0) authentication and API services ended November 30, 2025. Not relevant to naverworks-cli (NAVER WORKS API v2.0). Assessed as end-of-service for a different product."
     }
   ]
 }

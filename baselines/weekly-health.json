@@ -1,14 +1,19 @@
 {
   "_bootstrap": false,
-  "_date": "2026-10-26",
-  "_notes": "Vulnerability scan unavailable: vuln.go.dev blocked by network proxy. Test failures in cmd package are proxy-related (network calls to worksapis.com/example.com blocked), not code regressions.",
+  "_date": "2026-11-16",
+  "_notes": "Vulnerability scan unavailable: govulncheck v1.1.4 built with Go 1.24 cannot load Go 1.26 packages. Test failures in cmd package are proxy-related (network calls to worksapis.com/example.com blocked), not code regressions.",
   "vulnerabilities": null,
   "dependencies": {
     "direct_with_updates": [
       {
         "path": "golang.org/x/term",
         "current": "v0.45.0",
-        "latest": "v0.47.0"
+        "latest": "v0.48.0"
+      },
+      {
+        "path": "github.com/spf13/pflag",
+        "current": "v1.0.10",
+        "latest": "v1.1.0"
       }
     ],
     "indirect_with_updates": [
@@ -20,12 +25,12 @@
       {
         "path": "go.yaml.in/yaml/v3",
         "current": "v3.0.4",
-        "latest": "v3.0.5"
+        "latest": "v3.0.6"
       },
       {
         "path": "golang.org/x/sys",
         "current": "v0.47.0",
-        "latest": "v0.49.0"
+        "latest": "v0.50.0"
       },
       {
         "path": "gopkg.in/check.v1",

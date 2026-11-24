@@ -1,6 +1,6 @@
 {
   "_bootstrap": false,
-  "last_checked": "2026-11-23T00:00:00Z",
+  "last_checked": "2026-11-24T00:00:00Z",
   "known_announcements": [
     {
       "url": "https://line-works.com/notice/153784/",
@@ -97,6 +97,36 @@
       "title": "네이버욹크스 일부 기능의 사양 변경 및 종료 안내 - 5월 2일자 추가 업데이트",
       "date": "2024-05-02",
       "summary": "Service-level feature specification changes and discontinuation notice from ~May 2024 (notice number 75212 precedes 88927/91690/94415, indicating pre-2025 origin). Appeared in 2026-11-23 web search. Assessed as general service notice; no API endpoint or parameter changes confirmed. Added to baseline to prevent future false positives."
+    },
+    {
+      "url": "https://naver.worksmobile.com/notice/97004/",
+      "title": "네이버웍스 코어 & 웍스 드라이브 일부 기능의 사양 변경 및 종료 안내 (notice/97004)",
+      "date": "2026-03-01",
+      "summary": "Spec changes and discontinued features for NAVER WORKS Core and Works Drive (newer than notice/94415). Includes removal of '조직 연동 팝업 URL' from [감사 > Developers] event target items. Reported in GitHub issue #60."
+    },
+    {
+      "url": "https://naver.worksmobile.com/release-notes/core_20260409/",
+      "title": "네이버웍스 코어 정기 업데이트 (2026-04-09)",
+      "date": "2026-04-09",
+      "summary": "April 2026 core update. Added new audit event types: Provisioning app register, modify, and delete. Reported in GitHub issue #61."
+    },
+    {
+      "url": "https://naver.worksmobile.com/whats-new/notice/developers-console/",
+      "title": "네이버웍스 디벨로퍼스 콘솔 안내 (whats-new)",
+      "date": "2026-11-24",
+      "summary": "General developer console notice page from naver.worksmobile.com/whats-new. Assessed as evergreen navigation/documentation page, not a time-bound API announcement. Added to baseline to suppress future false positives."
+    },
+    {
+      "url": "https://naver.worksmobile.com/whats-new/workplace-user-notice/change-in-screen/developers/",
+      "title": "[개발자] Developers 화면 변경 안내 (whats-new)",
+      "date": "2026-11-24",
+      "summary": "Developer screen change notice page from naver.worksmobile.com/whats-new. Assessed as UI/screen-level change notice, not an API change. Added to baseline to suppress future false positives."
+    },
+    {
+      "url": "https://naver.worksmobile.com/whats-new/naver-works-users/feature-change/developers/",
+      "title": "디벨로퍼 콘솔 기존 대비 변경사항 (whats-new)",
+      "date": "2026-11-24",
+      "summary": "Developer console feature changes comparison page from naver.worksmobile.com/whats-new. Assessed as UI/console migration guide, not a direct API change announcement. Added to baseline to suppress future false positives."
     }
   ]
 }

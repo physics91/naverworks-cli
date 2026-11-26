@@ -1,6 +1,6 @@
 {
   "_bootstrap": false,
-  "last_checked": "2026-11-24T00:00:00Z",
+  "last_checked": "2026-11-26T00:00:00Z",
   "known_announcements": [
     {
       "url": "https://line-works.com/notice/153784/",
@@ -127,6 +127,18 @@
       "title": "디벨로퍼 콘솔 기존 대비 변경사항 (whats-new)",
       "date": "2026-11-24",
       "summary": "Developer console feature changes comparison page from naver.worksmobile.com/whats-new. Assessed as UI/console migration guide, not a direct API change announcement. Added to baseline to suppress future false positives."
+    },
+    {
+      "url": "https://developers.worksmobile.com/en/docs/sso-sp-oauth-login-app",
+      "title": "OAuth 2.0 SP-Initiated SSO 지원종료 예정 — 신규 설정 중단(2026-12초), 전체 종료(2027 봄)",
+      "date": "2026-11-26",
+      "summary": "OAuth 2.0 based SP-Initiated SSO scheduled to stop accepting new configurations in early December 2026 and to be fully discontinued in spring 2027. Distinct from SSO IdP-initiated logout POST deprecation (issue #44). Reported in GitHub issue #63. Affects auth domain."
+    },
+    {
+      "url": "https://naver.worksmobile.com/notice/89142/",
+      "title": "네이버웍스 경영지원 API 출시 안내 (notice/89142)",
+      "date": "2024-01-01",
+      "summary": "Business Support API (경영지원 API) launch announcement. Likely from late 2024 based on notice number sequence (88927 < 89142 < 91690). Assessed as new API launch notice, not a breaking change. Added to baseline to suppress future false positives."
     }
   ]
 }
